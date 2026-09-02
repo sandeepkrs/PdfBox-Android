@@ -26,13 +26,12 @@ import java.io.LineNumberReader;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
-
 /**
  * A class for mapping Unicode codepoints to OpenType script tags
  *
@@ -44,6 +43,7 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
  */
 public final class OpenTypeScript
 {
+
     public static final String INHERITED = "Inherited";
     public static final String UNKNOWN = "Unknown";
     public static final String TAG_DEFAULT = "DFLT";
@@ -61,150 +61,150 @@ public final class OpenTypeScript
     static
     {
         Object[][] table =
-            {
-                {"Adlam", new String[] { "adlm" }},
-                {"Ahom", new String[] { "ahom" }},
-                {"Anatolian_Hieroglyphs", new String[] { "hluw" }},
-                {"Arabic", new String[] { "arab" }},
-                {"Armenian", new String[] { "armn" }},
-                {"Avestan", new String[] { "avst" }},
-                {"Balinese", new String[] { "bali" }},
-                {"Bamum", new String[] { "bamu" }},
-                {"Bassa_Vah", new String[] { "bass" }},
-                {"Batak", new String[] { "batk" }},
-                {"Bengali", new String[] { "bng2", "beng" }},
-                {"Bhaiksuki", new String[] { "bhks" }},
-                {"Bopomofo", new String[] { "bopo" }},
-                {"Brahmi", new String[] { "brah" }},
-                {"Braille", new String[] { "brai" }},
-                {"Buginese", new String[] { "bugi" }},
-                {"Buhid", new String[] { "buhd" }},
-                // Byzantine Music: byzm
-                {"Canadian_Aboriginal", new String[] { "cans" }},
-                {"Carian", new String[] { "cari" }},
-                {"Caucasian_Albanian", new String[] { "aghb" }},
-                {"Chakma", new String[] { "cakm" }},
-                {"Cham", new String[] { "cham" }},
-                {"Cherokee", new String[] { "cher" }},
-                {"Common", new String[] { TAG_DEFAULT }}, // "Default" in OpenType
-                {"Coptic", new String[] { "copt" }},
-                {"Cuneiform", new String[] { "xsux" }}, // "Sumero-Akkadian Cuneiform" in OpenType
-                {"Cypriot", new String[] { "cprt" }},
-                {"Cyrillic", new String[] { "cyrl" }},
-                {"Deseret", new String[] { "dsrt" }},
-                {"Devanagari", new String[] { "dev2", "deva" }},
-                {"Duployan", new String[] { "dupl" }},
-                {"Egyptian_Hieroglyphs", new String[] { "egyp" }},
-                {"Elbasan", new String[] { "elba" }},
-                {"Ethiopic", new String[] { "ethi" }},
-                {"Georgian", new String[] { "geor" }},
-                {"Glagolitic", new String[] { "glag" }},
-                {"Gothic", new String[] { "goth" }},
-                {"Grantha", new String[] { "gran" }},
-                {"Greek", new String[] { "grek" }},
-                {"Gujarati", new String[] { "gjr2", "gujr" }},
-                {"Gurmukhi", new String[] { "gur2", "guru" }},
-                {"Han", new String[] { "hani" }}, // "CJK Ideographic" in OpenType
-                {"Hangul", new String[] { "hang" }},
-                // Hangul Jamo: jamo
-                {"Hanunoo", new String[] { "hano" }},
-                {"Hatran", new String[] { "hatr" }},
-                {"Hebrew", new String[] { "hebr" }},
-                {"Hiragana", new String[] { "kana" }},
-                {"Imperial_Aramaic", new String[] { "armi" }},
-                {INHERITED, new String[] { INHERITED }},
-                {"Inscriptional_Pahlavi", new String[] { "phli" }},
-                {"Inscriptional_Parthian", new String[] { "prti" }},
-                {"Javanese", new String[] { "java" }},
-                {"Kaithi", new String[] { "kthi" }},
-                {"Kannada", new String[] { "knd2", "knda" }},
-                {"Katakana", new String[] { "kana" }},
-                {"Kayah_Li", new String[] { "kali" }},
-                {"Kharoshthi", new String[] { "khar" }},
-                {"Khmer", new String[] { "khmr" }},
-                {"Khojki", new String[] { "khoj" }},
-                {"Khudawadi", new String[] { "sind" }},
-                {"Lao", new String[] { "lao " }},
-                {"Latin", new String[] { "latn" }},
-                {"Lepcha", new String[] { "lepc" }},
-                {"Limbu", new String[] { "limb" }},
-                {"Linear_A", new String[] { "lina" }},
-                {"Linear_B", new String[] { "linb" }},
-                {"Lisu", new String[] { "lisu" }},
-                {"Lycian", new String[] { "lyci" }},
-                {"Lydian", new String[] { "lydi" }},
-                {"Mahajani", new String[] { "mahj" }},
-                {"Malayalam", new String[] { "mlm2", "mlym" }},
-                {"Mandaic", new String[] { "mand" }},
-                {"Manichaean", new String[] { "mani" }},
-                {"Marchen", new String[] { "marc" }},
-                // Mathematical Alphanumeric Symbols: math
-                {"Meetei_Mayek", new String[] { "mtei" }},
-                {"Mende_Kikakui", new String[] { "mend" }},
-                {"Meroitic_Cursive", new String[] { "merc" }},
-                {"Meroitic_Hieroglyphs", new String[] { "mero" }},
-                {"Miao", new String[] { "plrd" }},
-                {"Modi", new String[] { "modi" }},
-                {"Mongolian", new String[] { "mong" }},
-                {"Mro", new String[] { "mroo" }},
-                {"Multani", new String[] { "mult" }},
-                // Musical Symbols: musc
-                {"Myanmar", new String[] { "mym2", "mymr" }},
-                {"Nabataean", new String[] { "nbat" }},
-                {"Newa", new String[] { "newa" }},
-                {"New_Tai_Lue", new String[] { "talu" }},
-                {"Nko", new String[] { "nko " }},
-                {"Ogham", new String[] { "ogam" }},
-                {"Ol_Chiki", new String[] { "olck" }},
-                {"Old_Italic", new String[] { "ital" }},
-                {"Old_Hungarian", new String[] { "hung" }},
-                {"Old_North_Arabian", new String[] { "narb" }},
-                {"Old_Permic", new String[] { "perm" }},
-                {"Old_Persian", new String[] { "xpeo" }},
-                {"Old_South_Arabian", new String[] { "sarb" }},
-                {"Old_Turkic", new String[] { "orkh" }},
-                {"Oriya", new String[] { "ory2", "orya" }}, // "Odia (formerly Oriya)" in OpenType
-                {"Osage", new String[] { "osge" }},
-                {"Osmanya", new String[] { "osma" }},
-                {"Pahawh_Hmong", new String[] { "hmng" }},
-                {"Palmyrene", new String[] { "palm" }},
-                {"Pau_Cin_Hau", new String[] { "pauc" }},
-                {"Phags_Pa", new String[] { "phag" }},
-                {"Phoenician", new String[] { "phnx" }},
-                {"Psalter_Pahlavi", new String[] { "phlp" }},
-                {"Rejang", new String[] { "rjng" }},
-                {"Runic", new String[] { "runr" }},
-                {"Samaritan", new String[] { "samr" }},
-                {"Saurashtra", new String[] { "saur" }},
-                {"Sharada", new String[] { "shrd" }},
-                {"Shavian", new String[] { "shaw" }},
-                {"Siddham", new String[] { "sidd" }},
-                {"SignWriting", new String[] { "sgnw" }},
-                {"Sinhala", new String[] { "sinh" }},
-                {"Sora_Sompeng", new String[] { "sora" }},
-                {"Sundanese", new String[] { "sund" }},
-                {"Syloti_Nagri", new String[] { "sylo" }},
-                {"Syriac", new String[] { "syrc" }},
-                {"Tagalog", new String[] { "tglg" }},
-                {"Tagbanwa", new String[] { "tagb" }},
-                {"Tai_Le", new String[] { "tale" }},
-                {"Tai_Tham", new String[] { "lana" }},
-                {"Tai_Viet", new String[] { "tavt" }},
-                {"Takri", new String[] { "takr" }},
-                {"Tamil", new String[] { "tml2", "taml" }},
-                {"Tangut", new String[] { "tang" }},
-                {"Telugu", new String[] { "tel2", "telu" }},
-                {"Thaana", new String[] { "thaa" }},
-                {"Thai", new String[] { "thai" }},
-                {"Tibetan", new String[] { "tibt" }},
-                {"Tifinagh", new String[] { "tfng" }},
-                {"Tirhuta", new String[] { "tirh" }},
-                {"Ugaritic", new String[] { "ugar" }},
-                {UNKNOWN, new String[] { TAG_DEFAULT }},
-                {"Vai", new String[] { "vai " }},
-                {"Warang_Citi", new String[] { "wara" }},
-                {"Yi", new String[] { "yi  " }}
-            };
+        {
+            {"Adlam", new String[] { "adlm" }},
+            {"Ahom", new String[] { "ahom" }},
+            {"Anatolian_Hieroglyphs", new String[] { "hluw" }},
+            {"Arabic", new String[] { "arab" }},
+            {"Armenian", new String[] { "armn" }},
+            {"Avestan", new String[] { "avst" }},
+            {"Balinese", new String[] { "bali" }},
+            {"Bamum", new String[] { "bamu" }},
+            {"Bassa_Vah", new String[] { "bass" }},
+            {"Batak", new String[] { "batk" }},
+            {"Bengali", new String[] { "bng2", "beng" }},
+            {"Bhaiksuki", new String[] { "bhks" }},
+            {"Bopomofo", new String[] { "bopo" }},
+            {"Brahmi", new String[] { "brah" }},
+            {"Braille", new String[] { "brai" }},
+            {"Buginese", new String[] { "bugi" }},
+            {"Buhid", new String[] { "buhd" }},
+            // Byzantine Music: byzm
+            {"Canadian_Aboriginal", new String[] { "cans" }},
+            {"Carian", new String[] { "cari" }},
+            {"Caucasian_Albanian", new String[] { "aghb" }},
+            {"Chakma", new String[] { "cakm" }},
+            {"Cham", new String[] { "cham" }},
+            {"Cherokee", new String[] { "cher" }},
+            {"Common", new String[] { TAG_DEFAULT }}, // "Default" in OpenType
+            {"Coptic", new String[] { "copt" }},
+            {"Cuneiform", new String[] { "xsux" }}, // "Sumero-Akkadian Cuneiform" in OpenType
+            {"Cypriot", new String[] { "cprt" }},
+            {"Cyrillic", new String[] { "cyrl" }},
+            {"Deseret", new String[] { "dsrt" }},
+            {"Devanagari", new String[] { "dev2", "deva" }},
+            {"Duployan", new String[] { "dupl" }},
+            {"Egyptian_Hieroglyphs", new String[] { "egyp" }},
+            {"Elbasan", new String[] { "elba" }},
+            {"Ethiopic", new String[] { "ethi" }},
+            {"Georgian", new String[] { "geor" }},
+            {"Glagolitic", new String[] { "glag" }},
+            {"Gothic", new String[] { "goth" }},
+            {"Grantha", new String[] { "gran" }},
+            {"Greek", new String[] { "grek" }},
+            {"Gujarati", new String[] { "gjr2", "gujr" }},
+            {"Gurmukhi", new String[] { "gur2", "guru" }},
+            {"Han", new String[] { "hani" }}, // "CJK Ideographic" in OpenType
+            {"Hangul", new String[] { "hang" }},
+            // Hangul Jamo: jamo
+            {"Hanunoo", new String[] { "hano" }},
+            {"Hatran", new String[] { "hatr" }},
+            {"Hebrew", new String[] { "hebr" }},
+            {"Hiragana", new String[] { "kana" }},
+            {"Imperial_Aramaic", new String[] { "armi" }},
+            {INHERITED, new String[] { INHERITED }},
+            {"Inscriptional_Pahlavi", new String[] { "phli" }},
+            {"Inscriptional_Parthian", new String[] { "prti" }},
+            {"Javanese", new String[] { "java" }},
+            {"Kaithi", new String[] { "kthi" }},
+            {"Kannada", new String[] { "knd2", "knda" }},
+            {"Katakana", new String[] { "kana" }},
+            {"Kayah_Li", new String[] { "kali" }},
+            {"Kharoshthi", new String[] { "khar" }},
+            {"Khmer", new String[] { "khmr" }},
+            {"Khojki", new String[] { "khoj" }},
+            {"Khudawadi", new String[] { "sind" }},
+            {"Lao", new String[] { "lao " }},
+            {"Latin", new String[] { "latn" }},
+            {"Lepcha", new String[] { "lepc" }},
+            {"Limbu", new String[] { "limb" }},
+            {"Linear_A", new String[] { "lina" }},
+            {"Linear_B", new String[] { "linb" }},
+            {"Lisu", new String[] { "lisu" }},
+            {"Lycian", new String[] { "lyci" }},
+            {"Lydian", new String[] { "lydi" }},
+            {"Mahajani", new String[] { "mahj" }},
+            {"Malayalam", new String[] { "mlm2", "mlym" }},
+            {"Mandaic", new String[] { "mand" }},
+            {"Manichaean", new String[] { "mani" }},
+            {"Marchen", new String[] { "marc" }},
+            // Mathematical Alphanumeric Symbols: math
+            {"Meetei_Mayek", new String[] { "mtei" }},
+            {"Mende_Kikakui", new String[] { "mend" }},
+            {"Meroitic_Cursive", new String[] { "merc" }},
+            {"Meroitic_Hieroglyphs", new String[] { "mero" }},
+            {"Miao", new String[] { "plrd" }},
+            {"Modi", new String[] { "modi" }},
+            {"Mongolian", new String[] { "mong" }},
+            {"Mro", new String[] { "mroo" }},
+            {"Multani", new String[] { "mult" }},
+            // Musical Symbols: musc
+            {"Myanmar", new String[] { "mym2", "mymr" }},
+            {"Nabataean", new String[] { "nbat" }},
+            {"Newa", new String[] { "newa" }},
+            {"New_Tai_Lue", new String[] { "talu" }},
+            {"Nko", new String[] { "nko " }},
+            {"Ogham", new String[] { "ogam" }},
+            {"Ol_Chiki", new String[] { "olck" }},
+            {"Old_Italic", new String[] { "ital" }},
+            {"Old_Hungarian", new String[] { "hung" }},
+            {"Old_North_Arabian", new String[] { "narb" }},
+            {"Old_Permic", new String[] { "perm" }},
+            {"Old_Persian", new String[] { "xpeo" }},
+            {"Old_South_Arabian", new String[] { "sarb" }},
+            {"Old_Turkic", new String[] { "orkh" }},
+            {"Oriya", new String[] { "ory2", "orya" }}, // "Odia (formerly Oriya)" in OpenType
+            {"Osage", new String[] { "osge" }},
+            {"Osmanya", new String[] { "osma" }},
+            {"Pahawh_Hmong", new String[] { "hmng" }},
+            {"Palmyrene", new String[] { "palm" }},
+            {"Pau_Cin_Hau", new String[] { "pauc" }},
+            {"Phags_Pa", new String[] { "phag" }},
+            {"Phoenician", new String[] { "phnx" }},
+            {"Psalter_Pahlavi", new String[] { "phlp" }},
+            {"Rejang", new String[] { "rjng" }},
+            {"Runic", new String[] { "runr" }},
+            {"Samaritan", new String[] { "samr" }},
+            {"Saurashtra", new String[] { "saur" }},
+            {"Sharada", new String[] { "shrd" }},
+            {"Shavian", new String[] { "shaw" }},
+            {"Siddham", new String[] { "sidd" }},
+            {"SignWriting", new String[] { "sgnw" }},
+            {"Sinhala", new String[] { "sinh" }},
+            {"Sora_Sompeng", new String[] { "sora" }},
+            {"Sundanese", new String[] { "sund" }},
+            {"Syloti_Nagri", new String[] { "sylo" }},
+            {"Syriac", new String[] { "syrc" }},
+            {"Tagalog", new String[] { "tglg" }},
+            {"Tagbanwa", new String[] { "tagb" }},
+            {"Tai_Le", new String[] { "tale" }},
+            {"Tai_Tham", new String[] { "lana" }},
+            {"Tai_Viet", new String[] { "tavt" }},
+            {"Takri", new String[] { "takr" }},
+            {"Tamil", new String[] { "tml2", "taml" }},
+            {"Tangut", new String[] { "tang" }},
+            {"Telugu", new String[] { "tel2", "telu" }},
+            {"Thaana", new String[] { "thaa" }},
+            {"Thai", new String[] { "thai" }},
+            {"Tibetan", new String[] { "tibt" }},
+            {"Tifinagh", new String[] { "tfng" }},
+            {"Tirhuta", new String[] { "tirh" }},
+            {"Ugaritic", new String[] { "ugar" }},
+            {UNKNOWN, new String[] { TAG_DEFAULT }},
+            {"Vai", new String[] { "vai " }},
+            {"Warang_Citi", new String[] { "wara" }},
+            {"Yi", new String[] { "yi  " }}
+        };
         UNICODE_SCRIPT_TO_OPENTYPE_TAG_MAP = new HashMap<String, String[]>(table.length);
         for (Object[] array : table)
         {
@@ -234,7 +234,7 @@ public final class OpenTypeScript
         catch (IOException e)
         {
             Log.w("PdfBox-Android", "Could not parse Scripts.txt, mirroring char map will be empty: "
-                + e.getMessage());
+                    + e.getMessage());
         }
         finally
         {
@@ -266,7 +266,7 @@ public final class OpenTypeScript
                 return o1[0] < o2[0] ? -1 : o1[0] == o2[0] ? 0 : 1;
             };
         });
-        LineNumberReader rd = new LineNumberReader(new InputStreamReader(inputStream));
+        LineNumberReader rd = new LineNumberReader(new InputStreamReader(inputStream, "US-ASCII"));
         int[] lastRange = { Integer.MIN_VALUE, Integer.MIN_VALUE };
         String lastScript = null;
         do

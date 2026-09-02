@@ -17,6 +17,7 @@
 
 package com.tom_roush.fontbox.util.autodetect;
 
+
 /**
  * Unix font directory finder. This class is based on a class provided by Apache FOP. see
  * com.tom_roush.fop.fonts.autodetect.UnixFontDirFinder
@@ -27,15 +28,15 @@ public class UnixFontDirFinder extends NativeFontDirFinder
     /**
      * Some guesses at possible unix font directory locations.
      *
-     * @return a list of possible font locations
+     * @return an array of possible font locations
      */
     @Override
     protected String[] getSearchableDirectories()
     {
         return new String[] { System.getProperty("user.home") + "/.fonts", // user
-            "/usr/local/fonts", // local
-            "/usr/local/share/fonts", // local shared
-            "/usr/share/fonts", // system
+                "/usr/local/fonts", // local
+                "/usr/local/share/fonts", // local shared
+                "/usr/share/fonts", // system
             "/usr/X11R6/lib/X11/fonts" // X
         };
     }

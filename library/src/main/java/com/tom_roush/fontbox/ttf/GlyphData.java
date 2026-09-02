@@ -21,7 +21,6 @@ import android.graphics.Path;
 import java.io.IOException;
 
 import com.tom_roush.fontbox.util.BoundingBox;
-
 /**
  * A glyph data record in the glyf table.
  *
@@ -43,9 +42,11 @@ public class GlyphData
      * @param glyphTable The glyph table this glyph belongs to.
      * @param data The stream to read the data from.
      * @param leftSideBearing The left side bearing for this glyph.
+     * @param level composite level
      * @throws IOException If there is an error reading the data.
      */
-    void initData( GlyphTable glyphTable, TTFDataStream data, int leftSideBearing ) throws IOException
+    void initData( GlyphTable glyphTable, TTFDataStream data, int leftSideBearing, int level)
+            throws IOException
     {
         numberOfContours = data.readSignedShort();
         xMin = data.readSignedShort();
@@ -63,7 +64,7 @@ public class GlyphData
         else
         {
             // create a composite glyph
-            glyphDescription = new GlyfCompositeDescript(data, glyphTable);
+            glyphDescription = new GlyfCompositeDescript(data, glyphTable, level + 1);
         }
     }
 

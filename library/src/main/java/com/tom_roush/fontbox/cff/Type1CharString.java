@@ -280,14 +280,14 @@ public class Type1CharString
         {
             if (numbers.size() >= 2)
             {
-                setcurrentpoint(numbers.get(0), numbers.get(1));
+                setCurrentPoint(numbers.get(0), numbers.get(1));
             }
         }
         else if ("callothersubr".equals(name))
         {
             if (!numbers.isEmpty())
             {
-                callothersubr(numbers.get(0).intValue());
+                callOtherSubr(numbers.get(0).intValue());
             }
         }
         else if ("div".equals(name))
@@ -339,7 +339,7 @@ public class Type1CharString
      * Sets the current absolute point without performing a moveto.
      * Used only with results from callothersubr
      */
-    private void setcurrentpoint(Number x, Number y)
+    private void setCurrentPoint(Number x, Number y)
     {
         current.set(x.floatValue(), y.floatValue());
     }
@@ -348,7 +348,7 @@ public class Type1CharString
      * Flex (via OtherSubrs)
      * @param num OtherSubrs entry number
      */
-    private void callothersubr(int num)
+    private void callOtherSubr(int num)
     {
         if (num == 0)
         {
@@ -491,9 +491,10 @@ public class Type1CharString
         try
         {
             Type1CharString accent = font.getType1CharString(accentName);
-            if (path == accent.getPath())
+            Path accentPath = accent.getPath();
+            if (path == accentPath)
             {
-                // PDFBOX-5339: avoid ArrayIndexOutOfBoundsException 
+                // PDFBOX-5339: avoid ArrayIndexOutOfBoundsException
                 // reproducable with poc file crash-4698e0dc7833a3f959d06707e01d03cda52a83f4
                 Log.w("PdfBox-Android", "Path for " + baseName + " and for accent " + accentName + " are same, ignored");
                 return;
@@ -501,7 +502,7 @@ public class Type1CharString
             AffineTransform at = AffineTransform.getTranslateInstance(
                 leftSideBearing.x + adx.floatValue() - asb.floatValue(),
                 leftSideBearing.y + ady.floatValue());
-            path.op(accent.getPath(), Path.Op.UNION); // TODO: PdfBox-Android
+            path.op(accentPath, Path.Op.UNION); // TODO: PdfBox-Android
         }
         catch (IOException e)
         {

@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import com.tom_roush.fontbox.util.BoundingBox;
 import com.tom_roush.fontbox.util.Charsets;
-
 /**
  * This class is used to parse AFM(Adobe Font Metrics) documents.
  *
@@ -310,7 +310,7 @@ public class AFMParser
      */
     public FontMetrics parse() throws IOException
     {
-        return parseFontMetric(false);
+        return parse(false);
     }
 
     /**
@@ -324,8 +324,16 @@ public class AFMParser
      */
     public FontMetrics parse(boolean reducedDataset) throws IOException
     {
-        return parseFontMetric(reducedDataset);
+        try
+        {
+            return parseFontMetric(reducedDataset);
+        }
+        catch (NoSuchElementException ex)
+        {
+            throw new IOException(ex);
+        }
     }
+
     /**
      * This will parse a font metrics item.
      *
@@ -340,7 +348,7 @@ public class AFMParser
         if( !START_FONT_METRICS.equals( startFontMetrics ) )
         {
             throw new IOException( "Error: The AFM file should start with " + START_FONT_METRICS +
-                " and not '" + startFontMetrics + "'" );
+                                   " and not '" + startFontMetrics + "'" );
         }
         fontMetrics.setAFMVersion( readFloat() );
         String nextCommand;
@@ -479,7 +487,7 @@ public class AFMParser
                 if( !end.equals( END_CHAR_METRICS ) )
                 {
                     throw new IOException( "Error: Expected '" + END_CHAR_METRICS + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
                 charMetricsRead = true;
                 fontMetrics.setCharMetrics(charMetrics);
@@ -496,7 +504,7 @@ public class AFMParser
                 if( !end.equals( END_COMPOSITES ) )
                 {
                     throw new IOException( "Error: Expected '" + END_COMPOSITES + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
             }
             else if( !reducedDataset && START_KERN_DATA.equals( nextCommand ) )
@@ -544,7 +552,7 @@ public class AFMParser
                 if( !end.equals( END_TRACK_KERN ) )
                 {
                     throw new IOException( "Error: Expected '" + END_TRACK_KERN + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
             }
             else if( START_KERN_PAIRS.equals( nextCommand ) )
@@ -559,7 +567,7 @@ public class AFMParser
                 if( !end.equals( END_KERN_PAIRS ) )
                 {
                     throw new IOException( "Error: Expected '" + END_KERN_PAIRS + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
             }
             else if( START_KERN_PAIRS0.equals( nextCommand ) )
@@ -574,7 +582,7 @@ public class AFMParser
                 if( !end.equals( END_KERN_PAIRS ) )
                 {
                     throw new IOException( "Error: Expected '" + END_KERN_PAIRS + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
             }
             else if( START_KERN_PAIRS1.equals( nextCommand ) )
@@ -589,7 +597,7 @@ public class AFMParser
                 if( !end.equals( END_KERN_PAIRS ) )
                 {
                     throw new IOException( "Error: Expected '" + END_KERN_PAIRS + "' actual '" +
-                        end + "'" );
+                                                end + "'" );
                 }
             }
             else
@@ -757,10 +765,39 @@ public class AFMParser
             while( metricsTokenizer.hasMoreTokens() )
             {
                 String nextCommand = metricsTokenizer.nextToken();
+                // top 5 most used first
                 if( nextCommand.equals( CHARMETRICS_C ) )
                 {
                     String charCode = metricsTokenizer.nextToken();
                     charMetric.setCharacterCode( Integer.parseInt( charCode ) );
+                    verifySemicolon( metricsTokenizer );
+                }
+                else if( nextCommand.equals( CHARMETRICS_WX ) )
+                {
+                    charMetric.setWx(Float.parseFloat(metricsTokenizer.nextToken()));
+                    verifySemicolon( metricsTokenizer );
+                }
+                else if( nextCommand.equals( CHARMETRICS_N ) )
+                {
+                    charMetric.setName(metricsTokenizer.nextToken());
+                    verifySemicolon( metricsTokenizer );
+                }
+                else if( nextCommand.equals( CHARMETRICS_B ) )
+                {
+                    BoundingBox box = new BoundingBox();
+                    box.setLowerLeftX(Float.parseFloat(metricsTokenizer.nextToken()));
+                    box.setLowerLeftY(Float.parseFloat(metricsTokenizer.nextToken()));
+                    box.setUpperRightX(Float.parseFloat(metricsTokenizer.nextToken()));
+                    box.setUpperRightY(Float.parseFloat(metricsTokenizer.nextToken()));
+                    charMetric.setBoundingBox( box );
+                    verifySemicolon( metricsTokenizer );
+                }
+                else if( nextCommand.equals( CHARMETRICS_L ) )
+                {
+                    Ligature lig = new Ligature();
+                    lig.setSuccessor(metricsTokenizer.nextToken());
+                    lig.setLigature(metricsTokenizer.nextToken());
+                    charMetric.addLigature( lig );
                     verifySemicolon( metricsTokenizer );
                 }
                 else if( nextCommand.equals( CHARMETRICS_CH ) )
@@ -769,11 +806,6 @@ public class AFMParser
                     //unclear, wait and see if it breaks anything.
                     String charCode = metricsTokenizer.nextToken();
                     charMetric.setCharacterCode( Integer.parseInt( charCode, BITS_IN_HEX ) );
-                    verifySemicolon( metricsTokenizer );
-                }
-                else if( nextCommand.equals( CHARMETRICS_WX ) )
-                {
-                    charMetric.setWx(Float.parseFloat(metricsTokenizer.nextToken()));
                     verifySemicolon( metricsTokenizer );
                 }
                 else if( nextCommand.equals( CHARMETRICS_W0X ) )
@@ -833,29 +865,6 @@ public class AFMParser
                     charMetric.setVv( vv );
                     verifySemicolon( metricsTokenizer );
                 }
-                else if( nextCommand.equals( CHARMETRICS_N ) )
-                {
-                    charMetric.setName(metricsTokenizer.nextToken());
-                    verifySemicolon( metricsTokenizer );
-                }
-                else if( nextCommand.equals( CHARMETRICS_B ) )
-                {
-                    BoundingBox box = new BoundingBox();
-                    box.setLowerLeftX(Float.parseFloat(metricsTokenizer.nextToken()));
-                    box.setLowerLeftY(Float.parseFloat(metricsTokenizer.nextToken()));
-                    box.setUpperRightX(Float.parseFloat(metricsTokenizer.nextToken()));
-                    box.setUpperRightY(Float.parseFloat(metricsTokenizer.nextToken()));
-                    charMetric.setBoundingBox( box );
-                    verifySemicolon( metricsTokenizer );
-                }
-                else if( nextCommand.equals( CHARMETRICS_L ) )
-                {
-                    Ligature lig = new Ligature();
-                    lig.setSuccessor(metricsTokenizer.nextToken());
-                    lig.setLigature(metricsTokenizer.nextToken());
-                    charMetric.addLigature( lig );
-                    verifySemicolon( metricsTokenizer );
-                }
                 else
                 {
                     throw new IOException( "Unknown CharMetrics command '" + nextCommand + "'" );
@@ -884,7 +893,7 @@ public class AFMParser
             if (!";".equals(semicolon))
             {
                 throw new IOException( "Error: Expected semicolon in stream actual='" +
-                    semicolon + "'" );
+                                            semicolon + "'" );
             }
         }
         else
@@ -996,10 +1005,9 @@ public class AFMParser
      *
      * @return true If the character is whitespace as defined by the AFM spec.
      */
-    private boolean isEOL( int character )
+    private static boolean isEOL( int character )
     {
-        return character == 0x0D ||
-            character == 0x0A;
+        return character == 0x0D || character == 0x0A;
     }
 
     /**
@@ -1009,11 +1017,17 @@ public class AFMParser
      *
      * @return true If the character is whitespace as defined by the AFM spec.
      */
-    private boolean isWhitespace( int character )
+    private static boolean isWhitespace( int character )
     {
-        return character == ' ' ||
-            character == '\t' ||
-            character == 0x0D ||
-            character == 0x0A;
+        switch (character)
+        {
+        case ' ':
+        case '\t':
+        case 0x0D:
+        case 0x0A:
+            return true;
+        default:
+            return false;
+        }
     }
 }

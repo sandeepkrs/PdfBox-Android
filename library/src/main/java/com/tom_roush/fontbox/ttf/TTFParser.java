@@ -21,7 +21,6 @@ import android.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-
 /**
  * TrueType font file parser.
  *
@@ -29,6 +28,7 @@ import java.io.InputStream;
  */
 public class TTFParser
 {
+
     private boolean isEmbedded = false;
     private boolean parseOnDemandOnly = false;
 
@@ -147,9 +147,9 @@ public class TTFParser
                 {
                     // PDFBOX-5285 if we're lucky, this is an "unimportant" table, e.g. vmtx
                     Log.w("PdfBox-Android", "Skip table '" + table.getTag() +
-                        "' which goes past the file size; offset: " + table.getOffset() +
-                        ", size: " + table.getLength() +
-                        ", font size: " + font.getOriginalDataSize());
+                            "' which goes past the file size; offset: " + table.getOffset() +
+                            ", size: " + table.getLength() +
+                            ", font size: " + font.getOriginalDataSize());
                 }
                 else
                 {
@@ -188,7 +188,8 @@ public class TTFParser
         }
 
         boolean hasCFF = font.tables.containsKey(CFFTable.TAG);
-        boolean isPostScript = allowCFF() && hasCFF;
+        boolean isOTF = font instanceof OpenTypeFont;
+        boolean isPostScript = isOTF ? ((OpenTypeFont) font).isPostScript() : hasCFF;
 
         HeaderTable head = font.getHeader();
         if (head == null)
@@ -217,21 +218,18 @@ public class TTFParser
 
         if (!isPostScript)
         {
-            String messageSuffix = "";
-            if (hasCFF)
+            if (font.getIndexToLocation() == null)
             {
-                messageSuffix = "; this an OpenType CFF font, but we expected a TrueType font here";
+                throw new IOException("'loca' table is mandatory");
             }
-            IndexToLocationTable loc = font.getIndexToLocation();
-            if (loc == null)
-            {
-                throw new IOException("'loca' table is mandatory" + messageSuffix);
-            }
-
             if (font.getGlyph() == null)
             {
-                throw new IOException("'glyf' table is mandatory" + messageSuffix);
+                throw new IOException("'glyf' table is mandatory");
             }
+        }
+        else if (!isOTF)
+        {
+            throw new IOException("True Type fonts using CFF outlines are not supported");
         }
 
         if (font.getNaming() == null && !isEmbedded)

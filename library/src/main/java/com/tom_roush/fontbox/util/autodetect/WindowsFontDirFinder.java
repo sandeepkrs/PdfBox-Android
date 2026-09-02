@@ -17,43 +17,14 @@
 
 package com.tom_roush.fontbox.util.autodetect;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.List;
-
-import com.tom_roush.fontbox.util.Charsets;
-
 /**
  * FontFinder for native Windows platforms. This class is based on a class provided by Apache FOP. see
- * com.tom_roush.fop.fonts.autodetect.WindowsFontDirFinder
+ * org.apache.fop.fonts.autodetect.WindowsFontDirFinder
  */
 public class WindowsFontDirFinder implements FontDirFinder
 {
-
-    /**
-     * Attempts to read windir environment variable on windows (disclaimer: This is a bit dirty but seems to work
-     * nicely).
-     */
-    private String getWinDir(String osName) throws IOException
-    {
-        Process process;
-        Runtime runtime = Runtime.getRuntime();
-        if (osName.startsWith("Windows 9"))
-        {
-            process = runtime.exec("command.com /c echo %windir%");
-        }
-        else
-        {
-            process = runtime.exec("cmd.exe /c echo %windir%");
-        }
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(
-            process.getInputStream(), Charsets.ISO_8859_1));
-        String winDir = bufferedReader.readLine();
-        bufferedReader.close();
-        return winDir;
-    }
 
     /**
      * {@inheritDoc}
@@ -73,16 +44,11 @@ public class WindowsFontDirFinder implements FontDirFinder
         {
             // should continue if this fails
         }
-        String osName = System.getProperty("os.name");
         if (windir == null)
         {
             try
             {
-                windir = getWinDir(osName);
-            }
-            catch (IOException e)
-            {
-                // should continue if this fails
+                windir = System.getenv("windir");
             }
             catch (SecurityException e)
             {
@@ -111,12 +77,13 @@ public class WindowsFontDirFinder implements FontDirFinder
         }
         else
         {
+            String osName = System.getProperty("os.name");
             String windowsDirName = osName.endsWith("NT") ? "WINNT" : "WINDOWS";
             // look for true type font folder
             for (char driveLetter = 'C'; driveLetter <= 'E'; driveLetter++)
             {
                 osFontsDir = new File(driveLetter + ":" + File.separator + windowsDirName
-                    + File.separator + "FONTS");
+                        + File.separator + "FONTS");
                 try
                 {
                     if (osFontsDir.exists() && osFontsDir.canRead())
@@ -155,7 +122,7 @@ public class WindowsFontDirFinder implements FontDirFinder
             if (localAppData != null && !localAppData.isEmpty())
             {
                 File localFontDir = new File(localAppData + File.separator + "Microsoft" +
-                    File.separator + "Windows" + File.separator + "Fonts");
+                        File.separator + "Windows" + File.separator + "Fonts");
                 if (localFontDir.exists() && localFontDir.canRead())
                 {
                     fontDirList.add(localFontDir);

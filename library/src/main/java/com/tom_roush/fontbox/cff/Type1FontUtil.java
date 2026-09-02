@@ -17,12 +17,13 @@
 package com.tom_roush.fontbox.cff;
 
 import java.util.Locale;
-
 /**
  * This class contains some helper methods handling Type1-Fonts.
  *
  * @author Villu Ruusmann
+ * @deprecated This class isn't used and will be removed in 4.0.0.
  */
+@Deprecated
 public final class Type1FontUtil
 {
 
@@ -31,7 +32,7 @@ public final class Type1FontUtil
     }
 
     /**
-     * Converts a byte-array into a string with the corresponding hex value. 
+     * Converts a byte-array into a string with the corresponding hex value.
      * @param bytes the byte array
      * @return the string with the hex value
      */
@@ -43,7 +44,7 @@ public final class Type1FontUtil
             String string = Integer.toHexString(aByte & 0xff);
             if (string.length() == 1)
             {
-                sb.append("0");
+                sb.append('0');
             }
             sb.append(string.toUpperCase(Locale.US));
         }

@@ -1,20 +1,18 @@
 /*
-
-   Licensed to the Apache Software Foundation (ASF) under one or more
-   contributor license agreements.  See the NOTICE file distributed with
-   this work for additional information regarding copyright ownership.
-   The ASF licenses this file to You under the Apache License, Version 2.0
-   (the "License"); you may not use this file except in compliance with
-   the License.  You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
-
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 package com.tom_roush.fontbox.ttf;
 
@@ -22,17 +20,17 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 /**
  * Glyph description for composite glyphs. Composite glyphs are made up of one
  * or more simple glyphs, usually with some sort of transformation applied to
  * each.
  *
  * This class is based on code from Apache Batik a subproject of Apache
- * XMLGraphics. see http://xmlgraphics.apache.org/batik/ for further details.
+ * XMLGraphics. See <a href="http://xmlgraphics.apache.org/batik/">The Apache™ Batik Project</a> for further details.
  */
 public class GlyfCompositeDescript extends GlyfDescript
 {
@@ -49,9 +47,10 @@ public class GlyfCompositeDescript extends GlyfDescript
      *
      * @param bais the stream to be read
      * @param glyphTable the Glyphtable containing all glyphs
+     * @param level current level
      * @throws IOException is thrown if something went wrong
      */
-    GlyfCompositeDescript(TTFDataStream bais, GlyphTable glyphTable) throws IOException
+    GlyfCompositeDescript(TTFDataStream bais, GlyphTable glyphTable, int level) throws IOException
     {
         super((short) -1, bais);
 
@@ -71,7 +70,7 @@ public class GlyfCompositeDescript extends GlyfDescript
         {
             readInstructions(bais, (bais.readUnsignedShort()));
         }
-        initDescriptions();
+        initDescriptions(level);
     }
 
     /**
@@ -250,6 +249,16 @@ public class GlyfCompositeDescript extends GlyfDescript
         return components.size();
     }
 
+    /**
+     * Gets a view to the composite components.
+     *
+     * @return unmodifiable list of this composite glyph's {@linkplain GlyfCompositeComp components}
+     */
+    public List<GlyfCompositeComp> getComponents()
+    {
+        return Collections.unmodifiableList(components);
+    }
+
     private GlyfCompositeComp getCompositeComp(int i)
     {
         for (GlyfCompositeComp c : components)
@@ -276,14 +285,14 @@ public class GlyfCompositeDescript extends GlyfDescript
         return null;
     }
 
-    private void initDescriptions()
+    private void initDescriptions(int level)
     {
         for (GlyfCompositeComp component : components)
         {
             try
             {
                 int index = component.getGlyphIndex();
-                GlyphData glyph = glyphTable.getGlyph(index);
+                GlyphData glyph = glyphTable.getGlyph(index, level);
                 if (glyph != null)
                 {
                     descriptions.put(index, glyph.getDescription());

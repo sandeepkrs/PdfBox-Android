@@ -23,7 +23,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
 /**
  * This class represents a converter for a mapping into a Type 1 sequence.
  *
@@ -34,6 +33,7 @@ import java.util.List;
  */
 public class Type1CharStringParser
 {
+
     // 1-byte commands
     static final int RETURN = 11;
     static final int CALLSUBR = 10;
@@ -84,10 +84,10 @@ public class Type1CharStringParser
                 if (!(obj instanceof Integer))
                 {
                     Log.w("PdfBox-Android", "Parameter " + obj + " for CALLSUBR is ignored, integer expected in glyph '"
-                        + glyphName + "' of font " + fontName);
+                            + glyphName + "' of font " + fontName);
                     continue;
                 }
-                Integer operand = (Integer) obj;
+                int operand = (int) (Integer) obj;
 
                 if (operand >= 0 && operand < subrs.size())
                 {
@@ -95,7 +95,7 @@ public class Type1CharStringParser
                     parse(subrBytes, subrs, sequence);
                     Object lastItem = sequence.get(sequence.size()-1);
                     if (lastItem instanceof CharStringCommand &&
-                        ((CharStringCommand)lastItem).getKey().getValue()[0] == RETURN)
+                          ((CharStringCommand)lastItem).getKey().getValue()[0] == RETURN)
                     {
                         sequence.remove(sequence.size()-1); // remove "return" command
                     }
@@ -103,10 +103,10 @@ public class Type1CharStringParser
                 else
                 {
                     Log.w("PdfBox-Android", "CALLSUBR is ignored, operand: " + operand
-                        + ", subrs.size(): " + subrs.size() + " in glyph '"
-                        + glyphName + "' of font " + fontName);
+                            + ", subrs.size(): " + subrs.size() + " in glyph '"
+                            + glyphName + "' of font " + fontName);
                     // remove all parameters (there can be more than one)
-                    while (sequence.get(sequence.size() - 1) instanceof Integer)
+                    while (!sequence.isEmpty() && sequence.get(sequence.size() - 1) instanceof Integer)
                     {
                         sequence.remove(sequence.size() - 1);
                     }

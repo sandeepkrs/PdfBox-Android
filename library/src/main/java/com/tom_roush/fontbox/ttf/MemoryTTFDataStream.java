@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-
 /**
  * An interface into a data stream.
  *
@@ -34,7 +33,7 @@ class MemoryTTFDataStream extends TTFDataStream
     private int currentPosition = 0;
 
     /**
-     * Constructor from a stream. 
+     * Constructor from a stream.
      * @param is The stream to read from. It will be closed by this method.
      * @throws IOException If an error occurs while reading from the stream.
      */
@@ -42,7 +41,13 @@ class MemoryTTFDataStream extends TTFDataStream
     {
         try
         {
-            ByteArrayOutputStream output = new ByteArrayOutputStream( is.available() );
+            int available = is.available();
+            if (available > Integer.MAX_VALUE - 8) // https://www.baeldung.com/java-arrays-max-size
+            {
+                // PDFBOX-5991
+                throw new IOException("Stream is too long, size: " + available);
+            }
+            ByteArrayOutputStream output = new ByteArrayOutputStream(available);
             byte[] buffer = new byte[1024];
             int amountRead;
             while( (amountRead = is.read( buffer ) ) != -1 )
@@ -179,10 +184,10 @@ class MemoryTTFDataStream extends TTFDataStream
      */
     @Override
     public int read(byte[] b,
-        int off,
-        int len)
-        throws IOException
-    {
+            int off,
+            int len)
+     throws IOException
+     {
         if (currentPosition < data.length)
         {
             int amountRead = Math.min( len, data.length-currentPosition );
@@ -194,7 +199,7 @@ class MemoryTTFDataStream extends TTFDataStream
         {
             return -1;
         }
-    }
+     }
 
     /**
      * Get the current position in the stream.

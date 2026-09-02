@@ -24,7 +24,6 @@ import android.util.Log;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-
 /**
  * Lexer for the ASCII portions of an Adobe Type 1 font.
  *
@@ -98,7 +97,7 @@ class Type1Lexer
     {
         try
         {
-            return (char) buffer.get();
+        	return (char) buffer.get();
         }
         catch (BufferUnderflowException exception)
         {
@@ -158,7 +157,7 @@ class Type1Lexer
                     {
                         // the stream is corrupt
                         throw new DamagedFontException("Could not read token at position " +
-                            buffer.position());
+                                                        buffer.position());
                     }
                     return new Token(regular, Token.LITERAL);
                 }
@@ -217,7 +216,7 @@ class Type1Lexer
                         {
                             // the stream is corrupt
                             throw new DamagedFontException("Could not read token at position " +
-                                buffer.position());
+                                                           buffer.position());
                         }
 
                         if (name.equals("RD") || name.equals("-|"))
@@ -361,7 +360,7 @@ class Type1Lexer
             }
             catch (NumberFormatException ex)
             {
-                throw new IOException("Invalid number '" + sb.toString() + "'", ex);
+                throw new IOException("Invalid number '" + sb + "'", ex);
             }
             return new Token(Integer.toString(val), Token.INTEGER);
         }
@@ -497,12 +496,16 @@ class Type1Lexer
      */
     private Token readCharString(int length) throws IOException
     {
+        if (length > buffer.array().length)
+        {
+            throw new IOException("String length " + length + " is larger than input");
+        }
         try
         {
-            buffer.get(); // space
-            byte[] data = new byte[length];
-            buffer.get(data);
-            return new Token(data, Token.CHARSTRING);
+	        buffer.get(); // space
+	        byte[] data = new byte[length];
+	        buffer.get(data);
+	        return new Token(data, Token.CHARSTRING);
         }
         catch (BufferUnderflowException exception)
         {

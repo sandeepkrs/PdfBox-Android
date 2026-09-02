@@ -35,7 +35,6 @@ import com.tom_roush.fontbox.cff.Type1CharStringParser;
 import com.tom_roush.fontbox.encoding.Encoding;
 import com.tom_roush.fontbox.pfb.PfbParser;
 import com.tom_roush.fontbox.util.BoundingBox;
-
 /**
  * Represents an Adobe Type 1 (.pfb) font. Thread safe.
  *
@@ -92,8 +91,8 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
     Encoding encoding = null;
     int paintType;
     int fontType;
-    List<Number> fontMatrix = new ArrayList<Number>();
-    List<Number> fontBBox = new ArrayList<Number>();
+    List<Number> fontMatrix = Collections.emptyList();
+    List<Number> fontBBox = Collections.emptyList();
     int uniqueID;
     float strokeWidth;
     String fontID = "";
@@ -110,17 +109,17 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
     float underlineThickness;
 
     // Private dictionary
-    List<Number> blueValues = new ArrayList<Number>();
-    List<Number> otherBlues = new ArrayList<Number>();
-    List<Number> familyBlues = new ArrayList<Number>();
-    List<Number> familyOtherBlues = new ArrayList<Number>();
+    List<Number> blueValues = Collections.emptyList();
+    List<Number> otherBlues = Collections.emptyList();
+    List<Number> familyBlues = Collections.emptyList();
+    List<Number> familyOtherBlues = Collections.emptyList();
     float blueScale;
     int blueShift;
     int blueFuzz;
-    List<Number> stdHW = new ArrayList<Number>();
-    List<Number> stdVW = new ArrayList<Number>();
-    List<Number> stemSnapH = new ArrayList<Number>();
-    List<Number> stemSnapV = new ArrayList<Number>();
+    List<Number> stdHW = Collections.emptyList();
+    List<Number> stdVW = Collections.emptyList();
+    List<Number> stemSnapH = Collections.emptyList();
+    List<Number> stemSnapV = Collections.emptyList();
     boolean forceBold;
     int languageGroup;
 
@@ -130,7 +129,7 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
 
     // private caches
     private final Map<String, Type1CharString> charStringCache =
-        new ConcurrentHashMap<String, Type1CharString>();
+            new ConcurrentHashMap<String, Type1CharString>();
 
     // raw data
     private final byte[] segment1;
@@ -199,6 +198,10 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
             if (bytes == null)
             {
                 bytes = charstrings.get(".notdef");
+                if (bytes == null)
+                {
+                    throw new IOException(".notdef is not defined");
+                }
             }
             Type1CharStringParser parser = new Type1CharStringParser(fontName, name);
             List<Object> sequence = parser.parse(bytes, subrs);
@@ -255,6 +258,7 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
      *
      * @return the font matrix
      */
+    @Override
     public List<Number> getFontMatrix()
     {
         return Collections.unmodifiableList(fontMatrix);
@@ -552,7 +556,7 @@ public final class Type1Font implements Type1CharStringReader, EncodedFont, Font
     public String toString()
     {
         return getClass().getName() + "[fontName=" + fontName + ", fullName=" + fullName
-            + ", encoding=" + encoding + ", charStringsDict=" + charstrings
-            + "]";
+                + ", encoding=" + encoding + ", charStringsDict=" + charstrings
+                + "]";
     }
 }

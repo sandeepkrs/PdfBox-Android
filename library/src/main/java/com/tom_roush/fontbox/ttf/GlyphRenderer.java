@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 
 import com.tom_roush.pdfbox.android.PDFBoxConfig;
-
 /**
  * This class provides a glyph to Path conversion for true type fonts.
  * Based on code from Apache Batik, a subproject of Apache XMLGraphics.
@@ -40,6 +39,7 @@ import com.tom_roush.pdfbox.android.PDFBoxConfig;
  */
 class GlyphRenderer
 {
+
     private GlyphDescription glyphDescription;
 
     GlyphRenderer(GlyphDescription glyphDescription)
@@ -78,7 +78,7 @@ class GlyphRenderer
                 endPtOfContourIndex = -1;
             }
             points[i] = new Point(gd.getXCoordinate(i), gd.getYCoordinate(i),
-                (gd.getFlags(i) & GlyfDescript.ON_CURVE) != 0, endPt);
+                    (gd.getFlags(i) & GlyfDescript.ON_CURVE) != 0, endPt);
         }
         return points;
     }
@@ -100,7 +100,7 @@ class GlyphRenderer
             {
                 Point firstPoint = points[start];
                 Point lastPoint = points[p];
-                List<Point> contour = new ArrayList<Point>();
+                List<Point> contour = new ArrayList<Point>((p - start) + 3);
                 for (int q = start; q <= p; ++q)
                 {
                     contour.add(points[q]);
@@ -171,7 +171,7 @@ class GlyphRenderer
         if (PDFBoxConfig.isDebugEnabled())
         {
             Log.d("PdfBox-Android", "quadTo: " + String.format(Locale.US, "%d,%d %d,%d", ctrlPoint.x, ctrlPoint.y,
-                point.x, point.y));
+                    point.x, point.y));
         }
     }
 
@@ -214,7 +214,7 @@ class GlyphRenderer
         public String toString()
         {
             return String.format(Locale.US, "Point(%d,%d,%s,%s)", x, y, onCurve ? "onCurve" : "",
-                endOfContour ? "endOfContour" : "");
+                    endOfContour ? "endOfContour" : "");
         }
     }
 

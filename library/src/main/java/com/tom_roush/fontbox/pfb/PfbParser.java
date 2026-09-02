@@ -16,6 +16,8 @@
  */
 package com.tom_roush.fontbox.pfb;
 
+import android.util.Log;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,8 +25,11 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import com.tom_roush.pdfbox.android.PDFBoxConfig;
 /**
  * Parser for a pfb-file.
  *
@@ -33,6 +38,7 @@ import java.util.Arrays;
  */
 public class PfbParser
 {
+
     /**
      * the pfb header length.
      * (start-marker (1 byte), ascii-/binary-marker (1 byte), size (4 byte))
@@ -56,10 +62,9 @@ public class PfbParser
     private static final int BINARY_MARKER = 0x02;
 
     /**
-     * The record types in the pfb-file.
+     * the EOF marker.
      */
-    private static final int[] PFB_RECORDS = {ASCII_MARKER, BINARY_MARKER,
-        ASCII_MARKER};
+    private static final int EOF_MARKER = 0x03;
 
     /**
      * buffersize.
@@ -72,12 +77,12 @@ public class PfbParser
     private byte[] pfbdata;
 
     /**
-     * the lengths of the records.
+     * the lengths of the records (ASCII, BINARY, ASCII)
      */
-    private int[] lengths;
+    private final int[] lengths = new int[3];
 
     // sample (pfb-file)
-    // 00000000 80 01 8b 15  00 00 25 21  50 53 2d 41  64 6f 62 65  
+    // 00000000 80 01 8b 15  00 00 25 21  50 53 2d 41  64 6f 62 65
     //          ......%!PS-Adobe
 
 
@@ -136,47 +141,110 @@ public class PfbParser
         {
             throw new IOException("PFB header missing");
         }
+        // read into segments and keep them
+        List<Integer> typeList = new ArrayList<Integer>(3);
+        List<byte[]> barrList = new ArrayList<byte[]>(3);
         ByteArrayInputStream in = new ByteArrayInputStream(pfb);
-        pfbdata = new byte[pfb.length - PFB_HEADER_LENGTH];
-        lengths = new int[PFB_RECORDS.length];
-        int pointer = 0;
-        for (int records = 0; records < PFB_RECORDS.length; records++)
+        long total = 0;
+        do
         {
-            if (in.read() != START_MARKER)
+            int r = in.read();
+            if (r == -1 && total > 0)
+            {
+                break; // EOF
+            }
+            if (r != START_MARKER)
             {
                 throw new IOException("Start marker missing");
             }
-
-            if (in.read() != PFB_RECORDS[records])
+            int recordType = in.read();
+            if (recordType == EOF_MARKER)
             {
-                throw new IOException("Incorrect record type");
+                break;
+            }
+            if (recordType != ASCII_MARKER && recordType != BINARY_MARKER)
+            {
+                throw new IOException("Incorrect record type: " + recordType);
             }
 
             int size = in.read();
             size += in.read() << 8;
             size += in.read() << 16;
             size += in.read() << 24;
+            if (PDFBoxConfig.isDebugEnabled())
+            {
+                Log.d("PdfBox-Android", "record type: " + recordType + ", segment size: " + size);
+            }
             if (size < 0)
             {
-                throw new IOException("PFB record size is negative: " + size);
+                throw new IOException("record size " + size + " is negative");
             }
-            lengths[records] = size;
-            if (pointer >= pfbdata.length)
+            if (size > pfb.length)
             {
-                throw new EOFException("attempted to read past EOF");
+                // PDFBOX-6044: avoid potential OOM
+                throw new IOException("record size " + size + " would be larger than the input");
             }
-            if (size > pfbdata.length - pointer)
+            byte[] ar = new byte[size];
+            int got = in.read(ar);
+            if (got != size)
             {
-                throw new EOFException("attempted to read " + size + " bytes at position " + pointer +
-                    " into array of size " + pfbdata.length + ", but only space for " +
-                    (pfbdata.length - pointer) + " bytes left");
+                throw new EOFException("EOF while reading PFB font");
             }
-            int got = in.read(pfbdata, pointer, size);
-            if (got < 0)
+            total += size;
+            typeList.add(recordType);
+            barrList.add(ar);
+        }
+        while (true);
+
+        // We now have ASCII and binary segments. Lets arrange these so that the ASCII segments
+        // come first, then the binary segments, then the last ASCII segment if it is
+        // 0000... cleartomark
+
+        if (total > pfb.length)
+        {
+            // PDFBOX-6044: avoid potential OOM
+            throw new IOException("total record size " + total + " would be larger than the input");
+        }
+        pfbdata = new byte[(int) total];
+        byte[] cleartomarkSegment = null;
+        int dstPos = 0;
+
+        // copy the ASCII segments
+        for (int i = 0; i < typeList.size(); ++i)
+        {
+            if (typeList.get(i) != ASCII_MARKER)
             {
-                throw new EOFException();
+                continue;
             }
-            pointer += got;
+            byte[] ar = barrList.get(i);
+            if (i == typeList.size() - 1 && ar.length < 600 &&
+                    new String(ar, "US-ASCII").contains("cleartomark"))
+            {
+                cleartomarkSegment = ar;
+                continue;
+            }
+            System.arraycopy(ar, 0, pfbdata, dstPos, ar.length);
+            dstPos += ar.length;
+        }
+        lengths[0] = dstPos;
+
+        // copy the binary segments
+        for (int i = 0; i < typeList.size(); ++i)
+        {
+            if (typeList.get(i) != BINARY_MARKER)
+            {
+                continue;
+            }
+            byte[] ar = barrList.get(i);
+            System.arraycopy(ar, 0, pfbdata, dstPos, ar.length);
+            dstPos += ar.length;
+        }
+        lengths[1] = dstPos - lengths[0];
+
+        if (cleartomarkSegment != null)
+        {
+            System.arraycopy(cleartomarkSegment, 0, pfbdata, dstPos, cleartomarkSegment.length);
+            lengths[2] = cleartomarkSegment.length;
         }
     }
 

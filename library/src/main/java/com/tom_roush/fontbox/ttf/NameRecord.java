@@ -17,7 +17,6 @@
 package com.tom_roush.fontbox.ttf;
 
 import java.io.IOException;
-
 /**
  * A name record in the name table.
  *
@@ -39,7 +38,7 @@ public class NameRecord
 
     // Unicode encoding ids
     /**
-     * @deprecated use {@link #LANGUAGE_UNICODE} instead.  
+     * @deprecated use {@link #LANGUAGE_UNICODE} instead.
      */
     @Deprecated
     public static final int LANGUGAE_UNICODE = 0;
@@ -52,7 +51,7 @@ public class NameRecord
 
     // Windows language ids
     /**
-     * @deprecated use {@link #LANGUAGE_WINDOWS_EN_US} instead.  
+     * @deprecated use {@link #LANGUAGE_WINDOWS_EN_US} instead.
      */
     @Deprecated
     public static final int LANGUGAE_WINDOWS_EN_US = 0x0409;
@@ -63,7 +62,7 @@ public class NameRecord
 
     // Macintosh language ids
     /**
-     * @deprecated use {@link #LANGUAGE_MACINTOSH_ENGLISH} instead.  
+     * @deprecated use {@link #LANGUAGE_MACINTOSH_ENGLISH} instead.
      */
     @Deprecated
     public static final int LANGUGAE_MACINTOSH_ENGLISH = 0;
@@ -195,14 +194,15 @@ public class NameRecord
      *
      * @return A string for this class.
      */
+    @Override
     public String toString()
     {
         return
             "platform=" + platformId +
-                " pEncoding=" + platformEncodingId +
-                " language=" + languageId +
-                " name=" + nameId +
-                " " + string;
+            " pEncoding=" + platformEncodingId +
+            " language=" + languageId +
+            " name=" + nameId +
+            " " + string;
     }
     /**
      * @return Returns the string.
