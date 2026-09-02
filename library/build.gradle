@@ -96,7 +96,7 @@ dependencies {
     api "org.bouncycastle:bcpkix-jdk15to18:1.73"
     api "org.bouncycastle:bcutil-jdk15to18:1.73"
     // for jpeg2000 decode/encode
-    compileOnly 'com.gemalto.jp2:jp2-android:1.0.3'
+    compileOnly files('libs/jp2-android-1.0.3.aar')
 
     // Test dependencies
     testImplementation 'junit:junit:4.13.2'
