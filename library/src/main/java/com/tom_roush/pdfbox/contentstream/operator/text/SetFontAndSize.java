@@ -30,7 +30,7 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdmodel.font.PDFont;
-
+import com.tom_roush.pdfbox.pdmodel.graphics.state.PDTextState;
 /**
  * Tf: Set text font and size.
  *
@@ -38,6 +38,7 @@ import com.tom_roush.pdfbox.pdmodel.font.PDFont;
  */
 public class SetFontAndSize extends OperatorProcessor
 {
+
     @Override
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {
@@ -58,13 +59,16 @@ public class SetFontAndSize extends OperatorProcessor
         }
         COSName fontName = (COSName) base0;
         float fontSize = ((COSNumber) base1).floatValue();
-        context.getGraphicsState().getTextState().setFontSize(fontSize);
+        PDTextState textState = context.getGraphicsState().getTextState();
+        textState.setFontSize(fontSize);
+        // Get the font after the size has been set in case there is an exception
+        // so that PDFBox will use a default font
         PDFont font = context.getResources().getFont(fontName);
         if (font == null)
         {
             Log.w("PdfBox-Android", "font '" + fontName.getName() + "' not found in resources");
         }
-        context.getGraphicsState().getTextState().setFont(font);
+        textState.setFont(font);
     }
 
     @Override

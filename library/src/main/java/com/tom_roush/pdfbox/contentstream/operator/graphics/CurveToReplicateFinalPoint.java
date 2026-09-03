@@ -17,6 +17,7 @@
 package com.tom_roush.pdfbox.contentstream.operator.graphics;
 
 import android.graphics.PointF;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,7 +27,6 @@ import com.tom_roush.pdfbox.contentstream.operator.Operator;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * y Append curved segment to path with final point replicated.
  *
@@ -34,6 +34,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
  */
 public final class CurveToReplicateFinalPoint extends GraphicsOperatorProcessor
 {
+
     @Override
     public void process(Operator operator, List<COSBase> operands) throws IOException
     {
@@ -50,12 +51,22 @@ public final class CurveToReplicateFinalPoint extends GraphicsOperatorProcessor
         COSNumber x3 = (COSNumber)operands.get(2);
         COSNumber y3 = (COSNumber)operands.get(3);
 
+        PointF currentPoint = context.getCurrentPoint();
+
         PointF point1 = context.transformedPoint(x1.floatValue(), y1.floatValue());
         PointF point3 = context.transformedPoint(x3.floatValue(), y3.floatValue());
 
-        context.curveTo(point1.x, point1.y,
-            point3.x, point3.y,
-            point3.x, point3.y);
+        if (currentPoint == null)
+        {
+            Log.w("PdfBox-Android", "curveTo (" + point3.x + "," + point3.y + ") without initial MoveTo");
+            context.moveTo(point3.x, point3.y);
+        }
+        else
+        {
+            context.curveTo(point1.x, point1.y,
+                            point3.x, point3.y,
+                            point3.x, point3.y);
+        }
     }
 
     @Override

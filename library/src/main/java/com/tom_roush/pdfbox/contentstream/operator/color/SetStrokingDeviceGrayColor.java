@@ -24,7 +24,6 @@ import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
-
 /**
  * G: Set the stroking colour space to DeviceGray and set the gray level to use for stroking
  * operations.
@@ -33,8 +32,13 @@ import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
  */
 public class SetStrokingDeviceGrayColor extends SetStrokingColor
 {
+    @Override
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {
+        if (!context.isShouldProcessColorOperators())
+        {
+            return;
+        }
         PDColorSpace cs = context.getResources().getColorSpace(COSName.DEVICEGRAY);
         context.getGraphicsState().setStrokingColorSpace(cs);
         super.process(operator, arguments);

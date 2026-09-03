@@ -27,7 +27,6 @@ import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorProcessor;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * J: Set the line cap style.
  *
@@ -40,6 +39,10 @@ public class SetLineCapStyle extends OperatorProcessor
         if (arguments.isEmpty())
         {
             throw new MissingOperandException(operator, arguments);
+        }
+        if (!checkArrayTypesClass(arguments, COSNumber.class))
+        {
+            return;
         }
         Paint.Cap lineCapStyle;
         switch (((COSNumber)arguments.get( 0 )).intValue())

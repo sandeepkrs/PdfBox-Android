@@ -24,7 +24,6 @@ import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
-
 /**
  * RG: Set the stroking colour space to DeviceRGB and set the colour to use for stroking operations.
  *
@@ -40,8 +39,13 @@ public class SetStrokingDeviceRGBColor extends SetStrokingColor
      * @param arguments List
      * @throws IOException If the color space cannot be read.
      */
+    @Override
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {
+        if (!context.isShouldProcessColorOperators())
+        {
+            return;
+        }
         PDColorSpace cs = context.getResources().getColorSpace(COSName.DEVICERGB);
         context.getGraphicsState().setStrokingColorSpace(cs);
         super.process(operator, arguments);
