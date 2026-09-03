@@ -17,9 +17,9 @@
 package com.tom_roush.pdfbox.pdmodel.interactive.form;
 
 import java.io.IOException;
+
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * A text field is a box or space for text fill-in data typically entered from a keyboard.
  * The text may be restricted to a single line or may be permitted to span multiple lines
@@ -211,6 +211,8 @@ public final class PDTextField extends PDVariableText
      *
      * @param value Plain text
      * @throws IOException if the value could not be set
+     * @throws IllegalArgumentException if the string contains a character that is not in the field
+     * font, see {@link #setDefaultAppearance(java.lang.String)}.
      */
     @Override
     public void setValue(String value) throws IOException

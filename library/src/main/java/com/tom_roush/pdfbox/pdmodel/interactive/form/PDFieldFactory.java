@@ -17,11 +17,13 @@
 
 package com.tom_roush.pdfbox.pdmodel.interactive.form;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * A PDField factory.
  */
@@ -42,7 +44,7 @@ public final class PDFieldFactory
      *
      * @param form the form that the field is part of
      * @param field the dictionary representing a field element
-     * @param parent the parent node of the node to be created 
+     * @param parent the parent node of the node to be created
      * @return the corresponding PDField instance
      */
     public static PDField createField(PDAcroForm form, COSDictionary field, PDNonTerminalField parent)
@@ -53,7 +55,7 @@ public final class PDFieldFactory
         // a field name (other than annotations)
         if (field.containsKey(COSName.KIDS))
         {
-            COSArray kids = (COSArray) field.getDictionaryObject(COSName.KIDS);
+            COSArray kids = field.getCOSArray(COSName.KIDS);
             if (kids != null && kids.size() > 0)
             {
                 for (int i = 0; i < kids.size(); i++)
@@ -67,7 +69,7 @@ public final class PDFieldFactory
             }
         }
 
-        String fieldType = findFieldType(field);
+        String fieldType = findFieldType(field, new HashSet<COSDictionary>());
 
         if (FIELD_TYPE_CHOICE.equals(fieldType))
         {
@@ -93,7 +95,7 @@ public final class PDFieldFactory
     }
 
     private static PDField createChoiceSubType(PDAcroForm form, COSDictionary field,
-        PDNonTerminalField parent)
+                                               PDNonTerminalField parent)
     {
         int flags = field.getInt(COSName.FF, 0);
         if ((flags & PDChoice.FLAG_COMBO) != 0)
@@ -107,7 +109,7 @@ public final class PDFieldFactory
     }
 
     private static PDField createButtonSubType(PDAcroForm form, COSDictionary field,
-        PDNonTerminalField parent)
+                                               PDNonTerminalField parent)
     {
         int flags = field.getInt(COSName.FF, 0);
         // BJL: I have found that the radio flag bit is not always set
@@ -127,17 +129,23 @@ public final class PDFieldFactory
         }
     }
 
-    private static String findFieldType(COSDictionary dic)
+    private static String findFieldType(COSDictionary dic, Set<COSDictionary> seen)
     {
+        if (!seen.add(dic))
+        {
+            // PDFBOX-5896: avoid endless recursion
+            return null;
+        }
         String retval = dic.getNameAsString(COSName.FT);
         if (retval == null)
         {
             COSBase base = dic.getDictionaryObject(COSName.PARENT, COSName.P);
             if (base instanceof COSDictionary)
             {
-                retval = findFieldType((COSDictionary) base);
+                retval = findFieldType((COSDictionary) base, seen);
             }
         }
+        seen.remove(dic);
         return retval;
     }
 }

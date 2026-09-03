@@ -16,9 +16,12 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation;
 
+import android.graphics.Rect;
+
 import java.io.IOException;
 import java.util.Calendar;
 
+// needed for the javadoc generation
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -37,10 +40,7 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDInkAppeara
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDPolygonAppearanceHandler;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDPolylineAppearanceHandler;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDSoundAppearanceHandler;
-
-// needed for the javadoc generation
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDVariableText;
-
 /**
  * This class represents the additional fields of a Markup type Annotation. See section 12.5.6 of ISO32000-1:2008
  * (starting with page 390) for details on annotation types.
@@ -156,7 +156,7 @@ public class PDAnnotationMarkup extends PDAnnotation
      */
     public PDAnnotationPopup getPopup()
     {
-        COSDictionary popup = (COSDictionary) getCOSObject().getDictionaryObject("Popup");
+        COSDictionary popup = getCOSObject().getCOSDictionary(COSName.POPUP);
         if (popup != null)
         {
             return new PDAnnotationPopup(popup);
@@ -174,11 +174,11 @@ public class PDAnnotationMarkup extends PDAnnotation
      */
     public void setPopup(PDAnnotationPopup popup)
     {
-        getCOSObject().setItem("Popup", popup);
+        getCOSObject().setItem(COSName.POPUP, popup);
     }
 
     /**
-     * This will retrieve the constant opacity value used when rendering the annotation (excluing any popup).
+     * This will retrieve the constant opacity value used when rendering the annotation (excluding any popup).
      *
      * @return the constant opacity value.
      */
@@ -188,7 +188,7 @@ public class PDAnnotationMarkup extends PDAnnotation
     }
 
     /**
-     * This will set the constant opacity value used when rendering the annotation (excluing any popup).
+     * This will set the constant opacity value used when rendering the annotation (excluding any popup).
      *
      * @param ca the constant opacity value.
      */
@@ -457,7 +457,7 @@ public class PDAnnotationMarkup extends PDAnnotation
      */
     public PDBorderEffectDictionary getBorderEffect()
     {
-        COSDictionary be = (COSDictionary) getCOSObject().getDictionaryObject(COSName.BE);
+        COSDictionary be = getCOSObject().getCOSDictionary(COSName.BE);
         if (be != null)
         {
             return new PDBorderEffectDictionary(be);
@@ -829,6 +829,7 @@ public class PDAnnotationMarkup extends PDAnnotation
         {
             COSArray array = (COSArray) base;
             float[][] pathArray = new float[array.size()][];
+            float[] emptyArray = new float[0];
             for (int i = 0; i < array.size(); ++i)
             {
                 COSBase base2 = array.getObject(i);
@@ -838,7 +839,7 @@ public class PDAnnotationMarkup extends PDAnnotation
                 }
                 else
                 {
-                    pathArray[i] = new float[0];
+                    pathArray[i] = emptyArray;
                 }
             }
             return pathArray;

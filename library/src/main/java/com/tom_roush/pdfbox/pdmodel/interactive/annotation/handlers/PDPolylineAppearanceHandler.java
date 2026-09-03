@@ -21,9 +21,6 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import com.tom_roush.pdfbox.cos.COSArray;
-import com.tom_roush.pdfbox.cos.COSBase;
-import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDAppearanceContentStream;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
@@ -31,17 +28,15 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup;
-import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import com.tom_roush.pdfbox.util.Matrix;
-
 import static com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine.LE_NONE;
-
 /**
  * Handler to generate the polyline annotations appearance.
  *
  */
 public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
 {
+
     public PDPolylineAppearanceHandler(PDAnnotation annotation)
     {
         super(annotation);
@@ -112,13 +107,15 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
             }
             cs.setLineWidth(ab.width);
 
+            String startPointEndingStyle = annotation.getStartPointEndingStyle();
+            String endPointEndingStyle = annotation.getEndPointEndingStyle();
             for (int i = 0; i < pathsArray.length / 2; ++i)
             {
                 float x = pathsArray[i * 2];
                 float y = pathsArray[i * 2 + 1];
                 if (i == 0)
                 {
-                    if (SHORT_STYLES.contains(annotation.getStartPointEndingStyle()))
+                    if (SHORT_STYLES.contains(startPointEndingStyle))
                     {
                         // modify coordinate to shorten the segment
                         // https://stackoverflow.com/questions/7740507/extend-a-line-segment-a-specific-distance
@@ -135,8 +132,7 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
                 }
                 else
                 {
-                    if (i == pathsArray.length / 2 - 1 &&
-                        SHORT_STYLES.contains(annotation.getEndPointEndingStyle()))
+                    if (i == pathsArray.length / 2 - 1 && SHORT_STYLES.contains(endPointEndingStyle))
                     {
                         // modify coordinate to shorten the segment
                         // https://stackoverflow.com/questions/7740507/extend-a-line-segment-a-specific-distance
@@ -159,7 +155,7 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
             // which would be more work and produce code difficult to understand
 
             // paint the styles here and after polyline draw, to avoid line crossing a filled shape
-            if (!LE_NONE.equals(annotation.getStartPointEndingStyle()))
+            if (!LE_NONE.equals(startPointEndingStyle))
             {
                 // check only needed to avoid q cm Q if LE_NONE
                 float x2 = pathsArray[2];
@@ -167,7 +163,7 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
                 float x1 = pathsArray[0];
                 float y1 = pathsArray[1];
                 cs.saveGraphicsState();
-                if (ANGLED_STYLES.contains(annotation.getStartPointEndingStyle()))
+                if (ANGLED_STYLES.contains(startPointEndingStyle))
                 {
                     double angle = Math.atan2(y2 - y1, x2 - x1);
                     cs.transform(Matrix.getRotateInstance(angle, x1, y1));
@@ -176,11 +172,11 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
                 {
                     cs.transform(Matrix.getTranslateInstance(x1, y1));
                 }
-                drawStyle(annotation.getStartPointEndingStyle(), cs, 0, 0, ab.width, hasStroke, hasBackground, false);
+                drawStyle(startPointEndingStyle, cs, 0, 0, ab.width, hasStroke, hasBackground, false);
                 cs.restoreGraphicsState();
             }
 
-            if (!LE_NONE.equals(annotation.getEndPointEndingStyle()))
+            if (!LE_NONE.equals(endPointEndingStyle))
             {
                 // check only needed to avoid q cm Q if LE_NONE
                 float x1 = pathsArray[pathsArray.length - 4];
@@ -188,7 +184,7 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
                 float x2 = pathsArray[pathsArray.length - 2];
                 float y2 = pathsArray[pathsArray.length - 1];
                 // save / restore not needed because it's the last one
-                if (ANGLED_STYLES.contains(annotation.getEndPointEndingStyle()))
+                if (ANGLED_STYLES.contains(endPointEndingStyle))
                 {
                     double angle = Math.atan2(y2 - y1, x2 - x1);
                     cs.transform(Matrix.getRotateInstance(angle, x2, y2));
@@ -197,7 +193,7 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
                 {
                     cs.transform(Matrix.getTranslateInstance(x2, y2));
                 }
-                drawStyle(annotation.getEndPointEndingStyle(), cs, 0, 0, ab.width, hasStroke, hasBackground, true);
+                drawStyle(endPointEndingStyle, cs, 0, 0, ab.width, hasStroke, hasBackground, true);
             }
         }
         catch (IOException ex)
@@ -220,46 +216,5 @@ public class PDPolylineAppearanceHandler extends PDAbstractAppearanceHandler
     public void generateDownAppearance()
     {
         // No down appearance generated for a polyline annotation
-    }
-
-    //TODO DRY, this code is from polygonAppearanceHandler so it's double
-
-    /**
-     * Get the line with of the border.
-     *
-     * Get the width of the line used to draw a border around the annotation.
-     * This may either be specified by the annotation dictionaries Border
-     * setting or by the W entry in the BS border style dictionary. If both are
-     * missing the default width is 1.
-     *
-     * @return the line width
-     */
-    // TODO: according to the PDF spec the use of the BS entry is annotation
-    // specific
-    // so we will leave that to be implemented by individual handlers.
-    // If at the end all annotations support the BS entry this can be handled
-    // here and removed from the individual handlers.
-    float getLineWidth()
-    {
-        PDAnnotationMarkup annotation = (PDAnnotationMarkup) getAnnotation();
-
-        PDBorderStyleDictionary bs = annotation.getBorderStyle();
-
-        if (bs != null)
-        {
-            return bs.getWidth();
-        }
-
-        COSArray borderCharacteristics = annotation.getBorder();
-        if (borderCharacteristics.size() >= 3)
-        {
-            COSBase base = borderCharacteristics.getObject(2);
-            if (base instanceof COSNumber)
-            {
-                return ((COSNumber) base).floatValue();
-            }
-        }
-
-        return 1;
     }
 }

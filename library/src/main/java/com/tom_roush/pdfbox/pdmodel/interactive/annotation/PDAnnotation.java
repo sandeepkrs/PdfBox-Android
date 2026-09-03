@@ -16,6 +16,7 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation;
 
+import android.graphics.Rect;
 import android.util.Log;
 
 import java.io.IOException;
@@ -37,7 +38,6 @@ import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
-
 /**
  * A PDF annotation.
  *
@@ -45,6 +45,10 @@ import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
  */
 public abstract class PDAnnotation implements COSObjectable
 {
+    /**
+     * Log instance.
+     */
+
     /**
      * An annotation flag.
      */
@@ -93,7 +97,7 @@ public abstract class PDAnnotation implements COSObjectable
      * Create the correct annotation from the base COS object.
      *
      * @param base The COS object that is the annotation.
-     * @return The correctly typed annotation object.
+     * @return The correctly typed annotation object, never null.
      *
      * @throws IOException If the annotation type is unknown.
      */
@@ -125,7 +129,7 @@ public abstract class PDAnnotation implements COSObjectable
                 annot = new PDAnnotationRubberStamp(annotDic);
             }
             else if (PDAnnotationSquareCircle.SUB_TYPE_SQUARE.equals(subtype)
-                || PDAnnotationSquareCircle.SUB_TYPE_CIRCLE.equals(subtype))
+                    || PDAnnotationSquareCircle.SUB_TYPE_CIRCLE.equals(subtype))
             {
                 annot = new PDAnnotationSquareCircle(annotDic);
             }
@@ -134,9 +138,9 @@ public abstract class PDAnnotation implements COSObjectable
                 annot = new PDAnnotationText(annotDic);
             }
             else if (PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT.equals(subtype)
-                || PDAnnotationTextMarkup.SUB_TYPE_UNDERLINE.equals(subtype)
-                || PDAnnotationTextMarkup.SUB_TYPE_SQUIGGLY.equals(subtype)
-                || PDAnnotationTextMarkup.SUB_TYPE_STRIKEOUT.equals(subtype))
+                    || PDAnnotationTextMarkup.SUB_TYPE_UNDERLINE.equals(subtype)
+                    || PDAnnotationTextMarkup.SUB_TYPE_SQUIGGLY.equals(subtype)
+                    || PDAnnotationTextMarkup.SUB_TYPE_STRIKEOUT.equals(subtype))
             {
                 // see 12.5.6.10 Text Markup Annotations
                 annot = new PDAnnotationTextMarkup(annotDic);
@@ -146,11 +150,11 @@ public abstract class PDAnnotation implements COSObjectable
                 annot = new PDAnnotationWidget(annotDic);
             }
             else if (PDAnnotationMarkup.SUB_TYPE_FREETEXT.equals(subtype)
-                || PDAnnotationMarkup.SUB_TYPE_POLYGON.equals(subtype)
-                || PDAnnotationMarkup.SUB_TYPE_POLYLINE.equals(subtype)
-                || PDAnnotationMarkup.SUB_TYPE_CARET.equals(subtype)
-                || PDAnnotationMarkup.SUB_TYPE_INK.equals(subtype)
-                || PDAnnotationMarkup.SUB_TYPE_SOUND.equals(subtype))
+                    || PDAnnotationMarkup.SUB_TYPE_POLYGON.equals(subtype)
+                    || PDAnnotationMarkup.SUB_TYPE_POLYLINE.equals(subtype)
+                    || PDAnnotationMarkup.SUB_TYPE_CARET.equals(subtype)
+                    || PDAnnotationMarkup.SUB_TYPE_INK.equals(subtype)
+                    || PDAnnotationMarkup.SUB_TYPE_SOUND.equals(subtype))
             {
                 annot = new PDAnnotationMarkup(annotDic);
             }
@@ -236,14 +240,14 @@ public abstract class PDAnnotation implements COSObjectable
      */
     public PDRectangle getRectangle()
     {
-        COSArray rectArray = (COSArray) dictionary.getDictionaryObject(COSName.RECT);
+        COSArray rectArray = dictionary.getCOSArray(COSName.RECT);
         PDRectangle rectangle = null;
         if (rectArray != null)
         {
             if (rectArray.size() == 4 && rectArray.getObject(0) instanceof COSNumber
-                && rectArray.getObject(1) instanceof COSNumber
-                && rectArray.getObject(2) instanceof COSNumber
-                && rectArray.getObject(3) instanceof COSNumber)
+                    && rectArray.getObject(1) instanceof COSNumber
+                    && rectArray.getObject(2) instanceof COSNumber
+                    && rectArray.getObject(3) instanceof COSNumber)
             {
                 rectangle = new PDRectangle(rectArray);
             }
@@ -313,6 +317,20 @@ public abstract class PDAnnotation implements COSObjectable
     public void setAppearanceState(String as)
     {
         getCOSObject().setName(COSName.AS, as);
+    }
+
+    /**
+     * This will set the annotations appearance state name.
+     *
+     * <p>Note that the PDF specification defines the AS entry as a name, but some PDFs use a string.
+     * This method will write a name, which is correct and should be preferred but may cause issues
+     * with some viewers if the PDF being edited already uses a string.</p>
+     *
+     * @param as The COSName of the appearance stream.
+     */
+    public void setAppearanceState(COSName as)
+    {
+        getCOSObject().setItem(COSName.AS, as);
     }
 
     /**
@@ -790,17 +808,17 @@ public abstract class PDAnnotation implements COSObjectable
             PDColorSpace colorSpace = null;
             switch (((COSArray) c).size())
             {
-                case 1:
-                    colorSpace = PDDeviceGray.INSTANCE;
-                    break;
-                case 3:
-                    colorSpace = PDDeviceRGB.INSTANCE;
-                    break;
-                case 4:
-                    colorSpace = PDDeviceCMYK.INSTANCE;
-                    break;
-                default:
-                    break;
+            case 1:
+                colorSpace = PDDeviceGray.INSTANCE;
+                break;
+            case 3:
+                colorSpace = PDDeviceRGB.INSTANCE;
+                break;
+            case 4:
+                colorSpace = PDDeviceCMYK.INSTANCE;
+                break;
+            default:
+                break;
             }
             return new PDColor((COSArray) c, colorSpace);
         }
@@ -818,7 +836,9 @@ public abstract class PDAnnotation implements COSObjectable
     }
 
     /**
-     * This will set the corresponding page for this annotation.
+     * This will set the corresponding page for this annotation. This is optional but recommended.
+     * Not doing it <a href="https://stackoverflow.com/questions/74836898/">can cause trouble when
+     * PDFs get signed</a>.
      *
      * @param page is the corresponding page
      */

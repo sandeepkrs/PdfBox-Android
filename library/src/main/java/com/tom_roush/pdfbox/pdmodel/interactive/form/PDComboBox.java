@@ -21,7 +21,6 @@ import java.util.List;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * A combo box consisting of a drop-down list.
  * May be accompanied by an editable text box in which non-predefined values may be entered.
@@ -84,6 +83,16 @@ public final class PDComboBox extends PDChoice
 
         if (!values.isEmpty())
         {
+            if (hasSeparateExportAndDisplayValues())
+            {
+                List<String> displayValues = getOptionsDisplayValues();
+                int index = getOptions().indexOf(values.get(0));
+                if (index != -1 && index < displayValues.size())
+                {
+                    apHelper.setAppearanceValue(displayValues.get(index));
+                    return;
+                }
+            }
             apHelper.setAppearanceValue(values.get(0));
         }
         else

@@ -16,14 +16,12 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation;
 
-import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSArray;
+import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
-
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDLineDashPattern;
-
 /**
  * This class represents a PDF /BS entry the border style dictionary.
  *
@@ -145,7 +143,7 @@ public class PDBorderStyleDictionary implements COSObjectable
     /**
      * This will retrieve the border style, see the STYLE_* constants for valid values.
      *
-     * @return the style of the border
+     * @return the style of the border, never null.
      */
     public String getStyle()
     {
@@ -169,7 +167,7 @@ public class PDBorderStyleDictionary implements COSObjectable
      */
     public PDLineDashPattern getDashStyle()
     {
-        COSArray d = (COSArray) getCOSObject().getDictionaryObject(COSName.D);
+        COSArray d = getCOSObject().getCOSArray(COSName.D);
         if (d == null)
         {
             d = new COSArray();

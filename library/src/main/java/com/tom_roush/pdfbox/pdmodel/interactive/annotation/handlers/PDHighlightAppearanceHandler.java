@@ -20,8 +20,6 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import com.tom_roush.pdfbox.cos.COSDictionary;
-import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDAppearanceContentStream;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
@@ -31,16 +29,17 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.graphics.blend.BlendMode;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDTransparencyGroupAttributes;
 import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup;
-
 /**
  *
  * @author Tilman Hausherr
  */
 public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
 {
+
     public PDHighlightAppearanceHandler(PDAnnotation annotation)
     {
         super(annotation);
@@ -98,7 +97,7 @@ public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
             // horizontal or vertical
             // if it is diagonal then... uh...
             float delta = Math.max((pathsArray[i + 0] - pathsArray[i + 4]) / 4,
-                (pathsArray[i + 1] - pathsArray[i + 5]) / 4);
+                                   (pathsArray[i + 1] - pathsArray[i + 5]) / 4);
             maxDelta = Math.max(delta, maxDelta);
         }
 
@@ -139,10 +138,7 @@ public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
                 IOUtils.closeQuietly(mwfofrmCS);
             }
             frm1.setBBox(annotation.getRectangle());
-            COSDictionary groupDict = new COSDictionary();
-            groupDict.setItem(COSName.S, COSName.TRANSPARENCY);
-            //TODO PDFormXObject.setGroup() is missing
-            frm1.getCOSObject().setItem(COSName.GROUP, groupDict);
+            frm1.setGroup(new PDTransparencyGroupAttributes());
             cs.drawForm(frm1);
             frm2.setBBox(annotation.getRectangle());
 
@@ -171,9 +167,9 @@ public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
                         delta = (pathsArray[of + 1] - pathsArray[of + 5]) / 4;
                     }
                     else if (Float.compare(pathsArray[of + 1], pathsArray[of + 5]) == 0 &&
-                        Float.compare(pathsArray[of + 0], pathsArray[of + 2]) == 0 &&
-                        Float.compare(pathsArray[of + 3], pathsArray[of + 7]) == 0 &&
-                        Float.compare(pathsArray[of + 4], pathsArray[of + 6]) == 0)
+                             Float.compare(pathsArray[of + 0], pathsArray[of + 2]) == 0 &&
+                             Float.compare(pathsArray[of + 3], pathsArray[of + 7]) == 0 &&
+                             Float.compare(pathsArray[of + 4], pathsArray[of + 6]) == 0)
                     {
                         // vertical highlight
                         delta = (pathsArray[of + 0] - pathsArray[of + 4]) / 4;
@@ -185,15 +181,15 @@ public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
                     {
                         // horizontal highlight
                         frm2CS.curveTo(pathsArray[of + 4] - delta, pathsArray[of + 5] + delta,
-                            pathsArray[of + 0] - delta, pathsArray[of + 1] - delta,
-                            pathsArray[of + 0], pathsArray[of + 1]);
+                                       pathsArray[of + 0] - delta, pathsArray[of + 1] - delta,
+                                       pathsArray[of + 0], pathsArray[of + 1]);
                     }
                     else if (Float.compare(pathsArray[of + 5], pathsArray[of + 1]) == 0)
                     {
                         // vertical highlight
                         frm2CS.curveTo(pathsArray[of + 4] + delta, pathsArray[of + 5] + delta,
-                            pathsArray[of + 0] - delta, pathsArray[of + 1] + delta,
-                            pathsArray[of + 0], pathsArray[of + 1]);
+                                       pathsArray[of + 0] - delta, pathsArray[of + 1] + delta,
+                                       pathsArray[of + 0], pathsArray[of + 1]);
                     }
                     else
                     {
@@ -204,15 +200,15 @@ public class PDHighlightAppearanceHandler extends PDAbstractAppearanceHandler
                     {
                         // horizontal highlight
                         frm2CS.curveTo(pathsArray[of + 2] + delta, pathsArray[of + 3] - delta,
-                            pathsArray[of + 6] + delta, pathsArray[of + 7] + delta,
-                            pathsArray[of + 6], pathsArray[of + 7]);
+                                       pathsArray[of + 6] + delta, pathsArray[of + 7] + delta,
+                                       pathsArray[of + 6], pathsArray[of + 7]);
                     }
                     else if (Float.compare(pathsArray[of + 3], pathsArray[of + 7]) == 0)
                     {
                         // vertical highlight
                         frm2CS.curveTo(pathsArray[of + 2] - delta, pathsArray[of + 3] - delta,
-                            pathsArray[of + 6] + delta, pathsArray[of + 7] - delta,
-                            pathsArray[of + 6], pathsArray[of + 7]);
+                                       pathsArray[of + 6] + delta, pathsArray[of + 7] - delta,
+                                       pathsArray[of + 6], pathsArray[of + 7]);
                     }
                     else
                     {

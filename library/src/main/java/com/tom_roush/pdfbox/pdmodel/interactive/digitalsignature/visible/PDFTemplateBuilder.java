@@ -32,7 +32,6 @@ import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDSignatureField;
-
 /**
  * That class builds visible signature template which will be added in our PDF document.
  * @author Vakhtang Koroghlishvili
@@ -96,7 +95,7 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createSignature(PDSignatureField pdSignatureField, PDPage page, String signerName)
-        throws IOException;
+            throws IOException;
 
     /**
      * Create AcroForm Dictionary.
@@ -106,7 +105,7 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createAcroFormDictionary(PDAcroForm acroForm, PDSignatureField signatureField)
-        throws IOException;
+            throws IOException;
 
     /**
      * Creates SignatureRectangle.
@@ -116,7 +115,7 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createSignatureRectangle(PDSignatureField signatureField,
-        PDVisibleSignDesigner properties) throws IOException;
+            PDVisibleSignDesigner properties) throws IOException;
 
     /**
      * Creates procSetArray of PDF,Text,ImageB,ImageC,ImageI.
@@ -172,17 +171,17 @@ public interface PDFTemplateBuilder
      * @param bbox bounding box
      */
     void createHolderForm(PDResources holderFormResources, PDStream holderFormStream,
-        PDRectangle bbox);
+            PDRectangle bbox);
 
     /**
      * Creates appearance dictionary
      *
-     * @param holderForml holder XObject
+     * @param holderForm holder XObject
      * @param signatureField the signature field
      * @throws IOException if something went wrong
      */
-    void createAppearanceDictionary(PDFormXObject holderForml,
-        PDSignatureField signatureField) throws IOException;
+    void createAppearanceDictionary(PDFormXObject holderForm, PDSignatureField signatureField)
+            throws IOException;
 
     /**
      *
@@ -209,7 +208,7 @@ public interface PDFTemplateBuilder
      * @param holderFormResources holder form resources
      */
     void insertInnerFormToHolderResources(PDFormXObject innerForm,
-        PDResources holderFormResources);
+            PDResources holderFormResources);
 
     /**
      *
@@ -234,8 +233,8 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createImageForm(PDResources imageFormResources, PDResources innerFormResource,
-        PDStream imageFormStream, PDRectangle bbox, AffineTransform affineTransform,
-        PDImageXObject img) throws IOException;
+            PDStream imageFormStream, PDRectangle bbox, AffineTransform affineTransform,
+            PDImageXObject img) throws IOException;
 
     /**
      * Creates the background layer form (n0).
@@ -245,7 +244,7 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createBackgroundLayerForm(PDResources innerFormResource, PDRectangle formatter)
-        throws IOException;
+            throws IOException;
 
     /**
      * Inject procSetArray
@@ -258,8 +257,8 @@ public interface PDFTemplateBuilder
      * @param procSet procset values
      */
     void injectProcSetArray(PDFormXObject innerForm, PDPage page,
-        PDResources innerFormResources, PDResources imageFormResources,
-        PDResources holderFormResources, COSArray procSet);
+            PDResources innerFormResources, PDResources imageFormResources,
+            PDResources holderFormResources, COSArray procSet);
 
     /**
      * injects appearance streams
@@ -274,8 +273,8 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void injectAppearanceStreams(PDStream holderFormStream, PDStream innerFormStream,
-        PDStream imageFormStream, COSName imageFormName, COSName imageName,
-        COSName innerFormName, PDVisibleSignDesigner properties) throws IOException;
+            PDStream imageFormStream, COSName imageFormName, COSName imageName,
+            COSName innerFormName, PDVisibleSignDesigner properties) throws IOException;
 
     /**
      * just to create visible signature
@@ -292,7 +291,7 @@ public interface PDFTemplateBuilder
      * @throws IOException if something went wrong
      */
     void createWidgetDictionary(PDSignatureField signatureField,
-        PDResources holderFormResources) throws IOException;
+            PDResources holderFormResources) throws IOException;
 
     /**
      *

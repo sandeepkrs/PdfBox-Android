@@ -25,10 +25,10 @@ import java.util.Set;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import com.tom_roush.pdfbox.pdmodel.interactive.digitalsignature.PDSeedValue;
 import com.tom_roush.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
-
 /**
  * A signature field is a form field that contains a digital signature.
  *
@@ -37,6 +37,7 @@ import com.tom_roush.pdfbox.pdmodel.interactive.digitalsignature.PDSignature;
  */
 public class PDSignatureField extends PDTerminalField
 {
+
     /**
      * @see PDTerminalField#PDTerminalField(PDAcroForm)
      *
@@ -133,7 +134,7 @@ public class PDSignatureField extends PDTerminalField
     public void setValue(String value)
     {
         throw new UnsupportedOperationException("Signature fields don't support setting the value as String "
-            + "- use setValue(PDSignature value) instead");
+                + "- use setValue(PDSignature value) instead");
     }
 
 
@@ -193,7 +194,7 @@ public class PDSignatureField extends PDTerminalField
      */
     public PDSeedValue getSeedValue()
     {
-        COSDictionary dict = (COSDictionary) getCOSObject().getDictionaryObject(COSName.SV);
+        COSDictionary dict = getCOSObject().getCOSDictionary(COSName.SV);
         PDSeedValue sv = null;
         if (dict != null)
         {
@@ -223,19 +224,19 @@ public class PDSignatureField extends PDTerminalField
         PDAnnotationWidget widget = this.getWidgets().get(0);
         if (widget != null)
         {
+            PDRectangle rectangle = widget.getRectangle();
             // check if the signature is visible
-            if (widget.getRectangle() == null ||
-                widget.getRectangle().getHeight() == 0 && widget.getRectangle().getWidth() == 0 ||
-                widget.isNoView() ||  widget.isHidden())
+            if (rectangle == null || rectangle.getHeight() == 0 && rectangle.getWidth() == 0 ||
+                widget.isNoView() || widget.isHidden())
             {
                 return;
             }
 
             // TODO: implement appearance generation for signatures (PDFBOX-3524)
             Log.w("PdfBox-Android", "Appearance generation for signature fields not implemented here. "
-                + "You need to generate/update that manually, see the "
-                + "CreateVisibleSignature*.java files in the examples subproject "
-                + "of the source code download");
+                    + "You need to generate/update that manually, see the "
+                    + "CreateVisibleSignature*.java files in the examples subproject "
+                    + "of the source code download");
         }
     }
 }

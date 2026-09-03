@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This represents a pdf signature seed value dictionary.
  *
@@ -141,9 +140,9 @@ public class PDSeedValue implements COSObjectable
     }
 
     /**
-     *
-     * @return true if the DigestMethod is required
-     */
+    *
+    * @return true if the DigestMethod is required
+    */
     public boolean isDigestMethodRequired()
     {
         return getCOSObject().getFlag( COSName.FF, FLAG_DIGEST_METHOD);
@@ -160,9 +159,9 @@ public class PDSeedValue implements COSObjectable
     }
 
     /**
-     *
-     * @return true if the V entry is required
-     */
+    *
+    * @return true if the V entry is required
+    */
     public boolean isVRequired()
     {
         return getCOSObject().getFlag( COSName.FF, FLAG_V);
@@ -179,9 +178,9 @@ public class PDSeedValue implements COSObjectable
     }
 
     /**
-     *
-     * @return true if the Reason is required
-     */
+    *
+    * @return true if the Reason is required
+    */
     public boolean isReasonRequired()
     {
         return getCOSObject().getFlag( COSName.FF, FLAG_REASON);
@@ -198,9 +197,9 @@ public class PDSeedValue implements COSObjectable
     }
 
     /**
-     *
-     * @return true if the LegalAttestation is required
-     */
+    *
+    * @return true if the LegalAttestation is required
+    */
     public boolean isLegalAttestationRequired()
     {
         return getCOSObject().getFlag( COSName.FF, FLAG_LEGAL_ATTESTATION);
@@ -217,9 +216,9 @@ public class PDSeedValue implements COSObjectable
     }
 
     /**
-     *
-     * @return true if the AddRevInfo is required
-     */
+    *
+    * @return true if the AddRevInfo is required
+    */
     public boolean isAddRevInfoRequired()
     {
         return getCOSObject().getFlag( COSName.FF, FLAG_ADD_REV_INFO);
@@ -272,7 +271,7 @@ public class PDSeedValue implements COSObjectable
     public List<String> getSubFilter()
     {
         List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.SUB_FILTER);
+        COSArray fields = dictionary.getCOSArray(COSName.SUB_FILTER);
 
         if (fields != null)
         {
@@ -312,7 +311,7 @@ public class PDSeedValue implements COSObjectable
     public List<String> getDigestMethod()
     {
         List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.DIGEST_METHOD);
+        COSArray fields = dictionary.getCOSArray(COSName.DIGEST_METHOD);
 
         if (fields != null)
         {
@@ -348,10 +347,10 @@ public class PDSeedValue implements COSObjectable
         for ( COSName cosName : digestMethod )
         {
             if (!(cosName.equals(COSName.DIGEST_SHA1)
-                || cosName.equals(COSName.DIGEST_SHA256)
-                || cosName.equals(COSName.DIGEST_SHA384)
-                || cosName.equals(COSName.DIGEST_SHA512)
-                || cosName.equals(COSName.DIGEST_RIPEMD160)))
+                    || cosName.equals(COSName.DIGEST_SHA256)
+                    || cosName.equals(COSName.DIGEST_SHA384)
+                    || cosName.equals(COSName.DIGEST_SHA512)
+                    || cosName.equals(COSName.DIGEST_RIPEMD160)))
             {
                 throw new IllegalArgumentException("Specified digest " + cosName.getName() + " isn't allowed.");
             }
@@ -401,7 +400,7 @@ public class PDSeedValue implements COSObjectable
     public List<String> getReasons()
     {
         List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.REASONS);
+        COSArray fields = dictionary.getCOSArray(COSName.REASONS);
 
         if (fields != null)
         {
@@ -562,7 +561,7 @@ public class PDSeedValue implements COSObjectable
     public List<String> getLegalAttestation()
     {
         List<String> retval = null;
-        COSArray fields = (COSArray)dictionary.getDictionaryObject(COSName.LEGAL_ATTESTATION);
+        COSArray fields = dictionary.getCOSArray(COSName.LEGAL_ATTESTATION);
 
         if (fields != null)
         {

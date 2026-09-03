@@ -17,6 +17,8 @@
 
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers;
 
+import android.graphics.Rect;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,7 +38,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationSquareCir
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
-
 /**
  * Generic handler to generate the fields appearance.
  *
@@ -215,7 +216,7 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
     PDRectangle getPaddedRectangle(PDRectangle rectangle, float padding)
     {
         return new PDRectangle(rectangle.getLowerLeftX() + padding, rectangle.getLowerLeftY() + padding,
-            rectangle.getWidth() - 2 * padding, rectangle.getHeight() - 2 * padding);
+                rectangle.getWidth() - 2 * padding, rectangle.getHeight() - 2 * padding);
     }
 
     /**
@@ -237,9 +238,9 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
         }
 
         return new PDRectangle(rectangle.getLowerLeftX() - differences[0],
-            rectangle.getLowerLeftY() - differences[1],
-            rectangle.getWidth() + differences[0] + differences[2],
-            rectangle.getHeight() + differences[1] + differences[3]);
+                rectangle.getLowerLeftY() - differences[1],
+                rectangle.getWidth() + differences[0] + differences[2],
+                rectangle.getHeight() + differences[1] + differences[3]);
     }
 
     /**
@@ -260,9 +261,9 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
             return rectangle;
         }
         return new PDRectangle(rectangle.getLowerLeftX() + differences[0],
-            rectangle.getLowerLeftY() + differences[1],
-            rectangle.getWidth() - differences[0] - differences[2],
-            rectangle.getHeight() - differences[1] - differences[3]);
+                rectangle.getLowerLeftY() + differences[1],
+                rectangle.getWidth() - differences[0] - differences[2],
+                rectangle.getHeight() - differences[1] - differences[3]);
     }
 
     void setOpacity(PDAppearanceContentStream contentStream, float opacity) throws IOException
@@ -293,7 +294,7 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
      * @throws IOException
      */
     void drawStyle(String style, final PDAppearanceContentStream cs, float x, float y,
-        float width, boolean hasStroke, boolean hasBackground, boolean ending) throws IOException
+                   float width, boolean hasStroke, boolean hasBackground, boolean ending) throws IOException
     {
         int sign = ending ? -1 : 1;
 
@@ -327,9 +328,9 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
             // the line is 18 x linewidth at an angle of 60°
             float width9 = width * 9;
             cs.moveTo(x + (float) (Math.cos(Math.toRadians(60)) * width9),
-                y + (float) (Math.sin(Math.toRadians(60)) * width9));
+                      y + (float) (Math.sin(Math.toRadians(60)) * width9));
             cs.lineTo(x + (float) (Math.cos(Math.toRadians(240)) * width9),
-                y + (float) (Math.sin(Math.toRadians(240)) * width9));
+                      y + (float) (Math.sin(Math.toRadians(240)) * width9));
         }
 
         if (PDAnnotationLine.LE_R_CLOSED_ARROW.equals(style) ||
@@ -338,9 +339,9 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
             cs.closePath();
         }
         cs.drawShape(width, hasStroke,
-            // make sure to only paint a background color (/IC value)
-            // for interior color styles, even if an /IC value is set.
-            INTERIOR_COLOR_STYLES.contains(style) && hasBackground);
+                     // make sure to only paint a background color (/IC value)
+                     // for interior color styles, even if an /IC value is set.
+                     INTERIOR_COLOR_STYLES.contains(style) && hasBackground);
     }
 
     /**
@@ -489,7 +490,7 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
 
 
     private PDAppearanceContentStream getAppearanceEntryAsContentStream(
-        PDAppearanceEntry appearanceEntry, boolean compress) throws IOException
+              PDAppearanceEntry appearanceEntry, boolean compress) throws IOException
     {
         PDAppearanceStream appearanceStream = appearanceEntry.getAppearanceStream();
         setTransformationMatrix(appearanceStream);
@@ -510,7 +511,7 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
         PDRectangle bbox = getRectangle();
         appearanceStream.setBBox(bbox);
         AffineTransform transform = AffineTransform.getTranslateInstance(-bbox.getLowerLeftX(),
-            -bbox.getLowerLeftY());
+                -bbox.getLowerLeftY());
         appearanceStream.setMatrix(transform);
     }
 
@@ -535,7 +536,7 @@ public abstract class PDAbstractAppearanceHandler implements PDAppearanceHandler
             PDRectangle rect = getRectangle();
             PDAppearanceStream appearanceStream = annotation.getNormalAppearanceStream();
             AffineTransform transform =
-                AffineTransform.getTranslateInstance(-rect.getLowerLeftX(), -rect.getLowerLeftY());
+                    AffineTransform.getTranslateInstance(-rect.getLowerLeftX(), -rect.getLowerLeftY());
             appearanceStream.setBBox(rect);
             appearanceStream.setMatrix(transform);
         }

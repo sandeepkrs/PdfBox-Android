@@ -17,10 +17,12 @@
 package com.tom_roush.pdfbox.pdmodel.interactive.form;
 
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.Log;
 
 import java.io.IOException;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,11 +36,10 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
-import com.tom_roush.pdfbox.pdmodel.PDPageContentStream;
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream.AppendMode;
+import com.tom_roush.pdfbox.pdmodel.PDPageContentStream;
 import com.tom_roush.pdfbox.pdmodel.PDPageTree;
 import com.tom_roush.pdfbox.pdmodel.PDResources;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
@@ -48,12 +49,12 @@ import com.tom_roush.pdfbox.pdmodel.fdf.FDFCatalog;
 import com.tom_roush.pdfbox.pdmodel.fdf.FDFDictionary;
 import com.tom_roush.pdfbox.pdmodel.fdf.FDFDocument;
 import com.tom_roush.pdfbox.pdmodel.fdf.FDFField;
+import com.tom_roush.pdfbox.pdmodel.font.PDFont;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * An interactive form, also known as an AcroForm.
  *
@@ -61,6 +62,7 @@ import com.tom_roush.pdfbox.util.Matrix;
  */
 public final class PDAcroForm implements COSObjectable
 {
+
     private static final int FLAG_SIGNATURES_EXIST = 1;
     private static final int FLAG_APPEND_ONLY = 1 << 1;
 
@@ -70,6 +72,8 @@ public final class PDAcroForm implements COSObjectable
     private Map<String, PDField> fieldCache;
 
     private ScriptingHandler scriptingHandler;
+
+    private final Map<COSName, SoftReference<PDFont>> directFontCache = new HashMap<COSName, SoftReference<PDFont>>();
 
     /**
      * Constructor.
@@ -221,9 +225,9 @@ public final class PDAcroForm implements COSObjectable
         if (!refreshAppearances && getNeedAppearances())
         {
             Log.w("PdfBox-Android", "acroForm.getNeedAppearances() returns true, " +
-                "visual field appearances may not have been set");
+                     "visual field appearances may not have been set");
             Log.w("PdfBox-Android", "call acroForm.refreshAppearances() or " +
-                "use the flatten() method with refreshAppearances parameter");
+                     "use the flatten() method with refreshAppearances parameter");
         }
 
         // for dynamic XFA forms there is no flatten as this would mean to do a rendering
@@ -264,7 +268,7 @@ public final class PDAcroForm implements COSObjectable
                 else if (isVisibleAnnotation(annotation))
                 {
                     PDPageContentStream contentStream = new PDPageContentStream(
-                        document, page, AppendMode.APPEND, true, !isContentStreamWrapped);
+                            document, page, AppendMode.APPEND, true, !isContentStreamWrapped);
                     try
                     {
                         isContentStreamWrapped = true;
@@ -322,7 +326,7 @@ public final class PDAcroForm implements COSObjectable
     }
 
     /**
-     * Refreshes the appearance streams and appearance dictionaries for 
+     * Refreshes the appearance streams and appearance dictionaries for
      * the widget annotations of all fields.
      *
      * @throws IOException
@@ -339,7 +343,7 @@ public final class PDAcroForm implements COSObjectable
     }
 
     /**
-     * Refreshes the appearance streams and appearance dictionaries for 
+     * Refreshes the appearance streams and appearance dictionaries for
      * the widget annotations of the specified fields.
      *
      * @param fields
@@ -363,7 +367,7 @@ public final class PDAcroForm implements COSObjectable
      * A field might have children that are fields (non-terminal field) or does not
      * have children which are fields (terminal fields).
      *
-     * The fields within an AcroForm are organized in a tree structure. The documents root fields 
+     * The fields within an AcroForm are organized in a tree structure. The documents root fields
      * might either be terminal fields, non-terminal fields or a mixture of both. Non-terminal fields
      * mark branches which contents can be retrieved using {@link PDNonTerminalField#getChildren()}.
      *
@@ -458,7 +462,7 @@ public final class PDAcroForm implements COSObjectable
      * This will get a field by name, possibly using the cache if setCache is true.
      *
      * @param fullyQualifiedName The name of the field to get.
-     * @return The field with that name of null if one was not found.
+     * @return The first field with that name of null if one was not found.
      */
     public PDField getField(String fullyQualifiedName)
     {
@@ -471,7 +475,8 @@ public final class PDAcroForm implements COSObjectable
         // get the field from the field tree
         for (PDField field : getFieldTree())
         {
-            if (field.getFullyQualifiedName().equals(fullyQualifiedName))
+            String fqn = field.getFullyQualifiedName();
+            if (fqn == null ? fullyQualifiedName == null : fqn.equals(fullyQualifiedName))
             {
                 return field;
             }
@@ -533,7 +538,8 @@ public final class PDAcroForm implements COSObjectable
         COSBase base = dictionary.getDictionaryObject(COSName.DR);
         if (base instanceof COSDictionary)
         {
-            retval = new PDResources((COSDictionary) base, document.getResourceCache());
+            retval = new PDResources((COSDictionary) base, document.getResourceCache(),
+                    directFontCache);
         }
         return retval;
     }
@@ -596,7 +602,7 @@ public final class PDAcroForm implements COSObjectable
 
     /**
      * This will get the document-wide default value for the quadding/justification of variable text
-     * fields. 
+     * fields.
      * <p>
      * 0 - Left(default)<br>
      * 1 - Centered<br>
@@ -607,13 +613,7 @@ public final class PDAcroForm implements COSObjectable
      */
     public int getQ()
     {
-        int retval = 0;
-        COSNumber number = (COSNumber)dictionary.getDictionaryObject(COSName.Q);
-        if (number != null)
-        {
-            retval = number.intValue();
-        }
-        return retval;
+        return dictionary.getInt(COSName.Q, 0);
     }
 
     /**
@@ -668,6 +668,57 @@ public final class PDAcroForm implements COSObjectable
     }
 
     /**
+     * Return the calculation order in which field values should be recalculated when the value of
+     * any field changes. (Read about "Trigger Events" in the PDF specification)
+     *
+     * @return field list. Note these objects may not be identical to PDField objects retrieved from
+     * other methods (depending on cache setting). The best strategy is to call
+     * {@link #getCOSObject()} to check for identity. The list is not backed by the /CO COSArray in
+     * the document.
+     */
+    public List<PDField> getCalcOrder()
+    {
+        COSArray co = dictionary.getCOSArray(COSName.CO);
+        if (co == null)
+        {
+            return Collections.emptyList();
+        }
+
+        Iterable<PDField> fields = isCachingFields() ? fieldCache.values() : getFieldTree();
+
+        List<PDField> actuals = new ArrayList<PDField>();
+        for (int i = 0; i < co.size(); i++)
+        {
+            COSBase item = co.getObject(i);
+            for (PDField field : fields)
+            {
+                if (field.getCOSObject() == item)
+                {
+                    actuals.add(field);
+                    break;
+                }
+            }
+        }
+        return actuals;
+    }
+
+    /**
+     * Set the calculation order in which field values should be recalculated when the value of any
+     * field changes. (Read about "Trigger Events" in the PDF specification)
+     *
+     * @param fields The field list.
+     */
+    public void setCalcOrder(List<PDField> fields)
+    {
+        COSArray array = new COSArray();
+        for (PDField field : fields)
+        {
+            array.add(field);
+        }
+        dictionary.setItem(COSName.CO, array);
+    }
+
+    /**
      * Set a handler to support JavaScript actions in the form.
      *
      * @return scriptingHandler
@@ -719,11 +770,18 @@ public final class PDAcroForm implements COSObjectable
         return bounds;
     }
 
+    /**
+     * Build a map of pages => widgets
+     * @param fields a list of fields to be flattened
+     * @param pages the page tree
+     * @return
+     * @throws IOException
+     */
     private Map<COSDictionary,Set<COSDictionary>> buildPagesWidgetsMap(
-        List<PDField> fields, PDPageTree pages) throws IOException
+            List<PDField> fields, PDPageTree pages) throws IOException
     {
         Map<COSDictionary,Set<COSDictionary>> pagesAnnotationsMap =
-            new HashMap<COSDictionary, Set<COSDictionary>>();
+                new HashMap<COSDictionary, Set<COSDictionary>>();
         boolean hasMissingPageRef = false;
 
         for (PDField field : fields)
@@ -738,6 +796,7 @@ public final class PDAcroForm implements COSObjectable
                 }
                 else
                 {
+                    Log.w("PdfBox-Android", "missing /P entry (page reference) in a widget for field: " + field);
                     hasMissingPageRef = true;
                 }
             }
@@ -748,14 +807,15 @@ public final class PDAcroForm implements COSObjectable
             return pagesAnnotationsMap;
         }
 
-        // If there is a widget with a missing page reference we need to build the map reverse i.e. 
+        // If there is a widget with a missing page reference we need to build the map reverse i.e.
         // from the annotations to the widget.
         Log.w("PdfBox-Android", "There has been a widget with a missing page reference, will check all page annotations");
+        Set<COSDictionary> widgetDictionarySet = createWidgetDictionarySet(fields);
         for (PDPage page : pages)
         {
             for (PDAnnotation annotation : page.getAnnotations())
             {
-                if (annotation instanceof PDAnnotationWidget)
+                if (widgetDictionarySet.contains(annotation.getCOSObject()))
                 {
                     fillPagesAnnotationMap(pagesAnnotationsMap, page, (PDAnnotationWidget) annotation);
                 }
@@ -765,8 +825,28 @@ public final class PDAcroForm implements COSObjectable
         return pagesAnnotationsMap;
     }
 
+    /**
+     * Return a set of all annotation widget dictionaries related to the fields to be flattened.
+     *
+     * @param fields
+     * @return
+     */
+    private Set<COSDictionary> createWidgetDictionarySet(List<PDField> fields)
+    {
+        Set<COSDictionary> widgetDictionarySet = new HashSet<COSDictionary>();
+        for (PDField field : fields)
+        {
+            List<PDAnnotationWidget> widgets = field.getWidgets();
+            for (PDAnnotationWidget widget : widgets)
+            {
+                widgetDictionarySet.add(widget.getCOSObject());
+            }
+        }
+        return widgetDictionarySet;
+    }
+
     private void fillPagesAnnotationMap(Map<COSDictionary, Set<COSDictionary>> pagesAnnotationsMap,
-        PDPage page, PDAnnotationWidget widget)
+            PDPage page, PDAnnotationWidget widget)
     {
         Set<COSDictionary> widgetsForPage = pagesAnnotationsMap.get(page.getCOSObject());
         if (widgetsForPage == null)
@@ -789,12 +869,12 @@ public final class PDAcroForm implements COSObjectable
             if (field.getParent() == null)
             {
                 // if the field has no parent, assume it is at root level list, remove it from there
-                array = (COSArray) dictionary.getDictionaryObject(COSName.FIELDS);
+                array = dictionary.getCOSArray(COSName.FIELDS);
             }
             else
             {
                 // if the field has a parent, then remove from the list there
-                array = (COSArray) field.getParent().getCOSObject().getDictionaryObject(COSName.KIDS);
+                array = field.getParent().getCOSObject().getCOSArray(COSName.KIDS);
             }
             array.removeObject(field.getCOSObject());
         }

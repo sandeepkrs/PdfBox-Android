@@ -18,12 +18,11 @@ package com.tom_roush.pdfbox.pdmodel.interactive.action;
 
 import java.io.IOException;
 
+import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSBoolean;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
-
 /**
  * This represents a launch action that can be executed in a PDF document.
  *
@@ -246,9 +245,10 @@ public class PDActionLaunch extends PDAction
      */
     public OpenMode getOpenInNewWindow()
     {
-        if (getCOSObject().getDictionaryObject(COSName.NEW_WINDOW) instanceof COSBoolean)
+        COSBase dictionaryObject = getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);
+        if (dictionaryObject instanceof COSBoolean)
         {
-            COSBoolean b = (COSBoolean) getCOSObject().getDictionaryObject(COSName.NEW_WINDOW);
+            COSBoolean b = (COSBoolean) dictionaryObject;
             return b.getValue() ? OpenMode.NEW_WINDOW : OpenMode.SAME_WINDOW;
         }
         return OpenMode.USER_PREFERENCE;

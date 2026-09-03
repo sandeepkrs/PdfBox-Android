@@ -29,7 +29,6 @@ import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.fdf.FDFField;
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDFormFieldAdditionalActions;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
-
 /**
  * A field in an interactive form.
  * Fields may be one of four types: button, text, choice, or signature.
@@ -165,7 +164,7 @@ public abstract class PDTerminalField extends PDField
     public List<PDAnnotationWidget> getWidgets()
     {
         List<PDAnnotationWidget> widgets = new ArrayList<PDAnnotationWidget>();
-        COSArray kids = (COSArray)getCOSObject().getDictionaryObject(COSName.KIDS);
+        COSArray kids = getCOSObject().getCOSArray(COSName.KIDS);
         if (kids == null)
         {
             // the field itself is a widget

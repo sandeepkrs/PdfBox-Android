@@ -15,6 +15,7 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers;
 
+import android.graphics.Rect;
 import android.util.Log;
 
 import java.io.IOException;
@@ -49,13 +50,12 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.layout.PlainText;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.layout.PlainTextFormatter;
 import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import com.tom_roush.pdfbox.util.Matrix;
-
 import static com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine.LE_NONE;
-
 public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
 {
+
     private static final Pattern COLOR_PATTERN =
-        Pattern.compile(".*color\\:\\s*\\#([0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]).*");
+            Pattern.compile("color:\\s*+#([0-9a-fA-F]{6})");
 
     private float fontSize = 10;
     private COSName fontName = COSName.HELV;
@@ -124,6 +124,8 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             }
             cs.setLineWidth(ab.width);
 
+            String lineEndingStyle = annotation.getLineEndingStyle();
+
             // draw callout line(s)
             // must be done before retangle paint to avoid a line cutting through cloud
             // see CTAN-example-Annotations.pdf
@@ -133,7 +135,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 float y = pathsArray[i * 2 + 1];
                 if (i == 0)
                 {
-                    if (SHORT_STYLES.contains(annotation.getLineEndingStyle()))
+                    if (SHORT_STYLES.contains(lineEndingStyle))
                     {
                         // modify coordinate to shorten the segment
                         // https://stackoverflow.com/questions/7740507/extend-a-line-segment-a-specific-distance
@@ -160,16 +162,16 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
 
             // paint the styles here and after line(s) draw, to avoid line crossing a filled shape
             if (PDAnnotationMarkup.IT_FREE_TEXT_CALLOUT.equals(annotation.getIntent())
-                // check only needed to avoid q cm Q if LE_NONE
-                && !LE_NONE.equals(annotation.getLineEndingStyle())
-                && pathsArray.length >= 4)
+                    // check only needed to avoid q cm Q if LE_NONE
+                    && !LE_NONE.equals(lineEndingStyle)
+                    && pathsArray.length >= 4)
             {
                 float x2 = pathsArray[2];
                 float y2 = pathsArray[3];
                 float x1 = pathsArray[0];
                 float y1 = pathsArray[1];
                 cs.saveGraphicsState();
-                if (ANGLED_STYLES.contains(annotation.getLineEndingStyle()))
+                if (ANGLED_STYLES.contains(lineEndingStyle))
                 {
                     // do a transform so that first "arm" is imagined flat,
                     // like in line handler.
@@ -183,7 +185,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 {
                     cs.transform(Matrix.getTranslateInstance(x1, y1));
                 }
-                drawStyle(annotation.getLineEndingStyle(), cs, 0, 0, ab.width, hasStroke, hasBackground, false);
+                drawStyle(lineEndingStyle, cs, 0, 0, ab.width, hasStroke, hasBackground, false);
                 cs.restoreGraphicsState();
             }
 
@@ -221,7 +223,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 // note that borderBox is not modified
                 PDRectangle paddedRectangle = getPaddedRectangle(borderBox, ab.width / 2);
                 cs.addRect(paddedRectangle.getLowerLeftX(), paddedRectangle.getLowerLeftY(),
-                    paddedRectangle.getWidth(), paddedRectangle.getHeight());
+                           paddedRectangle.getWidth(), paddedRectangle.getHeight());
             }
             cs.drawShape(ab.width, hasStroke, hasBackground);
 
@@ -238,7 +240,7 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             float clipY;
             float clipWidth = width - ab.width * 4;
             float clipHeight = rotation == 90 || rotation == 270 ?
-                borderBox.getWidth() - ab.width * 4 : borderBox.getHeight() - ab.width * 4;
+                                borderBox.getWidth() - ab.width * 4 : borderBox.getHeight() - ab.width * 4;
             extractFontDetails(annotation);
             if (document != null)
             {
@@ -291,7 +293,8 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
             cs.addRect(xOffset, clipY, clipWidth, clipHeight);
             cs.clip();
 
-            if (annotation.getContents() != null)
+            String annotationContents = annotation.getContents();
+            if (annotationContents != null)
             {
                 cs.beginText();
                 cs.setFont(font, fontSize);
@@ -300,14 +303,14 @@ public class PDFreeTextAppearanceHandler extends PDAbstractAppearanceHandler
                 appearanceStyle.setFont(font);
                 appearanceStyle.setFontSize(fontSize);
                 PlainTextFormatter formatter = new PlainTextFormatter.Builder(cs)
-                    .style(appearanceStyle)
-                    .text(new PlainText(annotation.getContents()))
-                    .width(width - ab.width * 4)
-                    .wrapLines(true)
-                    .initialOffset(xOffset, yOffset)
-                    // Adobe ignores the /Q
-                    //.textAlign(annotation.getQ())
-                    .build();
+                        .style(appearanceStyle)
+                        .text(new PlainText(annotationContents))
+                        .width(width - ab.width * 4)
+                        .wrapLines(true)
+                        .initialOffset(xOffset, yOffset)
+                        // Adobe ignores the /Q
+                        //.textAlign(annotation.getQ())
+                        .build();
                 try
                 {
                     formatter.format();
