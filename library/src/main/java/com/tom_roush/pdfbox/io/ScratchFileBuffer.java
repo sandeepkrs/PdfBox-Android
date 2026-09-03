@@ -16,14 +16,8 @@
  */
 package com.tom_roush.pdfbox.io;
 
-import android.util.Log;
-
 import java.io.EOFException;
 import java.io.IOException;
-
-import com.tom_roush.pdfbox.android.PDFBoxConfig;
-import com.tom_roush.pdfbox.cos.COSStream;
-
 /**
  * Implementation of {@link RandomAccess} as sequence of multiple fixed size pages handled
  * by {@link ScratchFile}.
@@ -483,44 +477,30 @@ class ScratchFileBuffer implements RandomAccess
     @Override
     public void close() throws IOException
     {
-        if (pageHandler != null) {
+        close(true);
+    }
 
+    /**
+     * Release all resources and remove this buffer from ScratchFile.
+     *
+     * @param removeBuffer remove buffer from ScratchFile if set to true
+     */
+    void close(boolean removeBuffer)
+    {
+        if (pageHandler != null)
+        {
             pageHandler.markPagesAsFree(pageIndexes, 0, pageCount);
+            if (removeBuffer)
+            {
+                pageHandler.removeBuffer(this);
+            }
             pageHandler = null;
-
             pageIndexes = null;
             currentPage = null;
             currentPageOffset = 0;
             currentPagePositionInPageIndexes = -1;
             positionInPage = 0;
             size = 0;
-        }
-    }
-
-    /**
-     * While calling finalize is normally discouraged we will have to
-     * use it here as long as closing a scratch file buffer is not 
-     * done in every case. Currently {@link COSStream} creates new
-     * buffers without closing the old one - which might still be
-     * used.
-     *
-     * <p>Enabling debugging one will see if there are still cases
-     * where the buffer is not closed.</p>
-     */
-    @Override
-    protected void finalize() throws Throwable
-    {
-        try
-        {
-            if ((pageHandler != null) && PDFBoxConfig.isDebugEnabled())
-            {
-                Log.d("PdfBox-Android", "ScratchFileBuffer not closed!");
-            }
-            close();
-        }
-        finally
-        {
-            super.finalize();
         }
     }
 }

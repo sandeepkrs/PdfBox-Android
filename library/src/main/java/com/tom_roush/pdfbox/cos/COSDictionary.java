@@ -16,6 +16,8 @@
  */
 package com.tom_roush.pdfbox.cos;
 
+import android.graphics.Rect;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -31,7 +33,6 @@ import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.util.DateConverter;
 import com.tom_roush.pdfbox.util.SmallMap;
-
 /**
  * This class represents a dictionary where name/value pairs reside.
  *
@@ -96,8 +97,9 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         {
             Object nextValue = entry.getValue();
             if (nextValue.equals(value)
-                || (nextValue instanceof COSObject && ((COSObject) nextValue).getObject()
-                .equals(value)))
+                    || (nextValue instanceof COSObject &&
+                       ((COSObject) nextValue).getObject() != null &&
+                       ((COSObject) nextValue).getObject().equals(value)))
             {
                 return entry.getKey();
             }
@@ -937,7 +939,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @throws IOException If there is an error converting to a date.
      */
     public Calendar getEmbeddedDate(String embedded, String key, Calendar defaultValue)
-        throws IOException
+            throws IOException
     {
         return getEmbeddedDate(embedded, COSName.getPDFName(key), defaultValue);
     }
@@ -952,7 +954,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
      * @throws IOException If there is an error converting to a date.
      */
     public Calendar getEmbeddedDate(String embedded, COSName key, Calendar defaultValue)
-        throws IOException
+            throws IOException
     {
         Calendar retval = defaultValue;
         COSDictionary eDic = (COSDictionary) getDictionaryObject(embedded);
@@ -1431,13 +1433,13 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
     @Override
     public boolean isNeedToBeUpdated()
     {
-        return needToBeUpdated;
+      return needToBeUpdated;
     }
 
     @Override
     public void setNeedToBeUpdated(boolean flag)
     {
-        needToBeUpdated = flag;
+      needToBeUpdated = flag;
     }
 
     /**
@@ -1561,11 +1563,11 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         if (objs.contains(base))
         {
             // avoid endless recursion
-            return String.valueOf(base.hashCode());
+            return "hash:" + base.hashCode();
         }
-        objs.add(base);
         if (base instanceof COSDictionary)
         {
+            objs.add(base);
             StringBuilder sb = new StringBuilder("COSDictionary{");
             for (Map.Entry<COSName, COSBase> x : ((COSDictionary) base).entrySet())
             {
@@ -1586,6 +1588,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         }
         if (base instanceof COSArray)
         {
+            objs.add(base);
             StringBuilder sb = new StringBuilder("COSArray{");
             for (COSBase x : ((COSArray) base))
             {
@@ -1597,6 +1600,7 @@ public class COSDictionary extends COSBase implements COSUpdateInfo
         }
         if (base instanceof COSObject)
         {
+            objs.add(base);
             COSObject obj = (COSObject) base;
             return "COSObject{" + getDictionaryString(obj.getObject(), objs) + "}";
         }

@@ -17,7 +17,6 @@
 package com.tom_roush.pdfbox.cos;
 
 import java.io.IOException;
-
 /**
  * This class represents an abstract number in a PDF document.
  *
@@ -113,14 +112,14 @@ public abstract class COSNumber extends COSBase
         {
             // check if the given string could be a number at all
             String numberString = number.startsWith("+") || number.startsWith("-")
-                ? number.substring(1) : number;
-            if (!numberString.matches("[0-9]*"))
+                    ? number.substring(1) : number;
+            if (!numberString.matches("\\d*"))
             {
                 throw new IOException("Not a number: " + number);
             }
             // return a limited COSInteger value which is marked as invalid
             return number.startsWith("-") ? COSInteger.OUT_OF_RANGE_MIN
-                : COSInteger.OUT_OF_RANGE_MAX;
+                    : COSInteger.OUT_OF_RANGE_MAX;
         }
     }
 

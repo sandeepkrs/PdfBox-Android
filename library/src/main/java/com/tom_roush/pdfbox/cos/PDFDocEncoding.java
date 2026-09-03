@@ -20,7 +20,6 @@ package com.tom_roush.pdfbox.cos;
 import java.io.ByteArrayOutputStream;
 import java.util.HashMap;
 import java.util.Map;
-
 /**
  * The "PDFDocEncoding" encoding. Note that this is *not* a Type 1 font encoding, it is used only
  * within PDF "text strings".
@@ -120,7 +119,7 @@ final class PDFDocEncoding
      */
     public static String toString(byte[] bytes)
     {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(bytes.length);
         for (byte b : bytes)
         {
             if ((b & 0xff) >= CODE_TO_UNI.length)
@@ -140,7 +139,7 @@ final class PDFDocEncoding
      */
     public static byte[] getBytes(String text)
     {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream(text.length());
         for (char c : text.toCharArray())
         {
             Integer code = UNI_TO_CODE.get(c);

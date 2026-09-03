@@ -30,7 +30,6 @@ import com.tom_roush.pdfbox.io.ScratchFile;
 import com.tom_roush.pdfbox.multipdf.Splitter;
 import com.tom_roush.pdfbox.pdfparser.PDFObjectStreamParser;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
-
 /**
  * This is the in-memory representation of the PDF document.  You need to call
  * close() on this object when you are done using it!!
@@ -40,7 +39,6 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument;
  */
 public class COSDocument extends COSBase implements Closeable
 {
-
     private float version = 1.4f;
 
     /**
@@ -57,7 +55,7 @@ public class COSDocument extends COSBase implements Closeable
         new HashMap<COSObjectKey, Long>();
 
     /**
-     * List containing all streams which are created when creating a new pdf. 
+     * List containing all streams which are created when creating a new pdf.
      */
     private final List<COSStream> streams = new ArrayList<COSStream>();
 
@@ -69,7 +67,7 @@ public class COSDocument extends COSBase implements Closeable
     private boolean warnMissingClose = true;
 
     /**
-     * Signal that document is already decrypted. 
+     * Signal that document is already decrypted.
      */
     private boolean isDecrypted = false;
 
@@ -350,7 +348,10 @@ public class COSDocument extends COSBase implements Closeable
     }
 
     /**
-     * This will set the document ID.
+     * This will set the document ID. This should be an array of two strings. This method cannot be
+     * used to remove the document id by passing null or an empty array; it will be recreated. Only
+     * the first existing string is used when writing, the second one is always recreated. If you
+     * don't want this, you'll have to modify the {@code COSWriter} class, look for {@link COSName#ID}.
      *
      * @param id The document id.
      */
@@ -516,7 +517,7 @@ public class COSDocument extends COSBase implements Closeable
         {
             if (warnMissingClose)
             {
-                Log.w("PdfBox-Android", "Warning: You did not close a PDF Document" );
+                Log.w("PdfBox-Android",  "Warning: You did not close a PDF Document" );
             }
             close();
         }
@@ -551,9 +552,9 @@ public class COSDocument extends COSBase implements Closeable
             {
                 COSObjectKey key = new COSObjectKey(next);
                 if (objectPool.get(key) == null || objectPool.get(key).getObject() == null
-                    // xrefTable stores negated objNr of objStream for objects in objStreams
-                    || (xrefTable.containsKey(key)
-                    && xrefTable.get(key) == -objStream.getObjectNumber()))
+                        // xrefTable stores negated objNr of objStream for objects in objStreams
+                        || (xrefTable.containsKey(key)
+                            && xrefTable.get(key) == -objStream.getObjectNumber()))
                 {
                     COSObject obj = getObjectFromPool(key);
                     obj.setObject(next.getObject());
@@ -623,7 +624,7 @@ public class COSDocument extends COSBase implements Closeable
     }
 
     /**
-     * This method set the startxref value of the document. This will only 
+     * This method set the startxref value of the document. This will only
      * be needed for incremental updates.
      *
      * @param startXrefValue the value for startXref
@@ -640,7 +641,7 @@ public class COSDocument extends COSBase implements Closeable
      */
     public long getStartXref()
     {
-        return startXref;
+      return startXref;
     }
 
     /**

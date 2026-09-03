@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * An array of PDFBase objects as part of the PDF document.
  *
@@ -117,12 +116,14 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
      *
      * @param objectList The list of objects to add.
      */
-    public void addAll( COSArray objectList )
+    public void addAll(COSArray objectList)
     {
-        if( objectList != null )
+        if (objectList == null)
         {
-            objects.addAll( objectList.objects );
+            return;
         }
+
+        objects.addAll(objectList.objects);
     }
 
     /**
@@ -472,10 +473,17 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
                     return i;
                 }
             }
-            else if (item.equals(object)
-                || item instanceof COSObject && ((COSObject) item).getObject().equals(object))
+            else if (item.equals(object))
             {
                 return i;
+            }
+            else if (item instanceof COSObject)
+            {
+                COSBase cosBase = ((COSObject) item).getObject();
+                if (cosBase != null && cosBase.equals(object))
+                {
+                    return i;
+                }
             }
         }
         return -1;
@@ -525,7 +533,7 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
     @Override
     public boolean isNeedToBeUpdated()
     {
-        return needToBeUpdated;
+      return needToBeUpdated;
     }
 
     /**
@@ -540,7 +548,7 @@ public class COSArray extends COSBase implements Iterable<COSBase>, COSUpdateInf
     @Override
     public void setNeedToBeUpdated(boolean flag)
     {
-        needToBeUpdated = flag;
+      needToBeUpdated = flag;
     }
 
     /**

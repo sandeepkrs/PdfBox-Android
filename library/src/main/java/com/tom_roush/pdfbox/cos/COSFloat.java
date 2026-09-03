@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.cos;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
-
 /**
  * This class represents a floating point number in a PDF document.
  *
@@ -38,7 +37,7 @@ public class COSFloat extends COSNumber
      */
     public COSFloat( float aFloat )
     {
-        // use a BigDecimal as intermediate state to avoid 
+        // use a BigDecimal as intermediate state to avoid
         // a floating point string representation of the float value
         value = new BigDecimal(String.valueOf(aFloat));
         valueAsString = removeNullDigits(value.toPlainString());
@@ -72,6 +71,11 @@ public class COSFloat extends COSNumber
                 // PDFBOX-3369 has 0.00-35095424
                 // PDFBOX-3500 has 0.-262
                 valueAsString = "-" + valueAsString.replaceFirst("\\-", "");
+            }
+            else if (aFloat.matches("^-\\d+\\.-\\d+"))
+            {
+                // PDFBOX-5829 has -12.-1
+                valueAsString = "-" + valueAsString.replace("-", "");
             }
             else
             {
@@ -184,7 +188,7 @@ public class COSFloat extends COSNumber
     public boolean equals( Object o )
     {
         return o instanceof COSFloat &&
-            Float.floatToIntBits(((COSFloat)o).value.floatValue()) == Float.floatToIntBits(value.floatValue());
+                Float.floatToIntBits(((COSFloat)o).value.floatValue()) == Float.floatToIntBits(value.floatValue());
     }
 
     /**

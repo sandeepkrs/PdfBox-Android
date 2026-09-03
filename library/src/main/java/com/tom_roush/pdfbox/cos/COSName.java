@@ -16,15 +16,19 @@
  */
 package com.tom_roush.pdfbox.cos;
 
+import android.graphics.Path;
+import android.graphics.Rect;
+
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.tom_roush.pdfbox.util.Charsets;
 import com.tom_roush.pdfbox.util.Hex;
-
 /**
  * A PDF Name object.
  *
@@ -33,12 +37,12 @@ import com.tom_roush.pdfbox.util.Hex;
 public final class COSName extends COSBase implements Comparable<COSName>
 {
     // using ConcurrentHashMap because this can be accessed by multiple threads
-    private static final Map<String, COSName> nameMap = new ConcurrentHashMap<String, COSName>(
-        8192);
+    private static final Map<ByteBuffer, COSName> nameMap = new ConcurrentHashMap<ByteBuffer, COSName>(
+            8192);
 
     // all common COSName values are stored in this HashMap
     // they are already defined as static constants and don't need to be synchronized
-    private static final Map<String, COSName> commonNameMap = new HashMap<String, COSName>(768);
+    private static final Map<ByteBuffer, COSName> commonNameMap = new HashMap<ByteBuffer, COSName>(768);
 
     //
     // IMPORTANT: this list is *alphabetized* and does not need any JavaDoc
@@ -51,12 +55,15 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName AC = new COSName("AC");
     public static final COSName ACRO_FORM = new COSName("AcroForm");
     public static final COSName ACTUAL_TEXT = new COSName("ActualText");
+    public static final COSName ADBE = new COSName("ADBE");
     public static final COSName ADBE_PKCS7_DETACHED = new COSName("adbe.pkcs7.detached");
     public static final COSName ADBE_PKCS7_SHA1 = new COSName("adbe.pkcs7.sha1");
     public static final COSName ADBE_X509_RSA_SHA1 = new COSName("adbe.x509.rsa_sha1");
     public static final COSName ADOBE_PPKLITE = new COSName("Adobe.PPKLite");
     public static final COSName AESV2 = new COSName("AESV2");
     public static final COSName AESV3 = new COSName("AESV3");
+    public static final COSName AF = new COSName("AF");
+    public static final COSName AF_RELATIONSHIP = new COSName("AFRelationship");
     public static final COSName AFTER = new COSName("After");
     public static final COSName AI_META_DATA = new COSName("AIMetaData");
     public static final COSName AIS = new COSName("AIS");
@@ -90,6 +97,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName BASE_ENCODING = new COSName("BaseEncoding");
     public static final COSName BASE_FONT = new COSName("BaseFont");
     public static final COSName BASE_STATE = new COSName("BaseState");
+    public static final COSName BASE_VERSION = new COSName("BaseVersion");
     public static final COSName BBOX = new COSName("BBox");
     public static final COSName BC = new COSName("BC");
     public static final COSName BE = new COSName("BE");
@@ -125,6 +133,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName CCITTFAX_DECODE_ABBREVIATION = new COSName("CCF");
     public static final COSName CENTER_WINDOW = new COSName("CenterWindow");
     public static final COSName CERT = new COSName("Cert");
+    public static final COSName CERTS = new COSName("Certs");
     public static final COSName CF = new COSName("CF");
     public static final COSName CFM = new COSName("CFM");
     //** Acro form field type for choice fields.
@@ -139,6 +148,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName CID_SET = new COSName("CIDSet");
     public static final COSName CIDSYSTEMINFO = new COSName("CIDSystemInfo");
     public static final COSName CL = new COSName("CL");
+    public static final COSName CLASS_MAP = new COSName("ClassMap");
     public static final COSName CLR_F = new COSName("ClrF");
     public static final COSName CLR_FF = new COSName("ClrFf");
     public static final COSName CMAP = new COSName("CMap");
@@ -167,6 +177,8 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName CP = new COSName("CP");
     public static final COSName CREATION_DATE = new COSName("CreationDate");
     public static final COSName CREATOR = new COSName("Creator");
+    public static final COSName CRL = new COSName("CRL");
+    public static final COSName CRLS = new COSName("CRLs");
     public static final COSName CROP_BOX = new COSName("CropBox");
     public static final COSName CRYPT = new COSName("Crypt");
     public static final COSName CS = new COSName("CS");
@@ -217,6 +229,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName DP = new COSName("DP");
     public static final COSName DR = new COSName("DR");
     public static final COSName DS = new COSName("DS");
+    public static final COSName DSS = new COSName("DSS");
     public static final COSName DUPLEX = new COSName("Duplex");
     public static final COSName DUR = new COSName("Dur");
     public static final COSName DV = new COSName("DV");
@@ -238,9 +251,13 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName ENCODING_ETEN_B5_V = new COSName("ETen-B5-V");
     public static final COSName ENCRYPT = new COSName("Encrypt");
     public static final COSName ENCRYPT_META_DATA = new COSName("EncryptMetadata");
+    public static final COSName ENCRYPTED_PAYLOAD = new COSName("EncryptedPayload");
     public static final COSName END_OF_LINE = new COSName("EndOfLine");
     public static final COSName ENTRUST_PPKEF = new COSName("Entrust.PPKEF");
     public static final COSName EXCLUSION = new COSName("Exclusion");
+    public static final COSName EXTENSIONS = new COSName("Extensions");
+    public static final COSName EXTENSION_LEVEL = new COSName("ExtensionLevel");
+    public static final COSName EX_DATA = new COSName("ExData");
     public static final COSName EXT_G_STATE = new COSName("ExtGState");
     public static final COSName EXTEND = new COSName("Extend");
     public static final COSName EXTENDS = new COSName("Extends");
@@ -345,6 +362,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName LENGTH2 = new COSName("Length2");
     public static final COSName LIGHTEN = new COSName("Lighten");
     public static final COSName LIMITS = new COSName("Limits");
+    public static final COSName LINK = getPDFName("Link");
     public static final COSName LJ = new COSName("LJ");
     public static final COSName LL = new COSName("LL");
     public static final COSName LLE = new COSName("LLE");
@@ -366,6 +384,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName MAX_LEN = new COSName("MaxLen");
     public static final COSName MAX_WIDTH = new COSName("MaxWidth");
     public static final COSName MCID = new COSName("MCID");
+    public static final COSName MCR = getPDFName("MCR");
     public static final COSName MDP = new COSName("MDP");
     public static final COSName MEDIA_BOX = new COSName("MediaBox");
     public static final COSName MEASURE = new COSName("Measure");
@@ -394,12 +413,15 @@ public final class COSName extends COSBase implements Comparable<COSName>
     // O
     public static final COSName O = new COSName("O");
     public static final COSName OBJ = new COSName("Obj");
+    public static final COSName OBJR = new COSName("OBJR");
     public static final COSName OBJ_STM = new COSName("ObjStm");
     public static final COSName OC = new COSName("OC");
     public static final COSName OCG = new COSName("OCG");
     public static final COSName OCGS = new COSName("OCGs");
     public static final COSName OCMD = new COSName("OCMD");
     public static final COSName OCPROPERTIES = new COSName("OCProperties");
+    public static final COSName OCSP = new COSName("OCSP");
+    public static final COSName OCSPS = new COSName("OCSPs");
     public static final COSName OE = new COSName("OE");
     public static final COSName OID = new COSName("OID");
 
@@ -426,7 +448,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName OUTLINES = new COSName("Outlines");
     public static final COSName OUTPUT_CONDITION = new COSName("OutputCondition");
     public static final COSName OUTPUT_CONDITION_IDENTIFIER = new COSName(
-        "OutputConditionIdentifier");
+            "OutputConditionIdentifier");
     public static final COSName OUTPUT_INTENT = new COSName("OutputIntent");
     public static final COSName OUTPUT_INTENTS = new COSName("OutputIntents");
     public static final COSName OVERLAY = new COSName("Overlay");
@@ -452,6 +474,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName PERCEPTUAL = new COSName("Perceptual");
     public static final COSName PIECE_INFO = new COSName("PieceInfo");
     public static final COSName PG = new COSName("Pg");
+    public static final COSName POPUP = new COSName("Popup");
     public static final COSName PRE_RELEASE = new COSName("PreRelease");
     public static final COSName PREDICTOR = new COSName("Predictor");
     public static final COSName PREV = new COSName("Prev");
@@ -512,6 +535,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName SIZE = new COSName("Size");
     public static final COSName SM = new COSName("SM");
     public static final COSName SMASK = new COSName("SMask");
+    public static final COSName SMASK_IN_DATA = new COSName("SMaskInData");
     public static final COSName SOFT_LIGHT = new COSName("SoftLight");
     public static final COSName SORT = new COSName("Sort");
     public static final COSName SOUND = new COSName("Sound");
@@ -548,6 +572,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName TARGET = new COSName("Target");
     public static final COSName TEMPLATES = new COSName("Templates");
     public static final COSName THREADS = new COSName("Threads");
+    public static final COSName THREE_DD = new COSName("3DD");
     public static final COSName THUMB = new COSName("Thumb");
     public static final COSName TI = new COSName("TI");
     public static final COSName TILING_TYPE = new COSName("TilingType");
@@ -597,6 +622,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName VIEWER_PREFERENCES = new COSName("ViewerPreferences");
     public static final COSName VOLUME = new COSName("Volume");
     public static final COSName VP = new COSName("VP");
+    public static final COSName VRI = new COSName("VRI");
     // W
     public static final COSName W = new COSName("W");
     public static final COSName W2 = new COSName("W2");
@@ -620,100 +646,180 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public static final COSName ZA_DB = new COSName("ZaDb");
 
     // fields
-    private final String name;
-    private final int hashCode;
 
     /**
-     * This will get a COSName object with that name.
+     * <p>Per PDF 32000-1:2008 §7.3.5: Beginning with PDF 1.2 a name object is an atomic symbol
+     * uniquely defined by a sequence of any characters (8-bit values) except null
+     * (character code 0).</p>
+     */
+    private final byte[] nameBytes;
+
+    /**
+     * Returns a {@code COSName} whose byte sequence is the UTF-8 encoding of {@code aName}.
      *
-     * @param aName The name of the object.
+     * <p>This is the standard factory for names defined in Java source code (e.g. the static
+     * constants above). All well-formed PDF names defined by the spec are ASCII, so the UTF-8
+     * encoding is a transparent identity transform for those cases.</p>
      *
-     * @return A COSName with the specified name.
+     * @param aName the name string; must not be {@code null}
+     * @return a canonicalised {@code COSName} instance
      */
     public static COSName getPDFName(String aName)
     {
-        COSName name = null;
-        if (aName != null)
+        return getPDFName(aName.getBytes(Charsets.UTF_8));
+    }
+
+    /**
+     * Returns a {@code COSName} whose byte sequence is exactly {@code bytes}.
+     *
+     * <p>This is the preferred factory when constructing a name directly from a PDF byte stream
+     * (i.e. after the parser has stripped the leading {@code /} and expanded all {@code #XX}
+     * escape sequences). Using this method preserves the spec-correct, byte-level identity of the
+     * name even when the bytes are not valid UTF-8.</p>
+     *
+     * <p>Null bytes (0x00) are rejected; the spec explicitly excludes them.</p>
+     *
+     * @param bytes the raw decoded byte sequence; must not be {@code null} and must not contain 0x00
+     * @return a canonicalised {@code COSName} instance
+     * @throws IllegalArgumentException if {@code bytes} contains a null byte
+     */
+    public static COSName getPDFName(byte[] bytes)
+    {
+        if (bytes == null)
         {
-            // Is it a common COSName ??
-            name = commonNameMap.get(aName);
+            return null;
+        }
+
+        // Wrap for lookup only to avoid unnecessary copying of the byte array for the key.
+        ByteBuffer lookupKey = ByteBuffer.wrap(bytes);
+
+        // Is it a common COSName ??
+        COSName name = commonNameMap.get(lookupKey);
+        if (name == null)
+        {
+            // It seems to be a document specific COSName
+            name = nameMap.get(lookupKey);
             if (name == null)
             {
-                // It seems to be a document specific COSName
-                name = nameMap.get(aName);
-                if (name == null)
-                {
-                    // name is added to the synchronized map in the constructor
-                    name = new COSName(aName, false);
-                }
+                // name is added to the synchronized map in the constructor
+                name = new COSName(bytes, false);
             }
         }
+
         return name;
     }
 
     /**
-     * Private constructor. This will limit the number of COSName objects. that are created.
+     * Private constructor. This will limit the number of COSName objects that are created.
      *
-     * @param aName The name of the COSName object.
+     * @param storedBytes The name of the COSName object.
      * @param staticValue Indicates if the COSName object is static so that it can be stored in the HashMap without
      * synchronizing.
      */
-    private COSName(String aName, boolean staticValue)
+    private COSName(byte[] storedBytes, boolean staticValue)
     {
-        name = aName;
-        hashCode = name.hashCode();
+        this.nameBytes = storedBytes;
+        ByteBuffer storedKey = ByteBuffer.wrap(storedBytes);
         if (staticValue)
         {
-            commonNameMap.put(aName, this);
+            commonNameMap.put(storedKey, this);
         }
         else
         {
-            nameMap.put(aName, this);
+            nameMap.put(storedKey, this);
         }
     }
 
     /**
-     * Private constructor. This will limit the number of COSName objects. that are created.
+     * Private constructor. This will limit the number of COSName objects that are created.
      *
      * @param aName The name of the COSName object.
      */
     private COSName(String aName)
     {
-        this(aName, true);
+        this(aName.getBytes(Charsets.UTF_8), true);
     }
 
     /**
-     * This will get the name of this COSName object.
+     * Returns the raw byte sequence that defines this name.
+     *
+     * <p>This is the atomic content/identity of the name. Prefer this over
+     * {@link #getName()} whenever you need to write name bytes to an output stream, compare names
+     * parsed from a PDF, or otherwise operate at the byte level.</p>
+     *
+     * @return a defensive copy of the internal byte array; never {@code null}
+     */
+    public byte[] getBytes()
+    {
+        return Arrays.copyOf(nameBytes, nameBytes.length);
+    }
+
+    /**
+     * Returns the name decoded as a UTF-8 {@code String}.
+     *
+     * <p>This method exists primarily for backward compatibility and for cases where the
+     * readable value needs to be stored.</p>
+     *
+     * <p>Per PDF 32000-1:2008 §7.3.5, ... However, occasionally the need arises to treat a name object
+     * as text, such as one that represents a font ... </p>
+     *
+     * <p>... In such situations, the sequence of bytes (after expansion of NUMBER SIGN sequences, if any)
+     * should be interpreted according to UTF-8... </p>
+     *
+     * <p>Use {@link #getBytes()} when byte-level fidelity is required.</p>
      *
      * @return The name of the object.
      */
     public String getName()
     {
-        return name;
+        String utf8String = new String(nameBytes, Charsets.UTF_8);
+
+        //check for lossy decoding, which can happen if the name contains
+        // bytes that are not valid UTF-8
+        if (utf8String.indexOf('\uFFFD') >= 0)
+        {
+            // fall back to ISO-8859-1, which is a single-byte encoding that can decode any
+            // byte sequence without loss
+            return new String(nameBytes, Charsets.ISO_8859_1);
+        }
+        return utf8String;
     }
 
     @Override
     public String toString()
     {
-        return "COSName{" + name + "}";
+        return "COSName{" + getName() + "}";
     }
 
     @Override
     public boolean equals(Object object)
     {
-        return object instanceof COSName && name.equals(((COSName) object).name);
+        return object instanceof COSName && Arrays.equals(nameBytes, ((COSName) object).nameBytes);
     }
 
     @Override
     public int hashCode()
     {
-        return hashCode;
+        return Arrays.hashCode(nameBytes);
     }
 
     @Override
     public int compareTo(COSName other)
     {
-        return name.compareTo(other.name);
+        if (this == other)
+        {
+            return 0;
+        }
+        int len = Math.min(nameBytes.length, other.nameBytes.length);
+        for (int i = 0; i < len; i++)
+        {
+            int diff = (nameBytes[i] & 0xFF) - (other.nameBytes[i] & 0xFF);
+            if (diff != 0)
+            {
+                return diff;
+            }
+        }
+        return nameBytes.length - other.nameBytes.length;
     }
 
     /**
@@ -722,7 +828,7 @@ public final class COSName extends COSBase implements Comparable<COSName>
      */
     public boolean isEmpty()
     {
-        return name.isEmpty();
+        return nameBytes.length == 0;
     }
 
     @Override
@@ -740,23 +846,23 @@ public final class COSName extends COSBase implements Comparable<COSName>
     public void writePDF(OutputStream output) throws IOException
     {
         output.write('/');
-        byte[] bytes = getName().getBytes(Charsets.UTF_8);
+        byte[] bytes = getBytes();
         for (byte b : bytes)
         {
             int current = b & 0xFF;
 
             // be more restrictive than the PDF spec, "Name Objects", see PDFBOX-2073
             if (current >= 'A' && current <= 'Z' ||
-                current >= 'a' && current <= 'z' ||
-                current >= '0' && current <= '9' ||
-                current == '+' ||
-                current == '-' ||
-                current == '_' ||
-                current == '@' ||
-                current == '*' ||
-                current == '$' ||
-                current == ';' ||
-                current == '.')
+                    current >= 'a' && current <= 'z' ||
+                    current >= '0' && current <= '9' ||
+                    current == '+' ||
+                    current == '-' ||
+                    current == '_' ||
+                    current == '@' ||
+                    current == '*' ||
+                    current == '$' ||
+                    current == ';' ||
+                    current == '.')
             {
                 output.write(current);
             }

@@ -1,5 +1,3 @@
-package com.tom_roush.pdfbox.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,18 +14,19 @@ package com.tom_roush.pdfbox.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.tom_roush.pdfbox.util;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.ListIterator;
-
 /**
  * This class provides an iterative (bottom-up) implementation of the
  * <a href="https://en.wikipedia.org/wiki/Merge_sort">MergeSort</a> algorithm for any generic Java
  * object which implements a {@link Comparator}.
  *
  * <p>
- * This implementation uses an iterative implementation approach over the more 
- * classical recursive approach in order to save the auxiliary space required 
+ * This implementation uses an iterative implementation approach over the more
+ * classical recursive approach in order to save the auxiliary space required
  * by the call stack in recursive implementations.
  * </p>
  *
