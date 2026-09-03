@@ -21,9 +21,7 @@ import android.graphics.Path;
 import android.graphics.Region;
 
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
@@ -44,7 +42,9 @@ public class PDGraphicsState implements Cloneable
 {
     private boolean isClippingPathDirty;
     private List<Path> clippingPaths = new ArrayList<Path>(1);
-    private Map<Path, Region> clippingCache = new IdentityHashMap<Path, Region>();
+    private Region clippingPathCache = null;
+    private Matrix textMatrix = null;
+    private Matrix textLineMatrix = null;
     private Matrix currentTransformationMatrix = new Matrix();
     private PDColor strokingColor = PDDeviceGray.INSTANCE.getInitialColor();
     private PDColor nonStrokingColor = PDDeviceGray.INSTANCE.getInitialColor();
@@ -503,7 +503,9 @@ public class PDGraphicsState implements Cloneable
             clone.nonStrokingColor = nonStrokingColor; // immutable
             clone.lineDashPattern = lineDashPattern; // immutable
             clone.clippingPaths = clippingPaths; // not cloned, see intersectClippingPath
-            clone.clippingCache = clippingCache;
+            clone.clippingPathCache = clippingPathCache;
+            clone.textLineMatrix = textLineMatrix == null ? null : textLineMatrix.clone();
+            clone.textMatrix = textMatrix == null ? null : textMatrix.clone();
             clone.isClippingPathDirty = false;
             return clone;
         }
@@ -616,6 +618,8 @@ public class PDGraphicsState implements Cloneable
 
         // add path to current clipping paths, combined later (see getCurrentClippingPath)
         clippingPaths.add(clonePath ? new Path(path) : path);
+        // clear cache
+        clippingPathCache = null;
     }
 
     /**
@@ -635,17 +639,14 @@ public class PDGraphicsState implements Cloneable
      */
     public Region getCurrentClippingPath()
     {
+        // If there is just a single clipping path, no intersections are needed.
         if (clippingPaths.size() == 1)
         {
-            // If there is just a single clipping path, no intersections are needed.
-            Path path = clippingPaths.get(0);
-            Region area = clippingCache.get(path);
-            if (area == null)
+            if (clippingPathCache == null)
             {
-                area = GraphicsUtil.getPathRegion(path);
-                clippingCache.put(path, area);
+                clippingPathCache = GraphicsUtil.getPathRegion(clippingPaths.get(0));
             }
-            return area;
+            return clippingPathCache;
         }
         // If there are multiple clipping paths, combine them to a single area.
         Path clippingPath = new Path(clippingPaths.get(0));
@@ -654,10 +655,10 @@ public class PDGraphicsState implements Cloneable
             clippingPath.op(clippingPaths.get(i), Path.Op.INTERSECT);
         }
         Region clippingRegion = GraphicsUtil.getPathRegion(clippingPath);
-        // Replace the list of individual clipping paths with the intersection, and add it to the cache.
+        clippingPathCache = clippingRegion;
+        // Replace the list of individual clipping paths with the intersection
         clippingPaths = new ArrayList<Path>(1);
         clippingPaths.add(clippingPath);
-        clippingCache.put(clippingPath, clippingRegion);
         return clippingRegion;
     }
 
@@ -703,4 +704,44 @@ public class PDGraphicsState implements Cloneable
     {
         this.transfer = transfer;
     }
+    /**
+     * Returns the text line matrix.
+     *
+     * @return The text line matrix.
+     */
+    public Matrix getTextLineMatrix()
+    {
+        return textLineMatrix;
+    }
+
+    /**
+     * Sets the text line matrix.
+     *
+     * @param value The text line matrix.
+     */
+    public void setTextLineMatrix(Matrix value)
+    {
+        textLineMatrix = value;
+    }
+
+    /**
+     * Returns the text matrix.
+     *
+     * @return The text matrix.
+     */
+    public Matrix getTextMatrix()
+    {
+        return textMatrix;
+    }
+
+    /**
+     * Sets the text matrix.
+     *
+     * @param value The text matrix.
+     */
+    public void setTextMatrix(Matrix value)
+    {
+        textMatrix = value;
+    }
+
 }

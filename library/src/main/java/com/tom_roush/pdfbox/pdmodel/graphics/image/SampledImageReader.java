@@ -75,10 +75,11 @@ final class SampledImageReader
         // avoid getting a Bitmap for the mask to lessen memory footprint.
         // Such masks are always bpc=1 and have no colorspace, but have a decode.
         // (see 8.9.6.2 Stencil Masking)
+        InputStream imageStream = pdImage.createInputStream();
         ImageInputStream iis = null;
         try
         {
-            iis = new MemoryCacheImageInputStream(pdImage.createInputStream());
+            iis = new MemoryCacheImageInputStream(imageStream);
             final float[] decode = getDecodeArray(pdImage);
             int value = decode[0] < decode[1] ? 1 : 0;
             int rowLen = width / 8;
@@ -125,6 +126,8 @@ final class SampledImageReader
             {
                 iis.close();
             }
+            // MemoryCacheImageInputStream doesn't close the wrapped stream
+            imageStream.close();
         }
 
         return masked;

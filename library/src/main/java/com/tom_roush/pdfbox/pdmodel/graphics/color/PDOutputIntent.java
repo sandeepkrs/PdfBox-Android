@@ -26,7 +26,6 @@ import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
 /**
  * An Output Intent describes the colour reproduction characteristics of a possible output
  * device or production condition.
@@ -39,6 +38,14 @@ public final class PDOutputIntent implements COSObjectable
 {
     private final COSDictionary dictionary;
 
+    /**
+     * Create an output intent of GTS_PDFA1 subtype.
+     *
+     * @param doc The document.
+     * @param colorProfile the ICC color profile input stream. You can close it after construction.
+     * @throws IOException If an I/O error occurs while reading the stream.
+     * @throws IllegalArgumentException If the stream does not contain valid ICC Profile data.
+     */
     public PDOutputIntent(PDDocument doc, InputStream colorProfile) throws IOException
     {
         dictionary = new COSDictionary();
@@ -61,7 +68,7 @@ public final class PDOutputIntent implements COSObjectable
 
     public COSStream getDestOutputIntent()
     {
-        return (COSStream) dictionary.getDictionaryObject(COSName.DEST_OUTPUT_PROFILE);
+        return dictionary.getCOSStream(COSName.DEST_OUTPUT_PROFILE);
     }
 
     public String getInfo()
@@ -105,7 +112,7 @@ public final class PDOutputIntent implements COSObjectable
     }
 
     private PDStream configureOutputProfile(PDDocument doc, InputStream colorProfile)
-        throws IOException
+            throws IOException
     {
 //        ICC_Profile icc = ICC_Profile.getInstance(colorProfile);
 //        PDStream stream = new PDStream(doc, new ByteArrayInputStream(icc.getData()), COSName.FLATE_DECODE);
@@ -114,4 +121,4 @@ public final class PDOutputIntent implements COSObjectable
         stream.getStream().setInt(COSName.N, 3);
         return stream;
     }
-}  
+}

@@ -87,6 +87,12 @@ public final class PDJPXColorSpace extends PDColorSpace
     @Override
     public float[] toRGB(float[] value)
     {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
+        {
+            android.graphics.Color c = android.graphics.Color.valueOf(value[0], value[1], value[2], 1f, colorSpace);
+            android.graphics.Color rgb = c.convert(android.graphics.ColorSpace.get(android.graphics.ColorSpace.Named.SRGB));
+            return new float[] { rgb.red(), rgb.green(), rgb.blue() };
+        }
         throw new UnsupportedOperationException("JPX color spaces don't support drawing");
     }
 

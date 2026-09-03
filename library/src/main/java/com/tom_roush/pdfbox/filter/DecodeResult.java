@@ -16,6 +16,8 @@
  */
 package com.tom_roush.pdfbox.filter;
 
+import android.graphics.Bitmap;
+
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDJPXColorSpace;
 
@@ -32,6 +34,7 @@ public final class DecodeResult
 
     private final COSDictionary parameters;
     private PDJPXColorSpace colorSpace;
+    private Bitmap smask;
 
     DecodeResult(COSDictionary parameters)
     {
@@ -67,4 +70,14 @@ public final class DecodeResult
     {
         this.colorSpace = colorSpace;
     }
+    void setJPXSMask(Bitmap smask)
+    {
+        this.smask = smask;
+    }
+
+    public Bitmap getJPXSMask()
+    {
+        return smask;
+    }
+
 }

@@ -22,7 +22,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * A line dash pattern for stroking paths.
  * Instances of PDLineDashPattern are immutable.
@@ -51,6 +50,26 @@ public final class PDLineDashPattern implements COSObjectable
     public PDLineDashPattern(COSArray array, int phase)
     {
         this.array = array.toFloatArray();
+        // PDF 2.0 specification, 8.4.3.6 Line dash pattern:
+        // "If the dash phase is negative, it shall be incremented by twice the sum of all
+        // lengths in the dash array until it is positive"
+        if (phase < 0)
+        {
+            float sum2 = 0;
+            for (float f : this.array)
+            {
+                sum2 += f;
+            }
+            sum2 *= 2;
+            if (sum2 > 0)
+            {
+                phase += (-phase < sum2) ? sum2 : (Math.floor(-phase / sum2) + 1) * sum2;
+            }
+            else
+            {
+                phase = 0;
+            }
+        }
         this.phase = phase;
     }
 

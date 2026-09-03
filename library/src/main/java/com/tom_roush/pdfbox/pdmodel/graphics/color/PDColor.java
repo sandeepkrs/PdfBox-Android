@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * A color value, consisting of one or more color components, or for pattern color spaces,
  * a name and optional color components.
@@ -37,6 +36,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
  */
 public final class PDColor
 {
+
     private final float[] components;
     private final COSName patternName;
     private final PDColorSpace colorSpace;
@@ -102,6 +102,12 @@ public final class PDColor
         this.components = components.clone();
         this.patternName = null;
         this.colorSpace = colorSpace;
+        if (colorSpace != null && colorSpace.getNumberOfComponents() != components.length)
+        {
+            // PDFBOX-5882
+            Log.w("PdfBox-Android", "Colorspace component count " + colorSpace.getNumberOfComponents() +
+                    " doesn't match components length " + components.length);
+        }
     }
 
     /**
@@ -168,7 +174,7 @@ public final class PDColor
      * Returns the packed RGB value for this color, if any.
      * @return RGB
      * @throws IOException if the color conversion fails
-     * @throws IllegalStateException if this color value is a pattern.
+     * @throws UnsupportedOperationException if this color value is a pattern.
      */
     public int toRGB() throws IOException
     {
@@ -209,6 +215,6 @@ public final class PDColor
     public String toString()
     {
         return "PDColor{components=" + Arrays.toString(components) +
-            ", patternName=" + patternName + "}";
+                ", patternName=" + patternName + "}";
     }
 }

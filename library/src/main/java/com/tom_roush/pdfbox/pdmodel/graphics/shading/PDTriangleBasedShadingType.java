@@ -24,6 +24,7 @@ import java.util.List;
 
 import com.tom_roush.harmony.awt.geom.AffineTransform;
 import com.tom_roush.harmony.javax.imageio.stream.ImageInputStream;
+import com.tom_roush.pdfbox.android.PDFBoxConfig;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
@@ -86,7 +87,10 @@ abstract class PDTriangleBasedShadingType extends PDShading
         if (bitsPerCoordinate == -1)
         {
             bitsPerCoordinate = getCOSObject().getInt(COSName.BITS_PER_COORDINATE, -1);
-            Log.d("PdfBox-Android", "bitsPerCoordinate: " + (Math.pow(2, bitsPerCoordinate) - 1));
+            if (PDFBoxConfig.isDebugEnabled())
+            {
+                Log.d("PdfBox-Android", "bitsPerCoordinate: " + (Math.pow(2, bitsPerCoordinate) - 1));
+            }
         }
         return bitsPerCoordinate;
     }
@@ -127,7 +131,7 @@ abstract class PDTriangleBasedShadingType extends PDShading
     {
         if (decode == null)
         {
-            decode = (COSArray) getCOSObject().getDictionaryObject(COSName.DECODE);
+            decode = getCOSObject().getCOSArray(COSName.DECODE);
         }
         return decode;
     }
@@ -191,6 +195,10 @@ abstract class PDTriangleBasedShadingType extends PDShading
         PDRange rangeX, PDRange rangeY, PDRange[] colRangeTab,
         Matrix matrix, AffineTransform xform) throws IOException
     {
+        if (bitsPerCoordinate <= 0 || numberOfColorComponents <= 0 || bitsPerColorComponent <= 0)
+        {
+            throw new IOException("nothing to read, check bitsPerCoordinate, numberOfColorComponents and bitsPerColorComponent");
+        }
         float[] colorComponentTab = new float[numberOfColorComponents];
         long x = input.readBits(bitsPerCoordinate);
         long y = input.readBits(bitsPerCoordinate);
