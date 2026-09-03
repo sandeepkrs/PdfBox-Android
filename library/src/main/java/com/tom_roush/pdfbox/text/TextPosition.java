@@ -25,7 +25,6 @@ import java.util.Map;
 
 import com.tom_roush.pdfbox.pdmodel.font.PDFont;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * This represents a string and a position on the screen of those characters.
  *
@@ -33,6 +32,7 @@ import com.tom_roush.pdfbox.util.Matrix;
  */
 public final class TextPosition
 {
+
     private static final Map<Integer, String> DIACRITICS = createDiacritics();
 
     // text matrix for the start of the text object, coordinates are in display units
@@ -81,9 +81,9 @@ public final class TextPosition
      * @param fontSizeInPt The font size in pt units (see {@link #getFontSizeInPt()} for details).
      */
     public TextPosition(int pageRotation, float pageWidth, float pageHeight, Matrix textMatrix,
-        float endX, float endY, float maxHeight, float individualWidth,
-        float spaceWidth, String unicode, int[] charCodes, PDFont font,
-        float fontSize, int fontSizeInPt)
+                        float endX, float endY, float maxHeight, float individualWidth,
+                        float spaceWidth, String unicode, int[] charCodes, PDFont font,
+                        float fontSize, int fontSizeInPt)
     {
         this.textMatrix = textMatrix;
 
@@ -167,6 +167,42 @@ public final class TextPosition
     public String getUnicode()
     {
         return unicode;
+    }
+
+    void setUnicode(String unicode)
+    {
+        this.unicode = unicode;
+    }
+
+    /**
+     * Same as {@link #getUnicode()} except that returned text is ensured to be
+     * visually ordered (i.e. same order you would see them displayed on screen when
+     * looking from left to right). This is important for Arabic/Hebrew where several
+     * unicode characters can be composed in one glyph with logical order (the order
+     * in which it would be normally typed from right to left).
+     *
+     * @return The string on the screen in visual order.
+     */
+    public String getVisuallyOrderedUnicode()
+    {
+        final String text = getUnicode();
+        final int length = text.length();
+        int nextIndex;
+        for (int index = 0; index < length; index = nextIndex)
+        {
+            int codePoint = text.codePointAt(index);
+            nextIndex = index + Character.charCount(codePoint);
+            byte directionality = Character.getDirectionality(codePoint);
+            if ((directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC ||
+                    directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT)
+                    // Even if the directionality is right to left, still there is no need to
+                    // reverse a single code-point
+                    && (index != 0 || nextIndex < length))
+            {
+                return new StringBuilder(text).reverse().toString();
+            }
+        }
+        return text;
     }
 
     /**
@@ -547,7 +583,7 @@ public final class TextPosition
         double thisYstart = getYDirAdj();
         double tp2Ystart = tp2.getYDirAdj();
         if (tp2Ystart + tp2.getHeightDir() < thisYstart ||
-            tp2Ystart > thisYstart + getHeightDir())
+                tp2Ystart > thisYstart + getHeightDir())
         {
             return false;
         }
@@ -566,6 +602,55 @@ public final class TextPosition
             double overlapPercent = overlap/thisWidth;
             return overlapPercent > .15;
         }
+        return true;
+    }
+
+    /**
+     * Determine if this TextPosition perfectly contains another (i.e. the other TextPosition
+     * overlaps 100% with this one and fits entirely inside its bounding box when they are rendered
+     * on top of each other).
+     *
+     * @param tp2 The other TestPosition to compare against
+     * @return True if tp2 is contained completely inside the bounding box of this text.
+     */
+    public boolean completelyContains(TextPosition tp2)
+    {
+        //  Note: (0, 0) is in the upper left and y-coordinate is top of TextPosition
+        //      +---thisTop------------+
+        //      |    +--tp2Top---+     |
+        //      |    |           |     |
+        //  thisLeft |       tp2Right  |
+        //      | tp2Left        | thisRight
+        //      |    |           |     |
+        //      |    +-tp2Bottom-+     |
+        //      +---------thisBottom---+
+
+        float thisLeft = getXDirAdj();
+        float thisWidth = getWidthDirAdj();
+        float thisRight = thisLeft + thisWidth;
+
+        float tp2Left = tp2.getXDirAdj();
+        float tp2Width = tp2.getWidthDirAdj();
+        float tp2Right = tp2Left + tp2Width;
+
+        if (thisLeft > tp2Left || tp2Right > thisRight)
+        {
+            return false;
+        }
+
+        float thisTop = getYDirAdj();
+        float thisHeight = getHeightDir();
+        float thisBottom = thisTop + thisHeight;
+
+        float tp2Top = tp2.getYDirAdj();
+        float tp2Height = tp2.getHeightDir();
+        float tp2Bottom = tp2Top + tp2Height;
+
+        if (thisTop > tp2Top || tp2Bottom > thisBottom)
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -597,14 +682,14 @@ public final class TextPosition
             if (i >= widths.length)
             {
                 Log.i("PdfBox-Android", "diacritic " + diacritic.getUnicode() + " on ligature " + unicode +
-                    " is not supported yet and is ignored (PDFBOX-2831)");
+                        " is not supported yet and is ignored (PDFBOX-2831)");
                 break;
             }
             float currCharXEnd = currCharXStart + widths[i];
 
-            // this is the case where there is an overlap of the diacritic character with the
-            // current character and the previous character. If no previous character, just append
-            // the diacritic after the current one
+             // this is the case where there is an overlap of the diacritic character with the
+             // current character and the previous character. If no previous character, just append
+             // the diacritic after the current one
             if (diacXStart < currCharXStart && diacXEnd <= currCharXEnd)
             {
                 if (i == 0)
@@ -671,16 +756,26 @@ public final class TextPosition
         float[] widths2 = new float[widths.length + 1];
         System.arraycopy(widths, 0, widths2, 0, i);
 
+        // First we add a zero-width entry for the diacritic in the widths array
+        widths2[i] = widths[i];
+        widths2[i + 1] = 0;
+        System.arraycopy(widths, i + 1, widths2, i + 2, widths.length - i - 1);
+
         // Unicode combining diacritics always go after the base character, regardless of whether
         // the string is in presentation order or logical order
         sb.append(unicode.charAt(i));
-        widths2[i] = widths[i];
+
+        // If a surrogate starts at the current position, make sure we preserve it
+        if (i < unicode.length() - 1 && Character.isSurrogatePair(unicode.charAt(i), unicode.charAt(i + 1)))
+        {
+            sb.append(unicode.charAt(i + 1));
+            i++;
+        }
+
         sb.append(combineDiacritic(diacritic.getUnicode()));
-        widths2[i + 1] = 0;
 
         // get the rest of the string
         sb.append(unicode.substring(i + 1));
-        System.arraycopy(widths, i + 1, widths2, i + 2, widths.length - i - 1);
 
         unicode = sb.toString();
         widths = widths2;
@@ -721,7 +816,7 @@ public final class TextPosition
         }
         if ("ー".equals(text))
         {
-            // PDFBOX-3833: ー is not a real diacritic like ¨ or ˆ, it just changes the 
+            // PDFBOX-3833: ー is not a real diacritic like ¨ or ˆ, it just changes the
             // pronunciation of the previous sound, and is printed after the previous glyph
             // http://www.japanesewithanime.com/2017/04/prolonged-sound-mark.html
             // Ignoring it as diacritic avoids trouble if it slightly overlaps with the next glyph.
@@ -729,10 +824,10 @@ public final class TextPosition
         }
         int type = Character.getType(text.charAt(0));
         return type == Character.NON_SPACING_MARK ||
-            type == Character.MODIFIER_SYMBOL ||
-            type == Character.MODIFIER_LETTER;
+               type == Character.MODIFIER_SYMBOL ||
+               type == Character.MODIFIER_LETTER;
 
-    }
+  }
 
     /**
      * Show the string data for this text position.
@@ -868,7 +963,7 @@ public final class TextPosition
         }
         return font != null ? font.equals(that.font) : that.font == null;
 
-        // If changing this method, do not compare mutable fields (PDFBOX-4701)        
+        // If changing this method, do not compare mutable fields (PDFBOX-4701)
     }
 
     @Override
