@@ -22,9 +22,8 @@ import java.util.Arrays;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
- * Helper class to contain predictor decoding used by Flate and LZW filter. 
+ * Helper class to contain predictor decoding used by Flate and LZW filter.
  * To see the history, look at the FlateFilter class.
  */
 public final class Predictor
@@ -77,7 +76,7 @@ public final class Predictor
                     {
                         int sub = ((actline[p] & 0xff) << 8) + (actline[p + 1] & 0xff);
                         int left = (((actline[p - bytesPerPixel] & 0xff) << 8)
-                            + (actline[p - bytesPerPixel + 1] & 0xff));
+                                + (actline[p - bytesPerPixel + 1] & 0xff));
                         actline[p] = (byte) (((sub + left) >> 8) & 0xff);
                         actline[p + 1] = (byte) ((sub + left) & 0xff);
                     }
@@ -231,8 +230,9 @@ public final class Predictor
      * @param decodeParams Decode parameters for the stream
      * @return An <code>OutputStream</code> is returned, which will write decoded data
      * into the given stream. If no predictor is specified, the original stream is returned.
+     * @throws IOException
      */
-    static OutputStream wrapPredictor(OutputStream out, COSDictionary decodeParams)
+    static OutputStream wrapPredictor(OutputStream out, COSDictionary decodeParams) throws IOException
     {
         int predictor = decodeParams.getInt(COSName.PREDICTOR);
         if (predictor > 1)
@@ -276,6 +276,7 @@ public final class Predictor
         private boolean predictorRead = false;
 
         PredictorOutputStream(OutputStream out, int predictor, int colors, int bitsPerComponent, int columns)
+                throws IOException
         {
             super(out);
             this.predictor = predictor;
@@ -283,6 +284,10 @@ public final class Predictor
             this.bitsPerComponent = bitsPerComponent;
             this.columns = columns;
             this.rowLength = calculateRowLength(colors, bitsPerComponent, columns);
+            if (rowLength < 0)
+            {
+                throw new IOException("Calculated row length is negative: " + rowLength);
+            }
             this.predictorPerRow = predictor >= 10;
             currentRow = new byte[rowLength];
             lastRow = new byte[rowLength];

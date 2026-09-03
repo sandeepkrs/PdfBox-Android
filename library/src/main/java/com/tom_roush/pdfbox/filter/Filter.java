@@ -21,13 +21,13 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Iterator;
 import java.util.zip.Deflater;
 
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * A filter for stream data.
  *
@@ -36,6 +36,7 @@ import com.tom_roush.pdfbox.cos.COSName;
  */
 public abstract class Filter
 {
+
     /**
      * Compression Level System Property. Set this to a value from 0 to 9 to change the zlib deflate
      * compression level used to compress /Flate streams. The default value is -1 which is
@@ -43,6 +44,16 @@ public abstract class Filter
      * {@code System.setProperty(Filter.SYSPROP_DEFLATELEVEL, "9");}
      */
     public static final String SYSPROP_DEFLATELEVEL = "com.tom_roush.pdfbox.filter.deflatelevel";
+
+    /**
+     * CCITTFax decode buffer size cap System Property. Sets the maximum number of bytes that
+     * CCITTFaxFilter is allowed to pre-allocate for a single image decode buffer. PDF-controlled
+     * /Columns and /Rows values are validated against this limit before allocation to prevent
+     * denial-of-service via crafted image dimensions. The default is 256 MB. To raise the cap for
+     * high-resolution legitimate documents, use
+     * {@code System.setProperty(Filter.SYSPROP_CCITTFAX_MAXBYTES, String.valueOf(512 * 1024 * 1024L));}
+     */
+    public static final String SYSPROP_CCITTFAX_MAXBYTES = "com.tom_roush.pdfbox.filter.ccittmaxbytes";
 
     /**
      * Constructor.
@@ -61,7 +72,7 @@ public abstract class Filter
      * @throws IOException if the stream cannot be decoded
      */
     public abstract DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary parameters,
-        int index) throws IOException;
+                    int index) throws IOException;
 
     /**
      * Decodes data, with optional DecodeOptions. Not all filters support all options, and so
@@ -76,7 +87,7 @@ public abstract class Filter
      * @throws IOException if the stream cannot be decoded
      */
     public DecodeResult decode(InputStream encoded, OutputStream decoded, COSDictionary parameters,
-        int index, DecodeOptions options) throws IOException
+            int index, DecodeOptions options) throws IOException
     {
         return decode(encoded, decoded, parameters, index);
     }
@@ -90,14 +101,14 @@ public abstract class Filter
      * @throws IOException if the stream cannot be encoded
      */
     public final void encode(InputStream input, OutputStream encoded, COSDictionary parameters,
-        int index) throws IOException
+                            int index) throws IOException
     {
         encode(input, encoded, parameters.asUnmodifiableDictionary());
     }
 
     // implemented in subclasses
     protected abstract void encode(InputStream input, OutputStream encoded,
-        COSDictionary parameters) throws IOException;
+                                   COSDictionary parameters) throws IOException;
 
     // gets the decode params for a specific filter index, this is used to
     // normalise the DecodeParams entry so that it is always a dictionary
@@ -107,8 +118,8 @@ public abstract class Filter
         COSBase obj = dictionary.getDictionaryObject(COSName.DP, COSName.DECODE_PARMS);
         if (filter instanceof COSName && obj instanceof COSDictionary)
         {
-            // PDFBOX-3932: The PDF specification requires "If there is only one filter and that 
-            // filter has parameters, DecodeParms shall be set to the filter’s parameter dictionary" 
+            // PDFBOX-3932: The PDF specification requires "If there is only one filter and that
+            // filter has parameters, DecodeParms shall be set to the filter’s parameter dictionary"
             // but tests show that Adobe means "one filter name object".
             return (COSDictionary)obj;
         }
@@ -127,12 +138,61 @@ public abstract class Filter
         else if (obj != null && !(filter instanceof COSArray || obj instanceof COSArray))
         {
             Log.e("PdfBox-Android", "Expected DecodeParams to be an Array or Dictionary but found " +
-                obj.getClass().getName());
+                      obj.getClass().getName());
         }
         return new COSDictionary();
     }
 
-//    protected static ImageReader findImageReader(String formatName, String errorCause) throws MissingImageReaderException TODO: PdfBox-Android
+// TODO: PdfBox-Android: javax.imageio not available
+//     /**
+//      * Finds a suitable image reader for a format.
+//      *
+//      * @param formatName The format to search for.
+//      * @param errorCause The probably cause if something goes wrong.
+//      * @return The image reader for the format.
+//      * @throws MissingImageReaderException if no image reader is found.
+//      */
+//     protected static ImageReader findImageReader(String formatName, String errorCause) throws MissingImageReaderException
+//     {
+//         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);
+//         ImageReader reader;
+//         while (readers.hasNext())
+//         {
+//             reader = readers.next();
+//             if (reader != null)
+//             {
+//                 return reader;
+//             }
+//         }
+//         throw new MissingImageReaderException("Cannot read " + formatName + " image: " + errorCause);
+//     }
+//
+//     /**
+//      * Finds a suitable image reader for an image format.
+//      *
+//      * @param formatName The image format to search for.
+//      * @param errorCause The probably cause if something goes wrong.
+//      * @return The image reader for the format.
+//      * @throws MissingImageReaderException if no image reader is found.
+//      */
+//     public static ImageReader findRasterReader(String formatName, String errorCause)
+//             throws MissingImageReaderException
+//     {
+//         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);
+//         while (readers.hasNext())
+//         {
+//             ImageReader reader = readers.next();
+//             if (reader != null)
+//             {
+//                 if (reader.canReadRaster())
+//                 {
+//                     return reader;
+//                 }
+//                 reader.dispose();
+//             }
+//         }
+//         throw new MissingImageReaderException("Cannot read " + formatName + " image: " + errorCause);
+//     }
 
     /**
      * @return the ZIP compression level configured for PDFBox
