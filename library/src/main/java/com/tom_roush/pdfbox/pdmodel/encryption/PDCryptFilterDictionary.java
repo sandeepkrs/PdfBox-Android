@@ -22,7 +22,6 @@ import com.tom_roush.pdfbox.cos.COSBoolean;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This class is a specialized view of the crypt filter dictionary of a PDF document.
  * It contains a low level dictionary (COSDictionary) and provides the methods to
@@ -98,8 +97,8 @@ public class PDCryptFilterDictionary implements COSObjectable
         return cryptFilterDictionary.getInt( COSName.LENGTH, 40 );
     }
 
-    /**
-     * This will set the crypt filter method. 
+     /**
+     * This will set the crypt filter method.
      * Allowed values are: NONE, V2, AESV2, AESV3
      *
      * @param cfm name of the crypt filter method.
@@ -111,14 +110,14 @@ public class PDCryptFilterDictionary implements COSObjectable
     }
 
     /**
-     * This will return the crypt filter method. 
+     * This will return the crypt filter method.
      * Allowed values are: NONE, V2, AESV2, AESV3
      *
      * @return the name of the crypt filter method.
      */
     public COSName getCryptFilterMethod()
     {
-        return (COSName)cryptFilterDictionary.getDictionaryObject( COSName.CFM );
+        return cryptFilterDictionary.getCOSName(COSName.CFM);
     }
 
     /**

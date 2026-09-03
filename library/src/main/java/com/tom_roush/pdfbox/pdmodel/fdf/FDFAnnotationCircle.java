@@ -23,9 +23,7 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
-
 import org.w3c.dom.Element;
-
 /**
  * This represents a Circle FDF annotation.
  *
@@ -84,16 +82,8 @@ public class FDFAnnotationCircle extends FDFAnnotation
         String fringe = element.getAttribute("fringe");
         if (fringe != null && !fringe.isEmpty())
         {
-            String[] fringeValues = fringe.split(",");
-            if (fringeValues.length != 4)
-            {
-                throw new IOException("Error: wrong amount of numbers in attribute 'fringe'");
-            }
-            PDRectangle rect = new PDRectangle();
-            rect.setLowerLeftX(Float.parseFloat(fringeValues[0]));
-            rect.setLowerLeftY(Float.parseFloat(fringeValues[1]));
-            rect.setUpperRightX(Float.parseFloat(fringeValues[2]));
-            rect.setUpperRightY(Float.parseFloat(fringeValues[3]));
+            PDRectangle rect = createRectangleFromAttributes(
+                    fringe, "Error: wrong amount of numbers in attribute 'fringe'");
             setFringe(rect);
         }
     }
@@ -122,17 +112,7 @@ public class FDFAnnotationCircle extends FDFAnnotation
      */
     public AWTColor getInteriorColor()
     {
-        AWTColor retval = null;
-        COSArray array = (COSArray) annot.getDictionaryObject(COSName.IC);
-        if (array != null)
-        {
-            float[] rgb = array.toFloatArray();
-            if (rgb.length >= 3)
-            {
-                retval = new AWTColor(rgb[0], rgb[1], rgb[2]);
-            }
-        }
-        return retval;
+        return getColor(COSName.IC);
     }
 
     /**

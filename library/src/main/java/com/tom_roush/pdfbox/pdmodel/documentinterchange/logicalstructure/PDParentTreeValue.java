@@ -20,10 +20,12 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
- * Described in the PDF specification in the ParentTree segment of the table "Entries in the
- * structure tree root". This is either a dictionary or an array.
+ * This is described in the PDF specification in the <b>ParentTree</b> segment of the table "Entries
+ * in the structure tree root". This is either a dictionary or an array. It's a dictionary for
+ * individual objects like an annotation or an XObject, and an array for a page object or a content
+ * stream containing marked-content sequences identified by an MCID. The index in the array is
+ * identical to the MCID. You can pass null if the MCIDs are not continous.
  *
  * @author Tilman Hausherr
  */

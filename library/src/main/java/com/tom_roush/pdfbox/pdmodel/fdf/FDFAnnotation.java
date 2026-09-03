@@ -39,14 +39,12 @@ import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderEffectDictionary;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
 import com.tom_roush.pdfbox.util.DateConverter;
-
 import org.w3c.dom.CDATASection;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
-
 /**
  * This represents an FDF annotation that is part of the FDF document.
  *
@@ -56,6 +54,7 @@ import org.w3c.dom.Text;
  * */
 public abstract class FDFAnnotation implements COSObjectable
 {
+
     /**
      * An annotation flag.
      */
@@ -200,16 +199,8 @@ public abstract class FDFAnnotation implements COSObjectable
         {
             throw new IOException("Error: missing attribute 'rect'");
         }
-        String[] rectValues = rect.split(",");
-        if (rectValues.length != 4)
-        {
-            throw new IOException("Error: wrong amount of numbers in attribute 'rect'");
-        }
-        float[] values = new float[4];
-        for (int i = 0; i < 4; i++)
-        {
-            values[i] = Float.parseFloat(rectValues[i]);
-        }
+        float[] values = parseRectangleAttributes(
+                rect, "Error: wrong amount of numbers in attribute 'rect'");
         COSArray array = new COSArray();
         array.setFloatArray(values);
         setRectangle(new PDRectangle(array));
@@ -233,7 +224,10 @@ public abstract class FDFAnnotation implements COSObjectable
             // not conforming to spec, but qoppa produces it and Adobe accepts it
             intent = element.getAttribute("IT");
         }
-        setIntent(intent);
+        if (!intent.isEmpty())
+        {
+            setIntent(intent);
+        }
 
         XPath xpath = XPathFactory.newInstance().newXPath();
         try
@@ -248,7 +242,7 @@ public abstract class FDFAnnotation implements COSObjectable
         try
         {
             Node richContents = (Node) xpath.evaluate("contents-richtext[1]", element,
-                XPathConstants.NODE);
+                    XPathConstants.NODE);
             if (richContents != null)
             {
                 setRichContents(richContentsToString(richContents, true));
@@ -273,36 +267,36 @@ public abstract class FDFAnnotation implements COSObjectable
             {
                 if (style.equals("dash"))
                 {
-                    borderStyle.setStyle("D");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_DASHED);
                 }
                 else if (style.equals("bevelled"))
                 {
-                    borderStyle.setStyle("B");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_BEVELED);
                 }
                 else if (style.equals("inset"))
                 {
-                    borderStyle.setStyle("I");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_INSET);
                 }
                 else if (style.equals("underline"))
                 {
-                    borderStyle.setStyle("U");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_UNDERLINE);
                 }
                 else if (style.equals("cloudy"))
                 {
-                    borderStyle.setStyle("S");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_SOLID);
                     PDBorderEffectDictionary borderEffect = new PDBorderEffectDictionary();
-                    borderEffect.setStyle("C");
+                    borderEffect.setStyle(PDBorderEffectDictionary.STYLE_CLOUDY);
                     String intensity = element.getAttribute("intensity");
                     if (intensity != null && !intensity.isEmpty())
                     {
                         borderEffect.setIntensity(Float.parseFloat(element
-                            .getAttribute("intensity")));
+                                .getAttribute("intensity")));
                     }
                     setBorderEffect(borderEffect);
                 }
                 else
                 {
-                    borderStyle.setStyle("S");
+                    borderStyle.setStyle(PDBorderStyleDictionary.STYLE_SOLID);
                 }
             }
             String dashes = element.getAttribute("dashes");
@@ -316,8 +310,49 @@ public abstract class FDFAnnotation implements COSObjectable
                 }
                 borderStyle.setDashStyle(dashPattern);
             }
-            setBorderStyle(borderStyle);
         }
+        setBorderStyle(borderStyle);
+    }
+
+    final float[] parseRectangleAttributes(String rect, String errorMessage) throws IOException
+    {
+        String[] rectValues = rect.split(",");
+        if (rectValues.length != 4)
+        {
+            throw new IOException(errorMessage);
+        }
+        float[] values = new float[4];
+        values[0] = Float.parseFloat(rectValues[0]);
+        values[1] = Float.parseFloat(rectValues[1]);
+        values[2] = Float.parseFloat(rectValues[2]);
+        values[3] = Float.parseFloat(rectValues[3]);
+        return values;
+    }
+
+    final float[] parseFloats(String[] srcValues)
+    {
+        float[] values = new float[srcValues.length];
+        for (int i = 0; i < srcValues.length; i++)
+        {
+            values[i] = Float.parseFloat(srcValues[i]);
+        }
+        return values;
+    }
+
+    final PDRectangle createRectangleFromAttributes(String rect, String errorMessage) throws IOException
+    {
+        String[] rectValues = rect.split(",");
+        if (rectValues.length != 4)
+        {
+            throw new IOException(errorMessage);
+        }
+        PDRectangle rectangle = new PDRectangle();
+        rectangle.setLowerLeftX(Float.parseFloat(rectValues[0]));
+        rectangle.setLowerLeftY(Float.parseFloat(rectValues[1]));
+        rectangle.setUpperRightX(Float.parseFloat(rectValues[2]));
+        rectangle.setUpperRightY(Float.parseFloat(rectValues[3]));
+
+        return rectangle;
     }
 
     /**
@@ -406,7 +441,7 @@ public abstract class FDFAnnotation implements COSObjectable
             else
             {
                 Log.w("PdfBox-Android", "Unknown or unsupported annotation type '"
-                    + fdfDicName + "'");
+                        + fdfDicName + "'");
             }
         }
         return retval;
@@ -456,8 +491,13 @@ public abstract class FDFAnnotation implements COSObjectable
      */
     public AWTColor getColor()
     {
+        return getColor(COSName.C);
+    }
+
+    final AWTColor getColor(COSName colorName)
+    {
         AWTColor retval = null;
-        COSArray array = (COSArray) annot.getDictionaryObject(COSName.C);
+        COSArray array = annot.getCOSArray(colorName);
         if (array != null)
         {
             float[] rgb = array.toFloatArray();
@@ -998,16 +1038,16 @@ public abstract class FDFAnnotation implements COSObjectable
             }
             else if (child instanceof CDATASection)
             {
-                sb.append("<![CDATA[").append(((CDATASection) child).getData()).append("]]>");
+            	sb.append("<![CDATA[").append(((CDATASection) child).getData()).append("]]>");
             }
             else if (child instanceof Text)
             {
-                String cdata = ((Text) child).getData();
-                if (cdata!=null)
-                {
-                    cdata = cdata.replace("&", "&amp;").replace("<", "&lt;");
-                }
-                sb.append(cdata);
+            	String cdata = ((Text) child).getData();
+            	if (cdata!=null)
+            	{
+            		cdata = cdata.replace("&", "&amp;").replace("<", "&lt;");
+            	}
+            	sb.append(cdata);
             }
         }
         if (root)
@@ -1023,12 +1063,12 @@ public abstract class FDFAnnotation implements COSObjectable
             String attributeNodeValue = attribute.getNodeValue();
             if (attributeNodeValue!=null)
             {
-                attributeNodeValue = attributeNodeValue.replace("\"", "&quot;");
+            	attributeNodeValue = attributeNodeValue.replace("\"", "&quot;");
             }
             builder.append(String.format(" %s=\"%s\"", attribute.getNodeName(),
-                attributeNodeValue));
+                    attributeNodeValue));
         }
         return String.format("<%s%s>%s</%s>", node.getNodeName(), builder.toString(),
-            sb.toString(), node.getNodeName());
+                sb.toString(), node.getNodeName());
     }
 }

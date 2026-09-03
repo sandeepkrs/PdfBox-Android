@@ -21,7 +21,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
-
 /**
  * An artifact marked content.
  *
@@ -55,8 +54,7 @@ public class PDArtifactMarkedContent extends PDMarkedContent
     public PDRectangle getBBox()
     {
         PDRectangle retval = null;
-        COSArray a = (COSArray) this.getProperties().getDictionaryObject(
-            COSName.BBOX);
+        COSArray a = this.getProperties().getCOSArray(COSName.BBOX);
         if (a != null)
         {
             retval = new PDRectangle(a);
@@ -128,8 +126,7 @@ public class PDArtifactMarkedContent extends PDMarkedContent
      */
     private boolean isAttached(String edge)
     {
-        COSArray a = (COSArray) this.getProperties().getDictionaryObject(
-            COSName.ATTACHED);
+        COSArray a = this.getProperties().getCOSArray(COSName.ATTACHED);
         if (a != null)
         {
             for (int i = 0; i < a.size(); i++)

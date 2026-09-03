@@ -21,7 +21,6 @@ import android.util.Log;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -33,13 +32,12 @@ import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.io.IOUtils;
+import com.tom_roush.pdfbox.util.Charsets;
 import com.tom_roush.pdfbox.util.Hex;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 /**
  * This represents a Stamp FDF annotation.
  *
@@ -48,6 +46,7 @@ import org.w3c.dom.NodeList;
  */
 public class FDFAnnotationStamp extends FDFAnnotation
 {
+
     /**
      * COS Model value for SubType entry.
      */
@@ -113,10 +112,10 @@ public class FDFAnnotationStamp extends FDFAnnotation
         }
         if (base64EncodedAppearance != null && !base64EncodedAppearance.isEmpty())
         {
-            Log.d("PdfBox-Android", "Decoded XML: " + new String(decodedAppearanceXML));
+            Log.d("PdfBox-Android", "Decoded XML: " + new String(decodedAppearanceXML, Charsets.UTF_8));
 
             Document stampAppearance = com.tom_roush.pdfbox.util.XMLUtil
-                .parse(new ByteArrayInputStream(decodedAppearanceXML));
+                    .parse(new ByteArrayInputStream(decodedAppearanceXML));
 
             Element appearanceEl = stampAppearance.getDocumentElement();
 
@@ -124,7 +123,7 @@ public class FDFAnnotationStamp extends FDFAnnotation
             if (!"dict".equalsIgnoreCase(appearanceEl.getNodeName()))
             {
                 throw new IOException("Error while reading stamp document, "
-                    + "root should be 'dict' and not '" + appearanceEl.getNodeName() + "'");
+                        + "root should be 'dict' and not '" + appearanceEl.getNodeName() + "'");
             }
             Log.d("PdfBox-Android", "Generate and set the appearance dictionary to the stamp annotation");
             annot.setItem(COSName.AP, parseStampAnnotationAppearanceXML(appearanceEl));
@@ -146,14 +145,14 @@ public class FDFAnnotationStamp extends FDFAnnotation
         NodeList nodeList = appearanceXML.getChildNodes();
         String parentAttrKey = appearanceXML.getAttribute("KEY");
         Log.d("PdfBox-Android", "Appearance Root - tag: " + appearanceXML.getTagName() + ", name: " +
-            appearanceXML.getNodeName() + ", key: " + parentAttrKey + ", children: " +
-            nodeList.getLength());
+                appearanceXML.getNodeName() + ", key: " + parentAttrKey + ", children: " +
+                nodeList.getLength());
 
         // Currently only handles Appearance dictionary (AP key on the root)
         if (!"AP".equals(appearanceXML.getAttribute("KEY")))
         {
             Log.w("PdfBox-Android", parentAttrKey + " => Not handling element: " + appearanceXML.getTagName() +
-                " with key: " + appearanceXML.getAttribute("KEY"));
+                                     " with key: " + appearanceXML.getAttribute("KEY"));
             return dictionary;
         }
         for (int i = 0; i < nodeList.getLength(); i++)
@@ -165,9 +164,9 @@ public class FDFAnnotationStamp extends FDFAnnotation
                 if ("STREAM".equalsIgnoreCase(child.getTagName()))
                 {
                     Log.d("PdfBox-Android", parentAttrKey +
-                        " => Process " + child.getAttribute("KEY") +
-                        " item in the dictionary after processing the " +
-                        child.getTagName());
+                            " => Process " + child.getAttribute("KEY") +
+                            " item in the dictionary after processing the " +
+                            child.getTagName());
                     dictionary.setItem(child.getAttribute("KEY"), parseStreamElement(child));
                     Log.d("PdfBox-Android", parentAttrKey + " => Set " + child.getAttribute("KEY"));
                 }
@@ -197,7 +196,7 @@ public class FDFAnnotationStamp extends FDFAnnotation
                 String childAttrKey = child.getAttribute("KEY");
                 String childAttrVal = child.getAttribute("VAL");
                 Log.d("PdfBox-Android", parentAttrKey + " => reading child: " + child.getTagName() +
-                    " with key: " + childAttrKey);
+                           " with key: " + childAttrKey);
                 if ("INT".equalsIgnoreCase(child.getTagName()))
                 {
                     if (!"Length".equals(childAttrKey))
@@ -239,7 +238,7 @@ public class FDFAnnotationStamp extends FDFAnnotation
                 else if ("DATA".equalsIgnoreCase(child.getTagName()))
                 {
                     Log.d("PdfBox-Android", parentAttrKey + " => Handling DATA with encoding: " +
-                        child.getAttribute("ENCODING"));
+                              child.getAttribute("ENCODING"));
                     if ("HEX".equals(child.getAttribute("ENCODING")))
                     {
                         OutputStream os = null;
@@ -260,8 +259,16 @@ public class FDFAnnotationStamp extends FDFAnnotation
                         try
                         {
                             os = stream.createOutputStream();
-                            // not sure about charset
-                            os.write(child.getTextContent().getBytes());
+                            String encoding = child.getOwnerDocument().getXmlEncoding();
+                            if (encoding == null)
+                            {
+                                encoding = child.getOwnerDocument().getInputEncoding();
+                            }
+                            if (encoding == null)
+                            {
+                                encoding = "UTF-8";
+                            }
+                            os.write(child.getTextContent().getBytes(encoding));
                             Log.d("PdfBox-Android", parentAttrKey + " => Data was streamed");
                         }
                         finally
@@ -272,7 +279,7 @@ public class FDFAnnotationStamp extends FDFAnnotation
                     else
                     {
                         Log.w("PdfBox-Android", parentAttrKey + " => Not handling element DATA encoding: " +
-                            child.getAttribute("ENCODING"));
+                                 child.getAttribute("ENCODING"));
                     }
                 }
                 else
@@ -296,12 +303,12 @@ public class FDFAnnotationStamp extends FDFAnnotation
         if ("BBox".equals(parentAttrKey) && nodeList.getLength() < 4)
         {
             throw new IOException("BBox does not have enough coordinates, only has: " +
-                nodeList.getLength());
+                    nodeList.getLength());
         }
         else if ("Matrix".equals(parentAttrKey) && nodeList.getLength() < 6)
         {
             throw new IOException("Matrix does not have enough coordinates, only has: " +
-                nodeList.getLength());
+                    nodeList.getLength());
         }
 
         for (int i = 0; i < nodeList.getLength(); i++)
@@ -313,7 +320,7 @@ public class FDFAnnotationStamp extends FDFAnnotation
                 String childAttrKey = child.getAttribute("KEY");
                 String childAttrVal = child.getAttribute("VAL");
                 Log.d("PdfBox-Android", parentAttrKey + " => reading child: " + child.getTagName() +
-                    " with key: " + childAttrKey);
+                           " with key: " + childAttrKey);
                 if ("INT".equalsIgnoreCase(child.getTagName()) || "FIXED".equalsIgnoreCase(child.getTagName()))
                 {
                     Log.d("PdfBox-Android", parentAttrKey + " value(" + i + "): " + childAttrVal);

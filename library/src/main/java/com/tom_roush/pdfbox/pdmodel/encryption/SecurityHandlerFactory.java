@@ -21,7 +21,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
-
 /**
  * Manages security handlers for the application.
  * It follows the singleton pattern.
@@ -37,22 +36,22 @@ public final class SecurityHandlerFactory
     public static final SecurityHandlerFactory INSTANCE = new SecurityHandlerFactory();
 
     private final Map<String, Class<? extends SecurityHandler>> nameToHandler =
-        new HashMap<String, Class<? extends SecurityHandler>>();
+            new HashMap<String, Class<? extends SecurityHandler>>();
 
     private final Map<Class<? extends ProtectionPolicy>,
-        Class<? extends SecurityHandler>> policyToHandler =
-        new HashMap<Class<? extends ProtectionPolicy>,
-            Class<? extends SecurityHandler>>();
+                      Class<? extends SecurityHandler>> policyToHandler =
+            new HashMap<Class<? extends ProtectionPolicy>,
+                        Class<? extends SecurityHandler>>();
 
     private SecurityHandlerFactory()
     {
         registerHandler(StandardSecurityHandler.FILTER,
-            StandardSecurityHandler.class,
-            StandardProtectionPolicy.class);
+                        StandardSecurityHandler.class,
+                        StandardProtectionPolicy.class);
 
         registerHandler(PublicKeySecurityHandler.FILTER,
-            PublicKeySecurityHandler.class,
-            PublicKeyProtectionPolicy.class);
+                        PublicKeySecurityHandler.class,
+                        PublicKeyProtectionPolicy.class);
     }
 
     /**
@@ -67,8 +66,8 @@ public final class SecurityHandlerFactory
      * @param protectionPolicy protection policy class to register
      */
     public void registerHandler(String name,
-        Class<? extends SecurityHandler> securityHandler,
-        Class<? extends ProtectionPolicy> protectionPolicy)
+                                Class<? extends SecurityHandler> securityHandler,
+                                Class<? extends ProtectionPolicy> protectionPolicy)
     {
         if (nameToHandler.containsKey(name))
         {
@@ -123,12 +122,12 @@ public final class SecurityHandlerFactory
      * @return a new SecurityHandler instance, or null if none is available.
      */
     private SecurityHandler newSecurityHandler(Class<? extends SecurityHandler> handlerClass,
-        Class<?>[] argsClasses, Object[] args)
+            Class<?>[] argsClasses, Object[] args)
     {
         try
         {
             Constructor<? extends SecurityHandler> ctor =
-                handlerClass.getDeclaredConstructor(argsClasses);
+                    handlerClass.getDeclaredConstructor(argsClasses);
             return ctor.newInstance(args);
         }
         catch(NoSuchMethodException e)

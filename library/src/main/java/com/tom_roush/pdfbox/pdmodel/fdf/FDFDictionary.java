@@ -32,11 +32,9 @@ import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDSimpleFileSpecification;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 /**
  * This represents an FDF dictionary that is part of the FDF document.
  *
@@ -44,6 +42,7 @@ import org.w3c.dom.NodeList;
  */
 public class FDFDictionary implements COSObjectable
 {
+
 
     private COSDictionary fdf;
 
@@ -98,7 +97,7 @@ public class FDFDictionary implements COSObjectable
                     catch (IOException e)
                     {
                         Log.w("PdfBox-Android", "Error parsing ID entry for attribute 'original' [" + original
-                            + "]. ID entry ignored.", e);
+                                + "]. ID entry ignored.", e);
                     }
                     try
                     {
@@ -107,7 +106,7 @@ public class FDFDictionary implements COSObjectable
                     catch (IOException e)
                     {
                         Log.w("PdfBox-Android", "Error parsing ID entry for attribute 'modified' [" + modified
-                            + "]. ID entry ignored.", e);
+                                + "]. ID entry ignored.", e);
                     }
                     setID(ids);
                 }
@@ -119,16 +118,16 @@ public class FDFDictionary implements COSObjectable
                     {
                         Node currentNode = fields.item(f);
                         if (currentNode instanceof Element
-                            && ((Element) currentNode).getTagName().equals("field"))
+                                && ((Element) currentNode).getTagName().equals("field"))
                         {
                             try
                             {
-                                fieldList.add(new FDFField((Element) fields.item(f)));
+                                fieldList.add(new FDFField((Element) currentNode));
                             }
                             catch (IOException e)
                             {
                                 Log.w("PdfBox-Android", "Error parsing field entry [" + currentNode.getNodeValue()
-                                    + "]. Field ignored.", e);
+                                        + "]. Field ignored.", e);
                             }
                         }
                     }
@@ -220,14 +219,14 @@ public class FDFDictionary implements COSObjectable
                                 else
                                 {
                                     Log.w("PdfBox-Android", "Unknown or unsupported annotation type '"
-                                        + annotationName + "'");
+                                            + annotationName + "'");
                                 }
                             }
                             catch (IOException e)
                             {
-                                Log.w("PdfBox-Android", 
-                                    "Error parsing annotation information ["
-                                        + annot.getNodeValue() + "]. Annotation ignored", e);
+                                Log.w("PdfBox-Android",
+                                        "Error parsing annotation information ["
+                                                + annot.getNodeValue() + "]. Annotation ignored", e);
                             }
                         }
                     }
@@ -333,10 +332,10 @@ public class FDFDictionary implements COSObjectable
     public List<FDFField> getFields()
     {
         List<FDFField> retval = null;
-        COSArray fieldArray = (COSArray) fdf.getDictionaryObject(COSName.FIELDS);
+        COSArray fieldArray = fdf.getCOSArray(COSName.FIELDS);
         if (fieldArray != null)
         {
-            List<FDFField> fields = new ArrayList<FDFField>();
+            List<FDFField> fields = new ArrayList<FDFField>(fieldArray.size());
             for (int i = 0; i < fieldArray.size(); i++)
             {
                 fields.add(new FDFField((COSDictionary) fieldArray.getObject(i)));
@@ -384,10 +383,10 @@ public class FDFDictionary implements COSObjectable
     public List<FDFPage> getPages()
     {
         List<FDFPage> retval = null;
-        COSArray pageArray = (COSArray) fdf.getDictionaryObject(COSName.PAGES);
+        COSArray pageArray = fdf.getCOSArray(COSName.PAGES);
         if (pageArray != null)
         {
-            List<FDFPage> pages = new ArrayList<FDFPage>();
+            List<FDFPage> pages = new ArrayList<FDFPage>(pageArray.size());
             for (int i = 0; i < pageArray.size(); i++)
             {
                 pages.add(new FDFPage((COSDictionary) pageArray.get(i)));
@@ -445,10 +444,10 @@ public class FDFDictionary implements COSObjectable
     public List<FDFAnnotation> getAnnotations() throws IOException
     {
         List<FDFAnnotation> retval = null;
-        COSArray annotArray = (COSArray) fdf.getDictionaryObject(COSName.ANNOTS);
+        COSArray annotArray = fdf.getCOSArray(COSName.ANNOTS);
         if (annotArray != null)
         {
-            List<FDFAnnotation> annots = new ArrayList<FDFAnnotation>();
+            List<FDFAnnotation> annots = new ArrayList<FDFAnnotation>(annotArray.size());
             for (int i = 0; i < annotArray.size(); i++)
             {
                 annots.add(FDFAnnotation.create((COSDictionary) annotArray.getObject(i)));
@@ -520,10 +519,10 @@ public class FDFDictionary implements COSObjectable
     public List<PDFileSpecification> getEmbeddedFDFs() throws IOException
     {
         List<PDFileSpecification> retval = null;
-        COSArray embeddedArray = (COSArray) fdf.getDictionaryObject(COSName.EMBEDDED_FDFS);
+        COSArray embeddedArray = fdf.getCOSArray(COSName.EMBEDDED_FDFS);
         if (embeddedArray != null)
         {
-            List<PDFileSpecification> embedded = new ArrayList<PDFileSpecification>();
+            List<PDFileSpecification> embedded = new ArrayList<PDFileSpecification>(embeddedArray.size());
             for (int i = 0; i < embeddedArray.size(); i++)
             {
                 embedded.add(PDFileSpecification.createFS(embeddedArray.get(i)));

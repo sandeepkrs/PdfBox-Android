@@ -33,7 +33,6 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Iterator;
-
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -70,7 +69,6 @@ import org.bouncycastle.cms.RecipientId;
 import org.bouncycastle.cms.RecipientInformation;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.util.Arrays;
-
 /**
  * This class implements the public key security handler described in the PDF specification.
  *
@@ -119,14 +117,14 @@ public final class PublicKeySecurityHandler extends SecurityHandler
      */
     @Override
     public void prepareForDecryption(PDEncryption encryption, COSArray documentIDArray,
-        DecryptionMaterial decryptionMaterial)
-        throws IOException
+            DecryptionMaterial decryptionMaterial)
+            throws IOException
     {
         if (!(decryptionMaterial instanceof PublicKeyDecryptionMaterial))
         {
             throw new IOException(
-                "Provided decryption material is not compatible with the document - "
-                    + "did you pass a null keyStore?");
+                    "Provided decryption material is not compatible with the document - "
+                            + "did you pass a null keyStore?");
         }
 
         PDCryptFilterDictionary defaultCryptFilterDictionary = encryption.getDefaultCryptFilterDictionary();
@@ -135,10 +133,14 @@ public final class PublicKeySecurityHandler extends SecurityHandler
             setKeyLength(defaultCryptFilterDictionary.getLength());
             setDecryptMetadata(defaultCryptFilterDictionary.isEncryptMetaData());
         }
-        else if (encryption.getLength() != 0)
+        else
         {
-            setKeyLength(encryption.getLength());
-            setDecryptMetadata(encryption.isEncryptMetaData());
+            int encryptionLength = encryption.getLength();
+            if (encryptionLength != 0)
+            {
+                setKeyLength(encryptionLength);
+                setDecryptMetadata(encryption.isEncryptMetaData());
+            }
         }
 
         PublicKeyDecryptionMaterial material = (PublicKeyDecryptionMaterial) decryptionMaterial;
@@ -179,7 +181,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
                 byte[] recipientBytes = recipientFieldString.getBytes();
                 CMSEnvelopedData data = new CMSEnvelopedData(recipientBytes);
                 Collection<RecipientInformation> recipCertificatesIt = data.getRecipientInfos()
-                    .getRecipients();
+                        .getRecipients();
                 int j = 0;
                 for (RecipientInformation ri : recipCertificatesIt)
                 {
@@ -213,7 +215,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
             if (!foundRecipient || envelopedData == null)
             {
                 throw new IOException("The certificate matches none of " + array.size()
-                    + " recipient entries" + extraInfo.toString());
+                        + " recipient entries" + extraInfo.toString());
             }
             if (envelopedData.length != 24)
             {
@@ -241,12 +243,13 @@ public final class PublicKeySecurityHandler extends SecurityHandler
             for (byte[] recipientFieldsByte : recipientFieldsBytes)
             {
                 System.arraycopy(recipientFieldsByte, 0, sha1Input, sha1InputOffset,
-                    recipientFieldsByte.length);
+                        recipientFieldsByte.length);
                 sha1InputOffset += recipientFieldsByte.length;
             }
 
             byte[] mdResult;
-            if (encryption.getVersion() == 4 || encryption.getVersion() == 5)
+            int encryptionVersion = encryption.getVersion();
+            if (encryptionVersion == 4 || encryptionVersion == 5)
             {
                 if (!isDecryptMetadata())
                 {
@@ -255,7 +258,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
                     sha1Input = Arrays.copyOf(sha1Input, sha1Input.length + 4);
                     System.arraycopy(new byte[]{ (byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff}, 0, sha1Input, sha1Input.length - 4, 4);
                 }
-                if (encryption.getVersion() == 4)
+                if (encryptionVersion == 4)
                 {
                     mdResult = MessageDigests.getSHA1().digest(sha1Input);
                 }
@@ -264,14 +267,14 @@ public final class PublicKeySecurityHandler extends SecurityHandler
                     mdResult = MessageDigests.getSHA256().digest(sha1Input);
                 }
 
-                // detect whether AES encryption is used. This assumes that the encryption algo is 
+                // detect whether AES encryption is used. This assumes that the encryption algo is
                 // stored in the PDCryptFilterDictionary
                 // However, crypt filters are used only when V is 4 or 5.
                 if (defaultCryptFilterDictionary != null)
                 {
                     COSName cryptFilterMethod = defaultCryptFilterDictionary.getCryptFilterMethod();
                     setAES(COSName.AESV2.equals(cryptFilterMethod) ||
-                        COSName.AESV3.equals(cryptFilterMethod));
+                           COSName.AESV3.equals(cryptFilterMethod));
                 }
             }
             else
@@ -298,7 +301,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
     }
 
     private void appendCertInfo(StringBuilder extraInfo, KeyTransRecipientId ktRid,
-        X509Certificate certificate, X509CertificateHolder materialCert)
+            X509Certificate certificate, X509CertificateHolder materialCert)
     {
         BigInteger ridSerialNumber = ktRid.getSerialNumber();
         if (ridSerialNumber != null)
@@ -477,7 +480,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
     }
 
     private ASN1Primitive createDERForRecipient(byte[] in, X509Certificate cert)
-        throws IOException, GeneralSecurityException
+            throws IOException, GeneralSecurityException
     {
         String algorithm = PKCSObjectIdentifiers.RC2_CBC.getId();
         AlgorithmParameterGenerator apg;
@@ -494,7 +497,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
         {
             // happens when using the command line app .jar file
             throw new IOException("Could not find a suitable javax.crypto provider for algorithm " +
-                algorithm + "; possible reason: using an unsigned .jar file", e);
+                    algorithm + "; possible reason: using an unsigned .jar file", e);
         }
         catch (NoSuchPaddingException e)
         {
@@ -519,7 +522,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
 
         AlgorithmIdentifier algorithmId = new AlgorithmIdentifier(new ASN1ObjectIdentifier(algorithm), object);
         EncryptedContentInfo encryptedInfo =
-            new EncryptedContentInfo(PKCSObjectIdentifiers.data, algorithmId, new DEROctetString(bytes));
+                new EncryptedContentInfo(PKCSObjectIdentifiers.data, algorithmId, new DEROctetString(bytes));
         EnvelopedData enveloped = new EnvelopedData(null, set, encryptedInfo, (ASN1Set) null);
 
         ContentInfo contentInfo = new ContentInfo(PKCSObjectIdentifiers.envelopedData, enveloped);
@@ -528,7 +531,7 @@ public final class PublicKeySecurityHandler extends SecurityHandler
 
     private KeyTransRecipientInfo computeRecipientInfo(X509Certificate x509certificate, byte[] abyte0)
         throws IOException, CertificateEncodingException, InvalidKeyException,
-        BadPaddingException, IllegalBlockSizeException
+            BadPaddingException, IllegalBlockSizeException
     {
         ASN1InputStream input = new ASN1InputStream(x509certificate.getTBSCertificate());
         TBSCertificate certificate = TBSCertificate.getInstance(input.readObject());
@@ -537,14 +540,14 @@ public final class PublicKeySecurityHandler extends SecurityHandler
         AlgorithmIdentifier algorithmId = certificate.getSubjectPublicKeyInfo().getAlgorithm();
 
         IssuerAndSerialNumber serial = new IssuerAndSerialNumber(
-            certificate.getIssuer(),
-            certificate.getSerialNumber().getValue());
+                certificate.getIssuer(),
+                certificate.getSerialNumber().getValue());
 
         Cipher cipher;
         try
         {
             cipher = Cipher.getInstance(algorithmId.getAlgorithm().getId(),
-                SecurityProvider.getProvider());
+                    SecurityProvider.getProvider());
         }
         catch (NoSuchAlgorithmException e)
         {

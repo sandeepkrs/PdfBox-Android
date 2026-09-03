@@ -24,9 +24,7 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSFloat;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine;
-
 import org.w3c.dom.Element;
-
 /**
  * This represents a Line FDF annotation.
  *
@@ -45,7 +43,6 @@ public class FDFAnnotationLine extends FDFAnnotation
      */
     public FDFAnnotationLine()
     {
-        super();
         annot.setName(COSName.SUBTYPE, SUBTYPE);
     }
 
@@ -82,16 +79,8 @@ public class FDFAnnotationLine extends FDFAnnotation
             throw new IOException("Error: missing attribute 'end'");
         }
         String line = startCoords + "," + endCoords;
-        String[] lineValues = line.split(",");
-        if (lineValues.length != 4)
-        {
-            throw new IOException("Error: wrong amount of line coordinates");
-        }
-        float[] values = new float[4];
-        for (int i = 0; i < 4; i++)
-        {
-            values[i] = Float.parseFloat(lineValues[i]);
-        }
+        float[] values = parseRectangleAttributes(
+                line, "Error: wrong amount of line coordinates");
         setLine(values);
 
         String leaderLine = element.getAttribute("leaderLength");
@@ -131,27 +120,27 @@ public class FDFAnnotationLine extends FDFAnnotation
         }
 
         String caption = element.getAttribute("caption");
-        if (caption != null && !caption.isEmpty())
+        if ("yes".equals(caption))
         {
-            setCaption("yes".equals(caption));
-        }
+            setCaption(true);
 
-        String captionH = element.getAttribute("caption-offset-h");
-        if (captionH != null && !captionH.isEmpty())
-        {
-            setCaptionHorizontalOffset(Float.parseFloat(captionH));
-        }
+            String captionH = element.getAttribute("caption-offset-h");
+            if (captionH != null && !captionH.isEmpty())
+            {
+                setCaptionHorizontalOffset(Float.parseFloat(captionH));
+            }
 
-        String captionV = element.getAttribute("caption-offset-v");
-        if (captionV != null && !captionV.isEmpty())
-        {
-            setCaptionVerticalOffset(Float.parseFloat(captionV));
-        }
+            String captionV = element.getAttribute("caption-offset-v");
+            if (captionV != null && !captionV.isEmpty())
+            {
+                setCaptionVerticalOffset(Float.parseFloat(captionV));
+            }
 
-        String captionStyle = element.getAttribute("caption-style");
-        if (captionStyle != null && !captionStyle.isEmpty())
-        {
-            setCaptionStyle(captionStyle);
+            String captionStyle = element.getAttribute("caption-style");
+            if (captionStyle != null && !captionStyle.isEmpty())
+            {
+                setCaptionStyle(captionStyle);
+            }
         }
     }
 
@@ -293,17 +282,7 @@ public class FDFAnnotationLine extends FDFAnnotation
      */
     public AWTColor getInteriorColor()
     {
-        AWTColor retval = null;
-        COSArray array = (COSArray) annot.getDictionaryObject(COSName.IC);
-        if (array != null)
-        {
-            float[] rgb = array.toFloatArray();
-            if (rgb.length >= 3)
-            {
-                retval = new AWTColor(rgb[0], rgb[1], rgb[2]);
-            }
-        }
-        return retval;
+        return getColor(COSName.IC);
     }
 
     /**

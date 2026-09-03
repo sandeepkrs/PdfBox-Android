@@ -22,7 +22,6 @@ import java.util.List;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * A User attribute object.
  *
@@ -95,7 +94,7 @@ public class PDUserAttributeObject extends PDAttributeObject
      */
     public void addUserProperty(PDUserProperty userProperty)
     {
-        COSArray p = (COSArray) this.getCOSObject().getDictionaryObject(COSName.P);
+        COSArray p = this.getCOSObject().getCOSArray(COSName.P);
         p.add(userProperty);
         this.notifyChanged();
     }
@@ -111,7 +110,7 @@ public class PDUserAttributeObject extends PDAttributeObject
         {
             return;
         }
-        COSArray p = (COSArray) this.getCOSObject().getDictionaryObject(COSName.P);
+        COSArray p = this.getCOSObject().getCOSArray(COSName.P);
         p.remove(userProperty.getCOSObject());
         this.notifyChanged();
     }
@@ -128,8 +127,8 @@ public class PDUserAttributeObject extends PDAttributeObject
     public String toString()
     {
         return super.toString() +
-            ", userProperties=" +
-            this.getOwnerUserProperties();
+                ", userProperties=" +
+                this.getOwnerUserProperties();
     }
 
 }

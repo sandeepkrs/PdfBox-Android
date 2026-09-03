@@ -24,7 +24,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This represents an FDF page that is part of the FDF document.
  *
@@ -64,7 +63,7 @@ public class FDFPage implements COSObjectable
     }
 
     /**
-     * This will get a list of FDFTemplage objects that describe the named pages that serve as templates.
+     * This will get a list of FDFTemplate objects that describe the named pages that serve as templates.
      *
      * @return A list of templates.
      */

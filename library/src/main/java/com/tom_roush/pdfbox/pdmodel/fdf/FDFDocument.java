@@ -22,8 +22,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -31,11 +31,11 @@ import java.io.Writer;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSDocument;
 import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdfparser.FDFParser;
 import com.tom_roush.pdfbox.pdfwriter.COSWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
 /**
  * This is the in-memory representation of the FDF document. You need to call close() on this object when you are done
  * using it!!
@@ -85,7 +85,7 @@ public class FDFDocument implements Closeable
         if (!xfdf.getNodeName().equals("xfdf"))
         {
             throw new IOException("Error while importing xfdf document, "
-                + "root should be 'xfdf' and not '" + xfdf.getNodeName() + "'");
+                    + "root should be 'xfdf' and not '" + xfdf.getNodeName() + "'");
         }
         FDFCatalog cat = new FDFCatalog(xfdf);
         setCatalog(cat);
@@ -210,7 +210,7 @@ public class FDFDocument implements Closeable
      */
     public static FDFDocument loadXFDF(String filename) throws IOException
     {
-        return loadXFDF(new BufferedInputStream(new FileInputStream(filename)));
+        return loadXFDF(new File(filename));
     }
 
     /**
@@ -224,7 +224,16 @@ public class FDFDocument implements Closeable
      */
     public static FDFDocument loadXFDF(File file) throws IOException
     {
-        return loadXFDF(new BufferedInputStream(new FileInputStream(file)));
+        InputStream is = null;
+        try
+        {
+            is = new BufferedInputStream(new FileInputStream(file));
+            return loadXFDF(is);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(is);
+        }
     }
 
     /**
@@ -302,7 +311,7 @@ public class FDFDocument implements Closeable
     public void saveXFDF(File fileName) throws IOException
     {
         BufferedWriter writer = new BufferedWriter(
-            new OutputStreamWriter(new FileOutputStream(fileName), "UTF-8"));
+                new OutputStreamWriter(new FileOutputStream(fileName), "UTF-8"));
         saveXFDF(writer);
         writer.close();
     }
