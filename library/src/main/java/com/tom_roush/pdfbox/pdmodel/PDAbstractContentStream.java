@@ -31,6 +31,7 @@ import com.tom_roush.harmony.awt.geom.AffineTransform;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
+import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdfwriter.COSWriter;
@@ -51,7 +52,6 @@ import com.tom_roush.pdfbox.pdmodel.graphics.state.RenderingMode;
 import com.tom_roush.pdfbox.util.Charsets;
 import com.tom_roush.pdfbox.util.Matrix;
 import com.tom_roush.pdfbox.util.NumberFormatUtil;
-
 /**
  * Provides the ability to write to a content stream.
  *
@@ -59,6 +59,7 @@ import com.tom_roush.pdfbox.util.NumberFormatUtil;
  */
 abstract class PDAbstractContentStream implements Closeable
 {
+
     protected final PDDocument document; // may be null
 
     protected final OutputStream outputStream;
@@ -165,7 +166,7 @@ abstract class PDAbstractContentStream implements Closeable
             else
             {
                 Log.w("PdfBox-Android", "Using the subsetted font '" + font.getName() +
-                    "' without a PDDocument context; call subset() before saving");
+                        "' without a PDDocument context; call subset() before saving");
             }
         }
 
@@ -450,20 +451,20 @@ abstract class PDAbstractContentStream implements Closeable
         sb.append(inlineImage.getHeight());
 
         sb.append("\n /CS ");
-        sb.append("/");
+        sb.append('/');
         sb.append(inlineImage.getColorSpace().getName());
 
         COSArray decodeArray = inlineImage.getDecode();
         if (decodeArray != null && decodeArray.size() > 0)
         {
             sb.append("\n /D ");
-            sb.append("[");
+            sb.append('[');
             for (COSBase base : decodeArray)
             {
                 sb.append(((COSNumber) base).intValue());
-                sb.append(" ");
+                sb.append(' ');
             }
-            sb.append("]");
+            sb.append(']');
         }
 
         if (inlineImage.isStencil())
@@ -599,12 +600,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setStrokingColor(PDColor color) throws IOException
     {
+        PDColorSpace colorSpace = color.getColorSpace();
         if (strokingColorSpaceStack.isEmpty() ||
-            strokingColorSpaceStack.peek() != color.getColorSpace())
+            strokingColorSpaceStack.peek() != colorSpace)
         {
-            writeOperand(getName(color.getColorSpace()));
+            writeOperand(getName(colorSpace));
             writeOperator(OperatorName.STROKING_COLORSPACE);
-            setStrokingColorSpaceStack(color.getColorSpace());
+            setStrokingColorSpaceStack(colorSpace);
         }
 
         for (float value : color.getComponents())
@@ -612,16 +614,16 @@ abstract class PDAbstractContentStream implements Closeable
             writeOperand(value);
         }
 
-//        if (color.getColorSpace() instanceof PDPattern)
+//        if (colorSpace instanceof PDPattern)
 //        {
 //            writeOperand(color.getPatternName());
 //        }
 
         if (
-//            color.getColorSpace() instanceof PDPattern ||
-//            color.getColorSpace() instanceof PDSeparation ||
-//            color.getColorSpace() instanceof PDDeviceN ||
-            color.getColorSpace() instanceof PDICCBased)
+//            colorSpace instanceof PDPattern ||
+//            colorSpace instanceof PDSeparation ||
+//            colorSpace instanceof PDDeviceN ||
+            colorSpace instanceof PDICCBased)
         {
             writeOperator(OperatorName.STROKING_COLOR_N);
         }
@@ -640,7 +642,7 @@ abstract class PDAbstractContentStream implements Closeable
     public void setStrokingColor(AWTColor color) throws IOException
     {
         float[] components = new float[] {
-            color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
+                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setStrokingColor(pdColor);
     }
@@ -659,7 +661,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f)", r, g, b));
+                    + String.format("(%.2f,%.2f,%.2f)", r, g, b));
         }
         writeOperand(r);
         writeOperand(g);
@@ -685,7 +687,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutside255Interval(r) || isOutside255Interval(g) || isOutside255Interval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d)", r, g, b));
+                    + String.format("(%d,%d,%d)", r, g, b));
         }
         setStrokingColor(r / 255f, g / 255f, b / 255f);
     }
@@ -705,7 +707,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
+                    + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
         }
         writeOperand(c);
         writeOperand(m);
@@ -741,12 +743,13 @@ abstract class PDAbstractContentStream implements Closeable
      */
     public void setNonStrokingColor(PDColor color) throws IOException
     {
+        PDColorSpace colorSpace = color.getColorSpace();
         if (nonStrokingColorSpaceStack.isEmpty() ||
-            nonStrokingColorSpaceStack.peek() != color.getColorSpace())
+            nonStrokingColorSpaceStack.peek() != colorSpace)
         {
-            writeOperand(getName(color.getColorSpace()));
+            writeOperand(getName(colorSpace));
             writeOperator(OperatorName.NON_STROKING_COLORSPACE);
-            setNonStrokingColorSpaceStack(color.getColorSpace());
+            setNonStrokingColorSpaceStack(colorSpace);
         }
 
         for (float value : color.getComponents())
@@ -754,16 +757,16 @@ abstract class PDAbstractContentStream implements Closeable
             writeOperand(value);
         }
 
-//        if (color.getColorSpace() instanceof PDPattern)
+//        if (colorSpace instanceof PDPattern)
 //        {
 //            writeOperand(color.getPatternName());
 //        }
 
         if (
-//            color.getColorSpace() instanceof PDPattern ||
-//            color.getColorSpace() instanceof PDSeparation ||
-//            color.getColorSpace() instanceof PDDeviceN ||
-            color.getColorSpace() instanceof PDICCBased)
+//            colorSpace instanceof PDPattern ||
+//            colorSpace instanceof PDSeparation ||
+//            colorSpace instanceof PDDeviceN ||
+            colorSpace instanceof PDICCBased)
         {
             writeOperator(OperatorName.NON_STROKING_COLOR_N);
         }
@@ -782,7 +785,7 @@ abstract class PDAbstractContentStream implements Closeable
     public void setNonStrokingColor(AWTColor color) throws IOException
     {
         float[] components = new float[] {
-            color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
+                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setNonStrokingColor(pdColor);
     }
@@ -801,7 +804,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f)", r, g, b));
+                    + String.format("(%.2f,%.2f,%.2f)", r, g, b));
         }
         writeOperand(r);
         writeOperand(g);
@@ -827,7 +830,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutside255Interval(r) || isOutside255Interval(g) || isOutside255Interval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d)", r, g, b));
+                    + String.format("(%d,%d,%d)", r, g, b));
         }
         setNonStrokingColor(r / 255f, g / 255f, b / 255f);
     }
@@ -849,7 +852,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutside255Interval(c) || isOutside255Interval(m) || isOutside255Interval(y) || isOutside255Interval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d,%d)", c, m, y, k));
+                    + String.format("(%d,%d,%d,%d)", c, m, y, k));
         }
         setNonStrokingColor(c / 255f, m / 255f, y / 255f, k / 255f);
     }
@@ -868,7 +871,7 @@ abstract class PDAbstractContentStream implements Closeable
         if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
+                    + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
         }
         writeOperand(c);
         writeOperand(m);
@@ -1348,6 +1351,24 @@ abstract class PDAbstractContentStream implements Closeable
     }
 
     /**
+     * Begin a marked content sequence with a reference to the marked content identifier (MCID).
+     *
+     * @param tag the tag to be added to the content stream
+     * @param mcid the marked content identifier (MCID)
+     * @throws IOException If the content stream could not be written
+     */
+    public void beginMarkedContent(COSName tag, int mcid) throws IOException
+    {
+        if (mcid < 0)
+        {
+            throw new IllegalArgumentException("mcid should not be negative");
+        }
+        writeOperand(tag);
+        write("<</MCID " + mcid + ">> ");
+        writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);
+    }
+
+    /**
      * Begin a marked content sequence with a reference to an entry in the page resources'
      * Properties dictionary.
      *
@@ -1358,7 +1379,18 @@ abstract class PDAbstractContentStream implements Closeable
     public void beginMarkedContent(COSName tag, PDPropertyList propertyList) throws IOException
     {
         writeOperand(tag);
-        writeOperand(resources.add(propertyList));
+
+        COSDictionary dict = propertyList.getCOSObject();
+        if (dict.getInt(COSName.MCID) > -1 && dict.size() == 1)
+        {
+            // PDFBOX-5890: use simplified notation if there's only an MCID
+            write("<</MCID " + dict.getInt(COSName.MCID) + ">> ");
+        }
+        else
+        {
+            writeOperand(resources.add(propertyList));
+        }
+
         writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);
     }
 

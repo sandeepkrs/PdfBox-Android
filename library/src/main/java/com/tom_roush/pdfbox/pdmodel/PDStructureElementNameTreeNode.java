@@ -18,11 +18,11 @@
 package com.tom_roush.pdfbox.pdmodel;
 
 import java.io.IOException;
+
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.pdmodel.common.PDNameTreeNode;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureElement;
-
 /**
  * todo: JavaDoc
  *
@@ -51,6 +51,10 @@ public class PDStructureElementNameTreeNode extends PDNameTreeNode<PDStructureEl
     @Override
     protected PDStructureElement convertCOSToPD( COSBase base ) throws IOException
     {
+        if (base != null && !(base instanceof COSDictionary))
+        {
+            throw new IOException("dictionary expected here, but got " + base);
+        }
         return new PDStructureElement((COSDictionary)base);
     }
 

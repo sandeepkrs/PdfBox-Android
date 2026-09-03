@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
 /**
  * This represents an embedded file in a file specification.
  *
@@ -182,7 +181,7 @@ public class PDEmbeddedFile extends PDStream
     public String getMacSubtype()
     {
         String retval = null;
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params != null )
         {
             retval = params.getEmbeddedString( "Mac", "Subtype" );
@@ -197,7 +196,7 @@ public class PDEmbeddedFile extends PDStream
      */
     public void setMacSubtype( String macSubtype )
     {
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params == null && macSubtype != null )
         {
             params = new COSDictionary();
@@ -217,7 +216,7 @@ public class PDEmbeddedFile extends PDStream
     public String getMacCreator()
     {
         String retval = null;
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params != null )
         {
             retval = params.getEmbeddedString( "Mac", "Creator" );
@@ -232,7 +231,7 @@ public class PDEmbeddedFile extends PDStream
      */
     public void setMacCreator( String macCreator )
     {
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params == null && macCreator != null )
         {
             params = new COSDictionary();
@@ -252,7 +251,7 @@ public class PDEmbeddedFile extends PDStream
     public String getMacResFork()
     {
         String retval = null;
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params != null )
         {
             retval = params.getEmbeddedString( "Mac", "ResFork" );
@@ -267,7 +266,7 @@ public class PDEmbeddedFile extends PDStream
      */
     public void setMacResFork( String macResFork )
     {
-        COSDictionary params = (COSDictionary)getCOSObject().getDictionaryObject( COSName.PARAMS );
+        COSDictionary params = getCOSObject().getCOSDictionary(COSName.PARAMS);
         if( params == null && macResFork != null )
         {
             params = new COSDictionary();
@@ -278,7 +277,6 @@ public class PDEmbeddedFile extends PDStream
             params.setEmbeddedString( "Mac", "ResFork", macResFork);
         }
     }
-
 
 
 }

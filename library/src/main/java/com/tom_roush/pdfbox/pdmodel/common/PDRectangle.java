@@ -18,6 +18,7 @@ package com.tom_roush.pdfbox.pdmodel.common;
 
 import android.graphics.Path;
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 import java.util.Arrays;
 
@@ -27,7 +28,6 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSFloat;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * A rectangle in a PDF document.
  *
@@ -43,10 +43,13 @@ public class PDRectangle implements COSObjectable
 
     /** A rectangle the size of U.S. Letter, 8.5" x 11". */
     public static final PDRectangle LETTER = new PDRectangle(8.5f * POINTS_PER_INCH,
-        11f *POINTS_PER_INCH);
+                                                            11f *POINTS_PER_INCH);
+    /**  A rectangle the size of U.S. Tabloid, 11" x 17". */
+    public static final PDRectangle TABLOID = new PDRectangle(11f * POINTS_PER_INCH,
+                                                            17f * POINTS_PER_INCH);
     /**  A rectangle the size of U.S. Legal, 8.5" x 14". */
     public static final PDRectangle LEGAL = new PDRectangle(8.5f * POINTS_PER_INCH,
-        14f * POINTS_PER_INCH);
+                                                            14f * POINTS_PER_INCH);
     /**  A rectangle the size of A0 Paper. */
     public static final PDRectangle A0 = new PDRectangle(841 * POINTS_PER_MM, 1189 * POINTS_PER_MM);
 
@@ -130,6 +133,14 @@ public class PDRectangle implements COSObjectable
     public PDRectangle( COSArray array )
     {
         float[] values = Arrays.copyOf(array.toFloatArray(), 4);
+        // replace huge values, most likely those are invalid due to a malformed pdf
+        for (int i = 0; i < values.length; i++)
+        {
+            if (Math.abs(values[i]) > Integer.MAX_VALUE)
+            {
+                values[i] = values[i] > 0 ? Integer.MAX_VALUE : -Integer.MAX_VALUE;
+            }
+        }
         rectArray = new COSArray();
         // we have to start with the lower left corner
         rectArray.add( new COSFloat( Math.min(values[0],values[2] )) );
@@ -151,7 +162,7 @@ public class PDRectangle implements COSObjectable
         float lly = getLowerLeftY();
         float ury = getUpperRightY();
         return x >= llx && x <= urx &&
-            y >= lly && y <= ury;
+               y >= lly && y <= ury;
     }
 
     /**
@@ -353,6 +364,6 @@ public class PDRectangle implements COSObjectable
     public String toString()
     {
         return "[" + getLowerLeftX() + "," + getLowerLeftY() + "," +
-            getUpperRightX() + "," + getUpperRightY() +"]";
+                     getUpperRightX() + "," + getUpperRightY() +"]";
     }
 }

@@ -32,7 +32,6 @@ import com.tom_roush.pdfbox.cos.COSNull;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSObject;
 import com.tom_roush.pdfbox.cos.COSString;
-
 /**
  * This is an implementation of a List that will sync its contents to a COSArray.
  *
@@ -44,7 +43,7 @@ public class COSArrayList<E> implements List<E>
     private final List<E> actual;
 
     // indicates that the list has been filtered
-    // i.e. the number of entries in array and actual differ 
+    // i.e. the number of entries in array and actual differ
     private boolean isFiltered = false;
 
     private COSDictionary parentDict;
@@ -79,7 +78,7 @@ public class COSArrayList<E> implements List<E>
         array = cosArray;
 
         // if the number of entries differs this may come from a filter being
-        // applied at the PDModel level 
+        // applied at the PDModel level
         if (actual.size() != array.size()) {
             isFiltered = true;
         }
@@ -120,7 +119,7 @@ public class COSArrayList<E> implements List<E>
     {
         array = new COSArray();
         array.add( item );
-        actual = new ArrayList<E>();
+        actual = new ArrayList<E>(1);
         actual.add( actualObject );
 
         parentDict = dictionary;
@@ -487,7 +486,7 @@ public class COSArrayList<E> implements List<E>
                     else
                     {
                         throw new IllegalArgumentException( "Error: Don't know how to convert type to COSBase '" +
-                            next.getClass().getName() + "'" );
+                        next.getClass().getName() + "'" );
                     }
                 }
             }
@@ -623,11 +622,12 @@ public class COSArrayList<E> implements List<E>
         }
         else
         {
+            COSBase cosObject = ((COSObjectable) element).getCOSObject();
             if( parentDict != null && index == 0 )
             {
-                parentDict.setItem( dictKey, ((COSObjectable)element).getCOSObject() );
+                parentDict.setItem(dictKey, cosObject);
             }
-            array.set( index, ((COSObjectable)element).getCOSObject() );
+            array.set(index, cosObject);
         }
         return actual.set( index, element );
     }

@@ -17,12 +17,12 @@
 package com.tom_roush.pdfbox.pdmodel;
 
 import java.io.IOException;
+
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.pdmodel.common.PDNameTreeNode;
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionFactory;
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
-
 /**
  * This class holds all of the name trees that are available at the document level.
  *
@@ -35,7 +35,6 @@ public class PDJavascriptNameTreeNode extends PDNameTreeNode<PDActionJavaScript>
      */
     public PDJavascriptNameTreeNode()
     {
-        super();
     }
 
     /**

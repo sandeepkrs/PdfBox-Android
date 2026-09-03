@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
@@ -33,7 +33,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
-
 /**
  * Represents the page label dictionary of a document.
  *
@@ -100,7 +99,7 @@ public class PDPageLabels implements COSObjectable
     private void findLabels(PDNumberTreeNode node) throws IOException
     {
         List<PDNumberTreeNode> kids = node.getKids();
-        if (node.getKids() != null)
+        if (kids != null)
         {
             for (PDNumberTreeNode kid : kids)
             {
@@ -208,7 +207,7 @@ public class PDPageLabels implements COSObjectable
     public Map<String, Integer> getPageIndicesByLabels()
     {
         int numberOfPages = doc.getNumberOfPages();
-        final Map<String, Integer> labelMap = new HashMap<String, Integer>(numberOfPages);
+        final Map<String, Integer> labelMap = new HashMap<String, Integer>();
         computeLabels(new LabelHandler()
         {
             @Override
@@ -280,7 +279,7 @@ public class PDPageLabels implements COSObjectable
             Entry<Integer, PDPageLabelRange> entry = iterator.next();
             int numPages = entry.getKey() - lastEntry.getKey();
             LabelGenerator gen = new LabelGenerator(lastEntry.getValue(),
-                numPages);
+                    numPages);
             while (gen.hasNext())
             {
                 handler.newLabel(pageIndex, gen.next());
@@ -289,7 +288,7 @@ public class PDPageLabels implements COSObjectable
             lastEntry = entry;
         }
         LabelGenerator gen = new LabelGenerator(lastEntry.getValue(),
-            numberOfPages - lastEntry.getKey());
+                numberOfPages - lastEntry.getKey());
         while (gen.hasNext())
         {
             handler.newLabel(pageIndex, gen.next());

@@ -22,7 +22,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDRange;
-
 /**
  * This class represents a Type 3 (stitching) function in a PDF document.
  *
@@ -56,8 +55,8 @@ public class PDFunctionType3 extends PDFunction
     }
 
     /**
-     * {@inheritDoc}
-     */
+    * {@inheritDoc}
+    */
     @Override
     public float[] eval(float[] input) throws IOException
     {
@@ -101,11 +100,11 @@ public class PDFunctionType3 extends PDFunction
             partitionValues[0] = domain.getMin();
             partitionValues[partitionValuesSize-1] = domain.getMax();
             System.arraycopy(boundsValues, 0, partitionValues, 1, boundsSize);
-            // find the partition 
+            // find the partition
             for (int i=0; i < partitionValuesSize-1; i++)
             {
                 if ( x >= partitionValues[i] &&
-                    (x < partitionValues[i+1] || (i == partitionValuesSize - 2 && x == partitionValues[i+1])))
+                        (x < partitionValues[i+1] || (i == partitionValuesSize - 2 && x == partitionValues[i+1])))
                 {
                     function = functionsArray[i];
                     PDRange encRange = getEncodeForParameter(i);
@@ -128,13 +127,13 @@ public class PDFunctionType3 extends PDFunction
     /**
      * Returns all functions values as COSArray.
      *
-     * @return the functions array. 
+     * @return the functions array.
      */
     public COSArray getFunctions()
     {
         if (functions == null)
         {
-            functions = (COSArray)(getCOSObject().getDictionaryObject( COSName.FUNCTIONS ));
+            functions = getCOSObject().getCOSArray(COSName.FUNCTIONS);
         }
         return functions;
     }
@@ -142,13 +141,13 @@ public class PDFunctionType3 extends PDFunction
     /**
      * Returns all bounds values as COSArray.
      *
-     * @return the bounds array. 
+     * @return the bounds array.
      */
     public COSArray getBounds()
     {
         if (bounds == null)
         {
-            bounds = (COSArray)(getCOSObject().getDictionaryObject( COSName.BOUNDS ));
+            bounds = getCOSObject().getCOSArray(COSName.BOUNDS);
         }
         return bounds;
     }
@@ -156,13 +155,13 @@ public class PDFunctionType3 extends PDFunction
     /**
      * Returns all encode values as COSArray.
      *
-     * @return the encode array. 
+     * @return the encode array.
      */
     public COSArray getEncode()
     {
         if (encode == null)
         {
-            encode = (COSArray)(getCOSObject().getDictionaryObject( COSName.ENCODE ));
+            encode = getCOSObject().getCOSArray(COSName.ENCODE);
         }
         return encode;
     }

@@ -24,12 +24,13 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.pdmodel.PDResources;
+import com.tom_roush.pdfbox.pdmodel.ResourceCache;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.function.PDFunction;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * Soft mask.
  *
@@ -43,6 +44,19 @@ public final class PDSoftMask implements COSObjectable
      * @param dictionary SMask
      */
     public static PDSoftMask create(COSBase dictionary)
+    {
+        return create(dictionary, null);
+    }
+
+    /**
+     * Creates a new soft mask.
+     *
+     * @param dictionary SMask
+     * @param resourceCache Resource cache, may be null.
+     *
+     * @return the newly created instance of PDSoftMask
+     */
+    public static PDSoftMask create(COSBase dictionary, ResourceCache resourceCache)
     {
         if (dictionary instanceof COSName)
         {
@@ -58,7 +72,7 @@ public final class PDSoftMask implements COSObjectable
         }
         else if (dictionary instanceof COSDictionary)
         {
-            return new PDSoftMask((COSDictionary) dictionary);
+            return new PDSoftMask((COSDictionary) dictionary, resourceCache);
         }
         else
         {
@@ -67,7 +81,9 @@ public final class PDSoftMask implements COSObjectable
         }
     }
 
+
     private final COSDictionary dictionary;
+    private final ResourceCache resourceCache;
     private COSName subType = null;
     private PDTransparencyGroup group = null;
     private COSArray backdropColor = null;
@@ -85,7 +101,19 @@ public final class PDSoftMask implements COSObjectable
      */
     public PDSoftMask(COSDictionary dictionary)
     {
+        this(dictionary, null);
+    }
+
+    /**
+     * Creates a new soft mask.
+     *
+     * @param dictionary The soft mask dictionary.
+     * @param resourceCache Resource cache, may be null.
+     */
+    public PDSoftMask(COSDictionary dictionary, ResourceCache resourceCache)
+    {
         this.dictionary = dictionary;
+        this.resourceCache = resourceCache;
     }
 
     @Override
@@ -101,7 +129,7 @@ public final class PDSoftMask implements COSObjectable
     {
         if (subType == null)
         {
-            subType = (COSName) getCOSObject().getDictionaryObject(COSName.S);
+            subType = getCOSObject().getCOSName(COSName.S);
         }
         return subType;
     }
@@ -119,7 +147,8 @@ public final class PDSoftMask implements COSObjectable
             COSBase cosGroup = getCOSObject().getDictionaryObject(COSName.G);
             if (cosGroup != null)
             {
-                PDXObject x = PDXObject.createXObject(cosGroup, null);
+                PDResources resources = new PDResources(new COSDictionary(), resourceCache);
+                PDXObject x = PDXObject.createXObject(cosGroup, resources);
                 if (x instanceof PDTransparencyGroup)
                 {
                     group = (PDTransparencyGroup) x;
@@ -136,7 +165,7 @@ public final class PDSoftMask implements COSObjectable
     {
         if (backdropColor == null)
         {
-            backdropColor = (COSArray) getCOSObject().getDictionaryObject(COSName.BC);
+            backdropColor = getCOSObject().getCOSArray(COSName.BC);
         }
         return backdropColor;
     }

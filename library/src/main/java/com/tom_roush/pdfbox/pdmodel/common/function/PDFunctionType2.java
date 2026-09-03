@@ -20,10 +20,10 @@ import java.io.IOException;
 
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
+import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSFloat;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * This class represents a Type 2 (exponential interpolation) function in a PDF
  * document.
@@ -55,7 +55,8 @@ public class PDFunctionType2 extends PDFunction
     {
         super(function);
 
-        COSArray cosArray0 = getCOSObject().getCOSArray(COSName.C0);
+        COSDictionary cosObject = getCOSObject();
+        COSArray cosArray0 = cosObject.getCOSArray(COSName.C0);
         if (cosArray0 != null)
         {
             c0 = cosArray0;
@@ -69,7 +70,7 @@ public class PDFunctionType2 extends PDFunction
             c0.add(new COSFloat(0));
         }
 
-        COSArray cosArray1 = getCOSObject().getCOSArray(COSName.C1);
+        COSArray cosArray1 = cosObject.getCOSArray(COSName.C1);
         if (cosArray1 != null)
         {
             c1 = cosArray1;
@@ -154,8 +155,8 @@ public class PDFunctionType2 extends PDFunction
     public String toString()
     {
         return "FunctionType2{"
-            + "C0: " + getC0() + " "
-            + "C1: " + getC1() + " "
-            + "N: " + getN() + "}";
+                + "C0: " + getC0() + " "
+                + "C1: " + getC1() + " "
+                + "N: " + getN() + "}";
     }
 }

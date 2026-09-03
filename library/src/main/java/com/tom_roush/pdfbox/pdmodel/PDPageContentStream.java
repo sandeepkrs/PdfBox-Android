@@ -31,6 +31,7 @@ import com.tom_roush.harmony.awt.geom.AffineTransform;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
+import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdfwriter.COSWriter;
@@ -55,7 +56,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
 import com.tom_roush.pdfbox.util.Charsets;
 import com.tom_roush.pdfbox.util.Matrix;
 import com.tom_roush.pdfbox.util.NumberFormatUtil;
-
 /**
  * Provides the ability to write to a page content stream.
  *
@@ -92,6 +92,7 @@ public final class PDPageContentStream implements Closeable
             return this == PREPEND;
         }
     }
+
 
     private final PDDocument document;
     private OutputStream output;
@@ -139,7 +140,7 @@ public final class PDPageContentStream implements Closeable
      */
     @Deprecated
     public PDPageContentStream(PDDocument document, PDPage sourcePage, boolean appendContent,
-        boolean compress) throws IOException
+                               boolean compress) throws IOException
     {
         this(document, sourcePage, appendContent, compress, false);
     }
@@ -157,7 +158,7 @@ public final class PDPageContentStream implements Closeable
      * @throws IOException If there is an error writing to the page contents.
      */
     public PDPageContentStream(PDDocument document, PDPage sourcePage, AppendMode appendContent,
-        boolean compress) throws IOException
+                               boolean compress) throws IOException
     {
         this(document, sourcePage, appendContent, compress, false);
     }
@@ -178,9 +179,9 @@ public final class PDPageContentStream implements Closeable
      */
     @Deprecated
     public PDPageContentStream(PDDocument document, PDPage sourcePage, boolean appendContent,
-        boolean compress, boolean resetContext) throws IOException
+                               boolean compress, boolean resetContext) throws IOException
     {
-        this (document, sourcePage, appendContent ? AppendMode.APPEND : AppendMode.OVERWRITE, compress, resetContext);
+      this (document, sourcePage, appendContent ? AppendMode.APPEND : AppendMode.OVERWRITE, compress, resetContext);
     }
 
     /**
@@ -197,7 +198,7 @@ public final class PDPageContentStream implements Closeable
      * @throws IOException If there is an error writing to the page contents.
      */
     public PDPageContentStream(PDDocument document, PDPage sourcePage, AppendMode appendContent,
-        boolean compress, boolean resetContext) throws IOException
+                               boolean compress, boolean resetContext) throws IOException
     {
         this.document = document;
         COSName filter = compress ? COSName.FLATE_DECODE : null;
@@ -299,7 +300,7 @@ public final class PDPageContentStream implements Closeable
      * @throws IOException If there is an error writing to the page contents.
      */
     public PDPageContentStream(PDDocument doc, PDAppearanceStream appearance, OutputStream outputStream)
-        throws IOException
+            throws IOException
     {
         this.document = doc;
 
@@ -319,7 +320,7 @@ public final class PDPageContentStream implements Closeable
      * @throws IOException If there is an error writing to the page contents.
      */
     public PDPageContentStream(PDDocument doc, PDFormXObject form, OutputStream outputStream)
-        throws IOException
+            throws IOException
     {
         this.document = doc;
 
@@ -339,7 +340,7 @@ public final class PDPageContentStream implements Closeable
      * @throws IOException If there is an error writing to the page contents.
      */
     public PDPageContentStream(PDDocument doc, PDTilingPattern pattern, OutputStream outputStream)
-        throws IOException
+            throws IOException
     {
         this.document = doc;
 
@@ -830,20 +831,20 @@ public final class PDPageContentStream implements Closeable
         sb.append(inlineImage.getHeight());
 
         sb.append("\n /CS ");
-        sb.append("/");
+        sb.append('/');
         sb.append(inlineImage.getColorSpace().getName());
 
         COSArray decodeArray = inlineImage.getDecode();
         if (decodeArray != null && decodeArray.size() > 0)
         {
             sb.append("\n /D ");
-            sb.append("[");
+            sb.append('[');
             for (COSBase base : decodeArray)
             {
                 sb.append(((COSNumber) base).intValue());
-                sb.append(" ");
+                sb.append(' ');
             }
-            sb.append("]");
+            sb.append(']');
         }
 
         if (inlineImage.isStencil())
@@ -1141,7 +1142,7 @@ public final class PDPageContentStream implements Closeable
     public void setStrokingColor(AWTColor color) throws IOException
     {
         float[] components = new float[] {
-            color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
+                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setStrokingColor(pdColor);
     }
@@ -1195,7 +1196,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f)", r, g, b));
+                    + String.format("(%.2f,%.2f,%.2f)", r, g, b));
         }
         writeOperand(r);
         writeOperand(g);
@@ -1221,7 +1222,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutside255Interval(r) || isOutside255Interval(g) || isOutside255Interval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d)", r, g, b));
+                    + String.format("(%d,%d,%d)", r, g, b));
         }
         setStrokingColor(r / 255f, g / 255f, b / 255f);
     }
@@ -1243,7 +1244,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutside255Interval(c) || isOutside255Interval(m) || isOutside255Interval(y) || isOutside255Interval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d,%d)", c, m, y, k));
+                    + String.format("(%d,%d,%d,%d)", c, m, y, k));
         }
         setStrokingColor(c / 255f, m / 255f, y / 255f, k / 255f);
     }
@@ -1263,7 +1264,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
+                    + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
         }
         writeOperand(c);
         writeOperand(m);
@@ -1372,7 +1373,7 @@ public final class PDPageContentStream implements Closeable
     public void setNonStrokingColor(AWTColor color) throws IOException
     {
         float[] components = new float[] {
-            color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
+                color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f };
         PDColor pdColor = new PDColor(components, PDDeviceRGB.INSTANCE);
         setNonStrokingColor(pdColor);
     }
@@ -1426,7 +1427,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutsideOneInterval(r) || isOutsideOneInterval(g) || isOutsideOneInterval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f)", r, g, b));
+                    + String.format("(%.2f,%.2f,%.2f)", r, g, b));
         }
         writeOperand(r);
         writeOperand(g);
@@ -1452,7 +1453,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutside255Interval(r) || isOutside255Interval(g) || isOutside255Interval(b))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d)", r, g, b));
+                    + String.format("(%d,%d,%d)", r, g, b));
         }
         setNonStrokingColor(r / 255f, g / 255f, b / 255f);
     }
@@ -1472,7 +1473,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutside255Interval(c) || isOutside255Interval(m) || isOutside255Interval(y) || isOutside255Interval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..255, but are "
-                + String.format("(%d,%d,%d,%d)", c, m, y, k));
+                    + String.format("(%d,%d,%d,%d)", c, m, y, k));
         }
         setNonStrokingColor(c / 255f, m / 255f, y / 255f, k / 255f);
     }
@@ -1508,7 +1509,7 @@ public final class PDPageContentStream implements Closeable
         if (isOutsideOneInterval(c) || isOutsideOneInterval(m) || isOutsideOneInterval(y) || isOutsideOneInterval(k))
         {
             throw new IllegalArgumentException("Parameters must be within 0..1, but are "
-                + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
+                    + String.format("(%.2f,%.2f,%.2f,%.2f)", c, m, y, k));
         }
         writeOperand(c);
         writeOperand(m);
@@ -2292,6 +2293,24 @@ public final class PDPageContentStream implements Closeable
     }
 
     /**
+     * Begin a marked content sequence with a reference to the marked content identifier (MCID).
+     *
+     * @param tag the tag to be added to the content stream
+     * @param mcid the marked content identifier (MCID)
+     * @throws IOException If the content stream could not be written
+     */
+    public void beginMarkedContent(COSName tag, int mcid) throws IOException
+    {
+        if (mcid < 0)
+        {
+            throw new IllegalArgumentException("mcid should not be negative");
+        }
+        writeOperand(tag);
+        write("<</MCID " + mcid + ">> ");
+        writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);
+    }
+
+    /**
      * Begin a marked content sequence with a reference to an entry in the page resources'
      * Properties dictionary.
      *
@@ -2302,7 +2321,18 @@ public final class PDPageContentStream implements Closeable
     public void beginMarkedContent(COSName tag, PDPropertyList propertyList) throws IOException
     {
         writeOperand(tag);
-        writeOperand(resources.add(propertyList));
+
+        COSDictionary dict = propertyList.getCOSObject();
+        if (dict.getInt(COSName.MCID) > -1 && dict.size() == 1)
+        {
+            // PDFBOX-5890: use simplified notation if there's only an MCID
+            write("<</MCID " + dict.getInt(COSName.MCID) + ">> ");
+        }
+        else
+        {
+            writeOperand(resources.add(propertyList));
+        }
+
         writeOperator(OperatorName.BEGIN_MARKED_CONTENT_SEQ);
     }
 
