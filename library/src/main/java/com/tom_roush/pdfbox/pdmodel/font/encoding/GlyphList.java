@@ -26,15 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 import com.tom_roush.pdfbox.io.IOUtils;
-
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 /**
  * PostScript glyph list, maps glyph names to sequences of Unicode characters.
  * Instances of GlyphList are immutable.
  */
 public final class GlyphList
 {
+
     // Adobe Glyph List (AGL)
     private static final GlyphList DEFAULT = load("glyphlist.txt", 4281);
 
@@ -83,7 +83,7 @@ public final class GlyphList
             if (location != null)
             {
                 throw new UnsupportedOperationException("glyphlist_ext is no longer supported, "
-                    + "use GlyphList.DEFAULT.addGlyphs(Properties) instead");
+                        + "use GlyphList.DEFAULT.addGlyphs(Properties) instead");
             }
         }
         catch (SecurityException e)  // can occur on System.getProperty
@@ -162,12 +162,6 @@ public final class GlyphList
                     String name = parts[0];
                     String[] unicodeList = parts[1].split(" ");
 
-                    if (nameToUnicode.containsKey(name))
-                    {
-                        Log.w("PdfBox-Android", "duplicate value for " + name + " -> " + parts[1] + " " +
-                            nameToUnicode.get(name));
-                    }
-
                     int[] codePoints = new int[unicodeList.length];
                     int index = 0;
                     for (String hex : unicodeList)
@@ -177,18 +171,22 @@ public final class GlyphList
                     String string = new String(codePoints, 0 , codePoints.length);
 
                     // forward mapping
-                    nameToUnicode.put(name, string);
-
+                    String oldMapping = nameToUnicode.put(name, string);
+                    if (oldMapping != null)
+                    {
+                        Log.w("PdfBox-Android", "duplicate value for " + name + " -> " + parts[1] + " "
+                                + nameToUnicode.get(name));
+                    }
                     // reverse mapping
-                    // PDFBOX-3884: take the various standard encodings as canonical, 
+                    // PDFBOX-3884: take the various standard encodings as canonical,
                     // e.g. tilde over ilde
                     final boolean forceOverride =
-                        WinAnsiEncoding.INSTANCE.contains(name) ||
-                            MacRomanEncoding.INSTANCE.contains(name) ||
-                            MacExpertEncoding.INSTANCE.contains(name) ||
-                            SymbolEncoding.INSTANCE.contains(name) ||
-                            ZapfDingbatsEncoding.INSTANCE.contains(name);
-                    if (!unicodeToName.containsKey(string) || forceOverride)
+                          WinAnsiEncoding.INSTANCE.contains(name) ||
+                          MacRomanEncoding.INSTANCE.contains(name) ||
+                          MacExpertEncoding.INSTANCE.contains(name) ||
+                          SymbolEncoding.INSTANCE.contains(name) ||
+                          ZapfDingbatsEncoding.INSTANCE.contains(name);
+                    if (forceOverride || !unicodeToName.containsKey(string))
                     {
                         unicodeToName.put(string, name);
                     }
@@ -261,38 +259,14 @@ public final class GlyphList
             {
                 unicode = toUnicode(name.substring(0, name.indexOf('.')));
             }
-            else if (name.startsWith("uni") && name.length() == 7)
+            else if ((name.length() == 7 && name.startsWith("uni"))
+                    || (name.length() == 5 && name.startsWith("u")))
             {
                 // test for Unicode name in the format uniXXXX where X is hex
-                int nameLength = name.length();
-                StringBuilder uniStr = new StringBuilder();
+                int start = name.length() == 7 ? 3 : 1;
                 try
                 {
-                    for (int chPos = 3; chPos + 4 <= nameLength; chPos += 4)
-                    {
-                        int codePoint = Integer.parseInt(name.substring(chPos, chPos + 4), 16);
-                        if (codePoint > 0xD7FF && codePoint < 0xE000)
-                        {
-                            Log.w("PdfBox-Android", "Unicode character name with disallowed code area: " + name);
-                        }
-                        else
-                        {
-                            uniStr.append((char) codePoint);
-                        }
-                    }
-                    unicode = uniStr.toString();
-                }
-                catch (NumberFormatException nfe)
-                {
-                    Log.w("PdfBox-Android", "Not a number in Unicode character name: " + name);
-                }
-            }
-            else if (name.startsWith("u") && name.length() == 5)
-            {
-                // test for an alternate Unicode name representation uXXXX
-                try
-                {
-                    int codePoint = Integer.parseInt(name.substring(1), 16);
+                    int codePoint = Integer.parseInt(name.substring(start), 16);
                     if (codePoint > 0xD7FF && codePoint < 0xE000)
                     {
                         Log.w("PdfBox-Android", "Unicode character name with disallowed code area: " + name);

@@ -1,5 +1,4 @@
 /*
-/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,14 +16,16 @@
  */
 package com.tom_roush.pdfbox.pdmodel.font.encoding;
 
+import android.util.Log;
+
 import java.util.HashMap;
 import java.util.Map;
+
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * This will perform the encoding from a dictionary.
  *
@@ -32,6 +33,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
  */
 public class DictionaryEncoding extends Encoding
 {
+
     private final COSDictionary encoding;
     private final Encoding baseEncoding;
     private final Map<Integer, String> differences = new HashMap<Integer, String>();
@@ -75,7 +77,24 @@ public class DictionaryEncoding extends Encoding
     public DictionaryEncoding(COSDictionary fontEncoding)
     {
         encoding = fontEncoding;
-        baseEncoding = null;
+        COSName name = encoding.getCOSName(COSName.BASE_ENCODING);
+        if (name != null)
+        {
+            baseEncoding = Encoding.getInstance(name); // null when the name is invalid
+            if (baseEncoding != null)
+            {
+                // PDFBOX-5963
+                // PDF Specification: "Differences array shall specify the complete character
+                // encoding for this font" but other viewers read it, thus we do too.
+                Log.w("PdfBox-Android", "/BaseEncoding in type 3 font");
+                codeToName.putAll(baseEncoding.codeToName);
+                inverted.putAll(baseEncoding.inverted);
+            }
+        }
+        else
+        {
+            baseEncoding = null;
+        }
         applyDifferences();
     }
 
@@ -117,7 +136,7 @@ public class DictionaryEncoding extends Encoding
                     // triggering this error indicates a bug in PDFBox. Every font should always have
                     // a built-in encoding, if not, we parsed it incorrectly.
                     throw new IllegalArgumentException("Symbolic fonts must have a built-in " +
-                        "encoding");
+                                                       "encoding");
                 }
             }
         }

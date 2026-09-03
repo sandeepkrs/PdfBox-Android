@@ -33,14 +33,13 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 import com.tom_roush.fontbox.FontBoxFont;
 import com.tom_roush.fontbox.ttf.OpenTypeFont;
 import com.tom_roush.fontbox.ttf.TTFParser;
 import com.tom_roush.fontbox.ttf.TrueTypeFont;
 import com.tom_roush.fontbox.type1.Type1Font;
 import com.tom_roush.pdfbox.android.PDFBoxConfig;
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
-
 /**
  * Font mapper, locates non-embedded fonts via a pluggable FontProvider.
  *
@@ -48,6 +47,7 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
  */
 final class FontMapperImpl implements FontMapper
 {
+
     private static final FontCache fontCache = new FontCache(); // todo: static cache isn't ideal
     private FontProvider fontProvider;
     private Map<String, FontInfo> fontInfoByName;
@@ -60,51 +60,50 @@ final class FontMapperImpl implements FontMapper
     {
         // substitutes for standard 14 fonts
         addSubstitutes("Courier",
-            new ArrayList<String>(Arrays.asList("CourierNew", "CourierNewPSMT", "LiberationMono",
-                "NimbusMonL-Regu", "DroidSansMono")));
+                new ArrayList<String>(Arrays.asList("CourierNew", "CourierNewPSMT", "LiberationMono",
+                        "NimbusMonL-Regu", "DroidSansMono")));
         addSubstitutes("Courier-Bold",
-            new ArrayList<String>(Arrays.asList("CourierNewPS-BoldMT", "CourierNew-Bold",
-                "LiberationMono-Bold", "NimbusMonL-Bold", "DroidSansMono")));
+                new ArrayList<String>(Arrays.asList("CourierNewPS-BoldMT", "CourierNew-Bold",
+                        "LiberationMono-Bold", "NimbusMonL-Bold", "DroidSansMono")));
         addSubstitutes("Courier-Oblique",
-            new ArrayList<String>(Arrays.asList("CourierNewPS-ItalicMT","CourierNew-Italic",
-                "LiberationMono-Italic", "NimbusMonL-ReguObli", "DroidSansMono")));
+                new ArrayList<String>(Arrays.asList("CourierNewPS-ItalicMT","CourierNew-Italic",
+                        "LiberationMono-Italic", "NimbusMonL-ReguObli", "DroidSansMono")));
         addSubstitutes("Courier-BoldOblique",
-            new ArrayList<String>(Arrays.asList("CourierNewPS-BoldItalicMT",
-                "CourierNew-BoldItalic", "LiberationMono-BoldItalic",
-                "NimbusMonL-BoldObli", "DroidSansMono")));
+                new ArrayList<String>(Arrays.asList("CourierNewPS-BoldItalicMT",
+                        "CourierNew-BoldItalic", "LiberationMono-BoldItalic",
+                        "NimbusMonL-BoldObli", "DroidSansMono")));
         addSubstitutes("Helvetica",
-            new ArrayList<String>(Arrays.asList("ArialMT", "Arial", "LiberationSans",
-                "NimbusSanL-Regu", "Roboto-Regular")));
+                new ArrayList<String>(Arrays.asList("ArialMT", "Arial", "LiberationSans",
+                        "NimbusSanL-Regu", "Roboto-Regular")));
         addSubstitutes("Helvetica-Bold",
-            new ArrayList<String>(Arrays.asList("Arial-BoldMT", "Arial-Bold",
-                "LiberationSans-Bold", "NimbusSanL-Bold", "Roboto-Bold")));
+                new ArrayList<String>(Arrays.asList("Arial-BoldMT", "Arial-Bold",
+                        "LiberationSans-Bold", "NimbusSanL-Bold", "Roboto-Bold")));
         addSubstitutes("Helvetica-Oblique",
-            new ArrayList<String>(Arrays.asList("Arial-ItalicMT", "Arial-Italic",
-                "Helvetica-Italic", "LiberationSans-Italic", "NimbusSanL-ReguItal", "Roboto-Italic")));
+                new ArrayList<String>(Arrays.asList("Arial-ItalicMT", "Arial-Italic",
+                        "Helvetica-Italic", "LiberationSans-Italic", "NimbusSanL-ReguItal", "Roboto-Italic")));
         addSubstitutes("Helvetica-BoldOblique",
-            new ArrayList<String>(Arrays.asList("Arial-BoldItalicMT", "Helvetica-BoldItalic",
-                "LiberationSans-BoldItalic", "NimbusSanL-BoldItal", "Roboto-BoldItalic")));
+                new ArrayList<String>(Arrays.asList("Arial-BoldItalicMT", "Helvetica-BoldItalic",
+                        "LiberationSans-BoldItalic", "NimbusSanL-BoldItal", "Roboto-BoldItalic")));
         addSubstitutes("Times-Roman",
-            new ArrayList<String>(Arrays.asList("TimesNewRomanPSMT", "TimesNewRoman",
-                "TimesNewRomanPS", "LiberationSerif", "NimbusRomNo9L-Regu", "Roboto-Regular")));
+                new ArrayList<String>(Arrays.asList("TimesNewRomanPSMT", "TimesNewRoman",
+                        "TimesNewRomanPS", "LiberationSerif", "NimbusRomNo9L-Regu", "Roboto-Regular")));
         addSubstitutes("Times-Bold",
-            new ArrayList<String>(Arrays.asList("TimesNewRomanPS-BoldMT", "TimesNewRomanPS-Bold",
-                "TimesNewRoman-Bold", "LiberationSerif-Bold",
-                "NimbusRomNo9L-Medi", "DroidSerif-Bold", "Roboto-Bold")));
+                new ArrayList<String>(Arrays.asList("TimesNewRomanPS-BoldMT", "TimesNewRomanPS-Bold",
+                        "TimesNewRoman-Bold", "LiberationSerif-Bold",
+                        "NimbusRomNo9L-Medi", "DroidSerif-Bold", "Roboto-Bold")));
         addSubstitutes("Times-Italic",
-            new ArrayList<String>(Arrays.asList("TimesNewRomanPS-ItalicMT",
-                "TimesNewRomanPS-Italic", "TimesNewRoman-Italic", "LiberationSerif-Italic",
-                "NimbusRomNo9L-ReguItal", "DroidSerif-Italic", "Roboto-Italic")));
+                new ArrayList<String>(Arrays.asList("TimesNewRomanPS-ItalicMT",
+                        "TimesNewRomanPS-Italic", "TimesNewRoman-Italic", "LiberationSerif-Italic",
+                        "NimbusRomNo9L-ReguItal", "DroidSerif-Italic", "Roboto-Italic")));
         addSubstitutes("Times-BoldItalic",
-            new ArrayList<String>(Arrays.asList("TimesNewRomanPS-BoldItalicMT",
-                "TimesNewRomanPS-BoldItalic", "TimesNewRoman-BoldItalic",
-                "LiberationSerif-BoldItalic", "NimbusRomNo9L-MediItal", "DroidSerif-BoldItalic", "Roboto-BoldItalic")));
+                new ArrayList<String>(Arrays.asList("TimesNewRomanPS-BoldItalicMT",
+                        "TimesNewRomanPS-BoldItalic", "TimesNewRoman-BoldItalic",
+                        "LiberationSerif-BoldItalic", "NimbusRomNo9L-MediItal", "DroidSerif-BoldItalic", "Roboto-BoldItalic")));
         addSubstitutes("Symbol",
-            new ArrayList<String>(Arrays.asList("Symbol", "SymbolMT", "StandardSymL")));
+                new ArrayList<String>(Arrays.asList("Symbol", "SymbolMT", "StandardSymL")));
         addSubstitutes("ZapfDingbats", new ArrayList<String>(
-            Arrays.asList("ZapfDingbatsITCbyBT-Regular", "ZapfDingbatsITC", "Dingbats",
-                "MS-Gothic")));
-        // TODO: PdfBox-Android load extra fonts? (DroidSerif for times and a symbol font)
+                Arrays.asList("ZapfDingbatsITCbyBT-Regular", "ZapfDingbatsITC", "Dingbats",
+                        "MS-Gothic", "DejaVuSans")));
 
         // Acrobat also uses alternative names for Standard 14 fonts, which we map to those above
         // these include names such as "Arial" and "TimesNewRoman"
@@ -119,6 +118,7 @@ final class FontMapperImpl implements FontMapper
 
         // -------------------------
 
+        // TODO: PdfBox-Android load extra fonts? (DroidSerif for times and a symbol font)
         try
         {
             String ttfName = "com/tom_roush/pdfbox/resources/ttf/LiberationSans-Regular.ttf";
@@ -270,8 +270,8 @@ final class FontMapperImpl implements FontMapper
             {
                 String lower = fontDescriptor.getFontName().toLowerCase();
                 isBold = lower.contains("bold") ||
-                    lower.contains("black") ||
-                    lower.contains("heavy");
+                         lower.contains("black") ||
+                         lower.contains("heavy");
             }
 
             // font descriptor flags should describe the style
@@ -343,7 +343,7 @@ final class FontMapperImpl implements FontMapper
      */
     @Override
     public FontMapping<TrueTypeFont> getTrueTypeFont(String baseFont,
-        PDFontDescriptor fontDescriptor)
+                                                            PDFontDescriptor fontDescriptor)
     {
         TrueTypeFont ttf = (TrueTypeFont)findFont(FontFormat.TTF, baseFont);
         if (ttf != null)
@@ -372,7 +372,7 @@ final class FontMapperImpl implements FontMapper
      */
     @Override
     public FontMapping<FontBoxFont> getFontBoxFont(String baseFont,
-        PDFontDescriptor fontDescriptor)
+                                                          PDFontDescriptor fontDescriptor)
     {
         FontBoxFont font = findFontBoxFont(baseFont);
         if (font != null)
@@ -435,10 +435,7 @@ final class FontMapperImpl implements FontMapper
         }
 
         // make sure the font provider is initialized
-        if (fontProvider == null)
-        {
-            getProvider();
-        }
+        getProvider();
 
         // first try to match the PostScript name
         FontInfo info = getFont(format, postScriptName);
@@ -471,6 +468,18 @@ final class FontMapperImpl implements FontMapper
             return info.getFont();
         }
 
+        if (postScriptName.contains(","))
+        {
+            postScriptName = postScriptName.substring(0, postScriptName.indexOf(","));
+            // PDFBOX-5806: try cutting font style and getting the basefont
+            // eg. for "Wingdings,Bolt" to "Wingding-Regular" (including the following step)
+            info = getFont(format, postScriptName);
+            if (info != null)
+            {
+                return info.getFont();
+            }
+        }
+
         // try appending "-Regular", works for Wingdings on windows
         info = getFont(format, postScriptName + "-Regular");
         if (info != null)
@@ -486,10 +495,11 @@ final class FontMapperImpl implements FontMapper
      */
     private FontInfo getFont(FontFormat format, String postScriptName)
     {
+        int index = postScriptName.indexOf('+');
         // strip subset tag (happens when we substitute a corrupt embedded font, see PDFBOX-2642)
-        if (postScriptName.contains("+"))
+        if (index > -1)
         {
-            postScriptName = postScriptName.substring(postScriptName.indexOf('+') + 1);
+            postScriptName = postScriptName.substring(index + 1);
         }
 
         // look up the PostScript name
@@ -514,7 +524,7 @@ final class FontMapperImpl implements FontMapper
      */
     @Override
     public CIDFontMapping getCIDFont(String baseFont, PDFontDescriptor fontDescriptor,
-        PDCIDSystemInfo cidSystemInfo)
+                                            PDCIDSystemInfo cidSystemInfo)
     {
         // try name match or substitute with OTF
         OpenTypeFont otf1 = (OpenTypeFont)findFont(FontFormat.OTF, baseFont);
@@ -530,7 +540,7 @@ final class FontMapperImpl implements FontMapper
             return new CIDFontMapping(null, ttf, false);
         }
 
-        if (cidSystemInfo != null)
+        if (cidSystemInfo != null && fontDescriptor != null)
         {
             // "In Acrobat 3.0.1 and later, Type 0 fonts that use a CMap whose CIDSystemInfo
             // dictionary defines the Adobe-GB1, Adobe-CNS1 Adobe-Japan1, or Adobe-Korea1 character
@@ -575,8 +585,11 @@ final class FontMapperImpl implements FontMapper
      * @param cidSystemInfo Font's CIDSystemInfo, may be null.
      */
     private PriorityQueue<FontMatch> getFontMatches(PDFontDescriptor fontDescriptor,
-        PDCIDSystemInfo cidSystemInfo)
+                                                           PDCIDSystemInfo cidSystemInfo)
     {
+        // make sure the font provider is initialized
+        getProvider();
+
         PriorityQueue<FontMatch> queue = new PriorityQueue<FontMatch>(20);
 
         for (FontInfo info : fontInfoByName.values())
@@ -597,7 +610,7 @@ final class FontMapperImpl implements FontMapper
                 {
                     if (panose.getFamilyKind() == 0 &&
                         (info.getPostScriptName().toLowerCase().contains("barcode") ||
-                            info.getPostScriptName().startsWith("Code")) &&
+                         info.getPostScriptName().startsWith("Code")) &&
                         !probablyBarcodeFont(fontDescriptor))
                     {
                         // PDFBOX-4268: ignore barcode font if we aren't searching for one.
@@ -610,15 +623,15 @@ final class FontMapperImpl implements FontMapper
                         match.score += 2;
                     }
                     else if (panose.getSerifStyle() >= 2 && panose.getSerifStyle() <= 5 &&
-                        info.getPanose().getSerifStyle() >= 2 &&
-                        info.getPanose().getSerifStyle() <= 5)
+                             info.getPanose().getSerifStyle() >= 2 &&
+                             info.getPanose().getSerifStyle() <= 5)
                     {
                         // cove (serif)
                         match.score += 1;
                     }
                     else if (panose.getSerifStyle() >= 11 && panose.getSerifStyle() <= 13 &&
-                        info.getPanose().getSerifStyle() >= 11 &&
-                        info.getPanose().getSerifStyle() <= 13)
+                             info.getPanose().getSerifStyle() >= 11 &&
+                             info.getPanose().getSerifStyle() <= 13)
                     {
                         // sans-serif
                         match.score += 1;
@@ -680,7 +693,7 @@ final class FontMapperImpl implements FontMapper
             fn = "";
         }
         return ff.startsWith("Code") || ff.toLowerCase().contains("barcode") ||
-            fn.startsWith("Code") || fn.toLowerCase().contains("barcode");
+               fn.startsWith("Code") || fn.toLowerCase().contains("barcode");
     }
 
     /**
@@ -689,10 +702,15 @@ final class FontMapperImpl implements FontMapper
      */
     private boolean isCharSetMatch(PDCIDSystemInfo cidSystemInfo, FontInfo info)
     {
+        String ordering = cidSystemInfo.getOrdering();
+        if (ordering == null)
+        {
+            return false;
+        }
         if (info.getCIDSystemInfo() != null)
         {
             return info.getCIDSystemInfo().getRegistry().equals(cidSystemInfo.getRegistry()) &&
-                info.getCIDSystemInfo().getOrdering().equals(cidSystemInfo.getOrdering());
+                   info.getCIDSystemInfo().getOrdering().equals(ordering);
         }
         else
         {
@@ -709,26 +727,26 @@ final class FontMapperImpl implements FontMapper
                 // PDFBOX-4793 and PDF.js 10699: This font has only Korean, but has bits 17-21 set.
                 codePageRange &= ~(JIS_JAPAN | CHINESE_SIMPLIFIED | CHINESE_TRADITIONAL);
             }
-            if (cidSystemInfo.getOrdering().equals("GB1") &&
-                (codePageRange & CHINESE_SIMPLIFIED) == CHINESE_SIMPLIFIED)
+            if (ordering.equals("GB1") &&
+                    (codePageRange & CHINESE_SIMPLIFIED) == CHINESE_SIMPLIFIED)
             {
                 return true;
             }
-            else if (cidSystemInfo.getOrdering().equals("CNS1") &&
-                (codePageRange & CHINESE_TRADITIONAL) == CHINESE_TRADITIONAL)
+            else if (ordering.equals("CNS1") &&
+                    (codePageRange & CHINESE_TRADITIONAL) == CHINESE_TRADITIONAL)
             {
                 return true;
             }
-            else if (cidSystemInfo.getOrdering().equals("Japan1") &&
-                (codePageRange & JIS_JAPAN) == JIS_JAPAN)
+            else if (ordering.equals("Japan1") &&
+                    (codePageRange & JIS_JAPAN) == JIS_JAPAN)
             {
                 return true;
             }
             else
             {
-                return cidSystemInfo.getOrdering().equals("Korea1") &&
-                    ((codePageRange & KOREAN_WANSUNG) == KOREAN_WANSUNG ||
-                        (codePageRange & KOREAN_JOHAB) == KOREAN_JOHAB);
+                return ordering.equals("Korea1") &&
+                        ((codePageRange & KOREAN_WANSUNG) == KOREAN_WANSUNG ||
+                         (codePageRange & KOREAN_JOHAB) == KOREAN_JOHAB);
             }
         }
     }
@@ -765,9 +783,9 @@ final class FontMapperImpl implements FontMapper
             FontMatch match = queue.poll();
             FontInfo info = match.info;
             System.out.println(match.score + " | " + info.getMacStyle() + " " +
-                info.getFamilyClass() + " " + info.getPanose() + " " +
-                info.getCIDSystemInfo() + " " + info.getPostScriptName() + " " +
-                info.getFormat());
+                               info.getFamilyClass() + " " + info.getPanose() + " " +
+                               info.getCIDSystemInfo() + " " + info.getPostScriptName() + " " +
+                               info.getFormat());
         }
         System.out.println("-------");
         return bestMatch;

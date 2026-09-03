@@ -24,8 +24,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +45,7 @@ import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
+import com.tom_roush.pdfbox.util.Charsets;
 /**
  * Common functionality for embedding TrueType fonts.
  *
@@ -57,6 +57,12 @@ abstract class TrueTypeEmbedder implements Subsetter
     private static final int ITALIC = 1;
     private static final int OBLIQUE = 512;
     private static final String BASE25 = "BCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    // PDF spec required tables (if present), all others will be removed
+    private static final List<String> TABLES =
+            Arrays.asList("head", "hhea", "loca", "maxp", "cvt ", "prep", "glyf", "hmtx", "fpgm",
+                    // Windows ClearType
+                    "gasp");
 
     private final PDDocument document;
     protected TrueTypeFont ttf;
@@ -71,14 +77,14 @@ abstract class TrueTypeEmbedder implements Subsetter
     protected final CmapSubtable cmap;
 
     protected final CmapLookup cmapLookup;
-    private final Set<Integer> subsetCodePoints = new HashSet<Integer>();
+    private final Set<Integer> subsetCodePoints = new LinkedHashSet<Integer>();
     private final boolean embedSubset;
 
     /**
      * Creates a new TrueType font for embedding.
      */
     TrueTypeEmbedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
-        boolean embedSubset) throws IOException
+                     boolean embedSubset) throws IOException
     {
         this.document = document;
         this.embedSubset = embedSubset;
@@ -98,7 +104,7 @@ abstract class TrueTypeEmbedder implements Subsetter
             InputStream is = ttf.getOriginalData();
             byte[] b = new byte[4];
             is.mark(b.length);
-            if (is.read(b) == b.length && new String(b).equals("ttcf"))
+            if (is.read(b) == b.length && new String(b, Charsets.US_ASCII).equals("ttcf"))
             {
                 is.close();
                 throw new IOException("Full embedding of TrueType font collections not supported");
@@ -156,9 +162,10 @@ abstract class TrueTypeEmbedder implements Subsetter
      */
     boolean isEmbeddingPermitted(TrueTypeFont ttf) throws IOException
     {
-        if (ttf.getOS2Windows() != null)
+        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();
+        if (os2 != null)
         {
-            int fsType = ttf.getOS2Windows().getFsType();
+            int fsType = os2.getFsType();
             int maskedFsType = fsType & 0x000F;
             // PDFBOX-5191: don't check the bit because permissions are exclusive
             if (maskedFsType == OS2WindowsMetricsTable.FSTYPE_RESTRICTED)
@@ -167,7 +174,7 @@ abstract class TrueTypeEmbedder implements Subsetter
                 return false;
             }
             else if ((fsType & OS2WindowsMetricsTable.FSTYPE_BITMAP_ONLY) ==
-                OS2WindowsMetricsTable.FSTYPE_BITMAP_ONLY)
+                                 OS2WindowsMetricsTable.FSTYPE_BITMAP_ONLY)
             {
                 // bitmap embedding only
                 return false;
@@ -181,11 +188,12 @@ abstract class TrueTypeEmbedder implements Subsetter
      */
     private boolean isSubsettingPermitted(TrueTypeFont ttf) throws IOException
     {
-        if (ttf.getOS2Windows() != null)
+        OS2WindowsMetricsTable os2 = ttf.getOS2Windows();
+        if (os2 != null)
         {
-            int fsType = ttf.getOS2Windows().getFsType();
+            int fsType = os2.getFsType();
             if ((fsType & OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING) ==
-                OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING)
+                          OS2WindowsMetricsTable.FSTYPE_NO_SUBSETTING)
             {
                 return false;
             }
@@ -324,6 +332,18 @@ abstract class TrueTypeEmbedder implements Subsetter
         subsetCodePoints.add(codePoint);
     }
 
+    /**
+     * Returns the Unicode code points that were passed to {@link #addToSubset(int)}, i.e. the code
+     * points actually used in the document, in first-occurrence order. Used when building the
+     * ToUnicode CMap to map a glyph back to the code point that was really typed.
+     *
+     * @return the code points added to the subset, in insertion order
+     */
+    Set<Integer> getSubsetCodePoints()
+    {
+        return subsetCodePoints;
+    }
+
     @Override
     public void subset() throws IOException
     {
@@ -337,23 +357,13 @@ abstract class TrueTypeEmbedder implements Subsetter
             throw new IllegalStateException("Subsetting is disabled");
         }
 
-        // PDF spec required tables (if present), all others will be removed
-        List<String> tables = new ArrayList<String>();
-        tables.add("head");
-        tables.add("hhea");
-        tables.add("loca");
-        tables.add("maxp");
-        tables.add("cvt ");
-        tables.add("prep");
-        tables.add("glyf");
-        tables.add("hmtx");
-        tables.add("fpgm");
-        // Windows ClearType
-        tables.add("gasp");
-
         // set the GIDs to subset
-        TTFSubsetter subsetter = new TTFSubsetter(ttf, tables);
+        TTFSubsetter subsetter = new TTFSubsetter(ttf, TABLES);
         subsetter.addAll(subsetCodePoints);
+        subsetter.forceInvisible('\u200B'); // ZWSP
+        subsetter.forceInvisible('\u200C'); // ZWNJ
+        subsetter.forceInvisible('\u2060'); // WJ
+        subsetter.forceInvisible('\uFEFF'); // ZWNBSP
 
         // calculate deterministic tag based on the chosen subset
         Map<Integer, Integer> gidToCid = subsetter.getGIDMap();
@@ -381,16 +391,15 @@ abstract class TrueTypeEmbedder implements Subsetter
      * Rebuild a font subset.
      */
     protected abstract void buildSubset(InputStream ttfSubset, String tag,
-        Map<Integer, Integer> gidToCid) throws IOException;
+                                     Map<Integer, Integer> gidToCid) throws IOException;
 
     /**
      * Returns an uppercase 6-character unique tag for the given subset.
      */
     public String getTag(Map<Integer, Integer> gidToCid)
     {
-        // deterministic
-        long num = gidToCid.hashCode();
-
+        // hash might be negative due to an overflow if the map contains lots of values
+        long num = Math.abs(gidToCid.hashCode());
         // base25 encode
         StringBuilder sb = new StringBuilder();
         do

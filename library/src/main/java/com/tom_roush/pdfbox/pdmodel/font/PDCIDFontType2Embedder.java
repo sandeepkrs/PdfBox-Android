@@ -23,14 +23,20 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.tom_roush.fontbox.cff.CFFCIDFont;
+import com.tom_roush.fontbox.cff.CFFCharset;
+import com.tom_roush.fontbox.cff.CFFFont;
+import com.tom_roush.fontbox.ttf.CFFTable;
 import com.tom_roush.fontbox.ttf.GlyphData;
 import com.tom_roush.fontbox.ttf.GlyphTable;
 import com.tom_roush.fontbox.ttf.HorizontalMetricsTable;
+import com.tom_roush.fontbox.ttf.OpenTypeFont;
 import com.tom_roush.fontbox.ttf.TrueTypeFont;
 import com.tom_roush.fontbox.ttf.VerticalHeaderTable;
 import com.tom_roush.fontbox.ttf.VerticalMetricsTable;
@@ -40,7 +46,6 @@ import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
 /**
  * Embedded PDCIDFontType2 builder. Helper class to populate a PDCIDFontType2 and its parent
  * PDType0Font from a TTF.
@@ -50,6 +55,7 @@ import com.tom_roush.pdfbox.pdmodel.common.PDStream;
  */
 final class PDCIDFontType2Embedder extends TrueTypeEmbedder
 {
+
 
     private final PDDocument document;
     private final PDType0Font parent;
@@ -67,7 +73,7 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
      * @throws IOException if the TTF could not be read
      */
     PDCIDFontType2Embedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
-        boolean embedSubset, PDType0Font parent, boolean vertical) throws IOException
+            boolean embedSubset, PDType0Font parent, boolean vertical) throws IOException
     {
         super(document, dict, ttf, embedSubset);
         this.document = document;
@@ -98,7 +104,7 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
      */
     @Override
     protected void buildSubset(InputStream ttfSubset, String tag, Map<Integer, Integer> gidToCid)
-        throws IOException
+            throws IOException
     {
         // build CID2GIDMap, because the content stream has been written with the old GIDs
         TreeMap<Integer, Integer> cidToGid = new TreeMap<Integer, Integer>();
@@ -125,6 +131,20 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
 
     private void buildToUnicodeCMap(Map<Integer, Integer> newGIDToOldCID) throws IOException
     {
+        // PDFBOX-6210:
+        // When several code points map to one glyph, prefer the one actually used in the
+        // document (first occurrence wins) instead of cmapLookup.getCharCodes(gid).get(0),
+        // which is the lowest code point and often an unexpected compatibility character.
+        Map<Integer, Integer> inputCodePointByGID = new HashMap<Integer, Integer>();
+        for (int codePoint : getSubsetCodePoints())
+        {
+            int inputGid = cmapLookup.getGlyphId(codePoint);
+            if (inputGid > 0 && inputCodePointByGID.get(inputGid) == null)
+            {
+                inputCodePointByGID.put(inputGid, codePoint);
+            }
+        }
+
         ToUnicodeWriter toUniWriter = new ToUnicodeWriter();
         boolean hasSurrogates = false;
         for (int gid = 1, max = ttf.getMaximumProfile().getNumGlyphs(); gid <= max; gid++)
@@ -149,10 +169,14 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
 
             // skip composite glyph components that have no code point
             List<Integer> codes = cmapLookup.getCharCodes(cid); // old GID -> Unicode
-            if (codes != null)
+            // PDFBOX-6210: try to get the codepoint that is actually use in the document
+            // instead of cmapLookup.getCharCodes(gid).get(0)
+            // set inputCodePoint to null to test pre-PDFBOX-6210 behavior
+            Integer inputCodePoint = inputCodePointByGID.get(cid);
+            if (inputCodePoint != null || codes != null)
             {
-                // use the first entry even for ambiguous mappings
-                int codePoint = codes.get(0);
+                // fall back to the cmap's first entry for glyphs with no recorded input
+                int codePoint = inputCodePoint != null ? inputCodePoint : codes.get(0);
                 if (codePoint > 0xFFFF)
                 {
                     hasSurrogates = true;
@@ -216,10 +240,46 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
             buildVerticalMetrics(cidFont);
         }
 
+        if (ttf instanceof OpenTypeFont && !needsSubset())
+        {
+            checkForCidGidIdentity();
+        }
+
         // CIDToGIDMap
         cidFont.setItem(COSName.CID_TO_GID_MAP, COSName.IDENTITY);
 
         return cidFont;
+    }
+
+    private void checkForCidGidIdentity() throws IOException
+    {
+        // PDFBOX-6172: if somebody is using a not subsetted otf font, check whether cid == gid
+        // (subsetted will fail anyway)
+        OpenTypeFont otf = (OpenTypeFont) ttf;
+        CFFTable cffTable = otf.getCFF();
+        if (cffTable == null)
+        {
+            return;
+        }
+        CFFFont cff = cffTable.getFont();
+        if (!(cff instanceof CFFCIDFont))
+        {
+            return;
+        }
+        CFFCharset charset = cff.getCharset();
+        if (charset == null)
+        {
+            return;
+        }
+        int glyphCount = otf.getNumberOfGlyphs();
+        for (int gid = 0; gid < glyphCount; gid++)
+        {
+            int cid = charset.getCIDForGID(gid);
+            if (gid != cid)
+            {
+                throw new IllegalStateException("CID and GID not identical: CID " + cid + " != GID " + gid + ", use a ttf font instead");
+            }
+        }
     }
 
     private void addNameTag(String tag)
@@ -285,7 +345,7 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
         COSArray widths = new COSArray();
         COSArray ws = new COSArray();
         int prev = Integer.MIN_VALUE;
-        // Use a sorted list to get an optimal width array  
+        // Use a sorted list to get an optimal width array
         Set<Integer> keys = cidToGid.keySet();
         HorizontalMetricsTable horizontalMetricsTable = ttf.getHorizontalMetrics();
         for (int cid : keys)
@@ -580,63 +640,63 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
 
             switch (state)
             {
-                case FIRST:
-                    if (cid == lastCid + 1 && w1Value == lastW1Value && vxValue == lastVxValue && vyValue == lastVyValue)
-                    {
-                        state = State.SERIAL;
-                    }
-                    else if (cid == lastCid + 1)
-                    {
-                        state = State.BRACKET;
-                        inner = new COSArray();
-                        inner.add(COSInteger.get(lastW1Value));
-                        inner.add(COSInteger.get(lastVxValue));
-                        inner.add(COSInteger.get(lastVyValue));
-                    }
-                    else
-                    {
-                        inner = new COSArray();
-                        inner.add(COSInteger.get(lastW1Value));
-                        inner.add(COSInteger.get(lastVxValue));
-                        inner.add(COSInteger.get(lastVyValue));
-                        outer.add(inner);
-                        outer.add(COSInteger.get(cid));
-                    }
-                    break;
-                case BRACKET:
-                    if (cid == lastCid + 1 && w1Value == lastW1Value && vxValue == lastVxValue && vyValue == lastVyValue)
-                    {
-                        state = State.SERIAL;
-                        outer.add(inner);
-                        outer.add(COSInteger.get(lastCid));
-                    }
-                    else if (cid == lastCid + 1)
-                    {
-                        inner.add(COSInteger.get(lastW1Value));
-                        inner.add(COSInteger.get(lastVxValue));
-                        inner.add(COSInteger.get(lastVyValue));
-                    }
-                    else
-                    {
-                        state = State.FIRST;
-                        inner.add(COSInteger.get(lastW1Value));
-                        inner.add(COSInteger.get(lastVxValue));
-                        inner.add(COSInteger.get(lastVyValue));
-                        outer.add(inner);
-                        outer.add(COSInteger.get(cid));
-                    }
-                    break;
-                case SERIAL:
-                    if (cid != lastCid + 1 || w1Value != lastW1Value || vxValue != lastVxValue || vyValue != lastVyValue)
-                    {
-                        outer.add(COSInteger.get(lastCid));
-                        outer.add(COSInteger.get(lastW1Value));
-                        outer.add(COSInteger.get(lastVxValue));
-                        outer.add(COSInteger.get(lastVyValue));
-                        outer.add(COSInteger.get(cid));
-                        state = State.FIRST;
-                    }
-                    break;
+            case FIRST:
+                if (cid == lastCid + 1 && w1Value == lastW1Value && vxValue == lastVxValue && vyValue == lastVyValue)
+                {
+                    state = State.SERIAL;
+                }
+                else if (cid == lastCid + 1)
+                {
+                    state = State.BRACKET;
+                    inner = new COSArray();
+                    inner.add(COSInteger.get(lastW1Value));
+                    inner.add(COSInteger.get(lastVxValue));
+                    inner.add(COSInteger.get(lastVyValue));
+                }
+                else
+                {
+                    inner = new COSArray();
+                    inner.add(COSInteger.get(lastW1Value));
+                    inner.add(COSInteger.get(lastVxValue));
+                    inner.add(COSInteger.get(lastVyValue));
+                    outer.add(inner);
+                    outer.add(COSInteger.get(cid));
+                }
+                break;
+            case BRACKET:
+                if (cid == lastCid + 1 && w1Value == lastW1Value && vxValue == lastVxValue && vyValue == lastVyValue)
+                {
+                    state = State.SERIAL;
+                    outer.add(inner);
+                    outer.add(COSInteger.get(lastCid));
+                }
+                else if (cid == lastCid + 1)
+                {
+                    inner.add(COSInteger.get(lastW1Value));
+                    inner.add(COSInteger.get(lastVxValue));
+                    inner.add(COSInteger.get(lastVyValue));
+                }
+                else
+                {
+                    state = State.FIRST;
+                    inner.add(COSInteger.get(lastW1Value));
+                    inner.add(COSInteger.get(lastVxValue));
+                    inner.add(COSInteger.get(lastVyValue));
+                    outer.add(inner);
+                    outer.add(COSInteger.get(cid));
+                }
+                break;
+            case SERIAL:
+                if (cid != lastCid + 1 || w1Value != lastW1Value || vxValue != lastVxValue || vyValue != lastVyValue)
+                {
+                    outer.add(COSInteger.get(lastCid));
+                    outer.add(COSInteger.get(lastW1Value));
+                    outer.add(COSInteger.get(lastVxValue));
+                    outer.add(COSInteger.get(lastVyValue));
+                    outer.add(COSInteger.get(cid));
+                    state = State.FIRST;
+                }
+                break;
             }
             lastW1Value = w1Value;
             lastVxValue = vxValue;
@@ -646,25 +706,25 @@ final class PDCIDFontType2Embedder extends TrueTypeEmbedder
 
         switch (state)
         {
-            case FIRST:
-                inner = new COSArray();
-                inner.add(COSInteger.get(lastW1Value));
-                inner.add(COSInteger.get(lastVxValue));
-                inner.add(COSInteger.get(lastVyValue));
-                outer.add(inner);
-                break;
-            case BRACKET:
-                inner.add(COSInteger.get(lastW1Value));
-                inner.add(COSInteger.get(lastVxValue));
-                inner.add(COSInteger.get(lastVyValue));
-                outer.add(inner);
-                break;
-            case SERIAL:
-                outer.add(COSInteger.get(lastCid));
-                outer.add(COSInteger.get(lastW1Value));
-                outer.add(COSInteger.get(lastVxValue));
-                outer.add(COSInteger.get(lastVyValue));
-                break;
+        case FIRST:
+            inner = new COSArray();
+            inner.add(COSInteger.get(lastW1Value));
+            inner.add(COSInteger.get(lastVxValue));
+            inner.add(COSInteger.get(lastVyValue));
+            outer.add(inner);
+            break;
+        case BRACKET:
+            inner.add(COSInteger.get(lastW1Value));
+            inner.add(COSInteger.get(lastVxValue));
+            inner.add(COSInteger.get(lastVyValue));
+            outer.add(inner);
+            break;
+        case SERIAL:
+            outer.add(COSInteger.get(lastCid));
+            outer.add(COSInteger.get(lastW1Value));
+            outer.add(COSInteger.get(lastVxValue));
+            outer.add(COSInteger.get(lastVyValue));
+            break;
         }
         return outer;
     }

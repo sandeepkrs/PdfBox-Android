@@ -34,7 +34,7 @@ import com.tom_roush.pdfbox.pdmodel.font.encoding.GlyphList;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.StandardEncoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
-
+import com.tom_roush.pdfbox.pdmodel.font.encoding.ZapfDingbatsEncoding;
 /**
  * A simple font. Simple fonts use a PostScript encoding vector.
  *
@@ -42,6 +42,7 @@ import com.tom_roush.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
  */
 public abstract class PDSimpleFont extends PDFont
 {
+
     protected Encoding encoding;
     protected GlyphList glyphList;
     private Boolean isSymbolic;
@@ -85,11 +86,21 @@ public abstract class PDSimpleFont extends PDFont
         if (encodingBase instanceof COSName)
         {
             COSName encodingName = (COSName) encodingBase;
-            this.encoding = Encoding.getInstance(encodingName);
-            if (this.encoding == null)
+            if ("ZapfDingbats".equals(getName()) && !isEmbedded())
             {
-                Log.w("PdfBox-Android", "Unknown encoding: " + encodingName.getName());
-                this.encoding = readEncodingFromFont(); // fallback
+                // PDFBOX- and PDF.js issue 16464: ignore other encodings
+                // this segment will work only if readEncoding() is called after the data
+                // for getName() and isEmbedded() is available
+                this.encoding = ZapfDingbatsEncoding.INSTANCE;
+            }
+            else
+            {
+                this.encoding = Encoding.getInstance(encodingName);
+                if (this.encoding == null)
+                {
+                    Log.w("PdfBox-Android", "Unknown encoding: " + encodingName.getName());
+                    this.encoding = readEncodingFromFont(); // fallback
+                }
             }
         }
         else if (encodingBase instanceof COSDictionary)
@@ -101,7 +112,7 @@ public abstract class PDSimpleFont extends PDFont
             COSName baseEncoding = encodingDict.getCOSName(COSName.BASE_ENCODING);
 
             boolean hasValidBaseEncoding = baseEncoding != null &&
-                Encoding.getInstance(baseEncoding) != null;
+                                             Encoding.getInstance(baseEncoding) != null;
 
             if (!hasValidBaseEncoding && Boolean.TRUE.equals(symbolic))
             {
@@ -198,8 +209,8 @@ public abstract class PDSimpleFont extends PDFont
                 return true;
             }
             else if (encoding instanceof WinAnsiEncoding ||
-                encoding instanceof MacRomanEncoding ||
-                encoding instanceof StandardEncoding)
+                     encoding instanceof MacRomanEncoding ||
+                     encoding instanceof StandardEncoding)
             {
                 return false;
             }
@@ -213,8 +224,8 @@ public abstract class PDSimpleFont extends PDFont
                         // skip
                     }
                     else if (!(WinAnsiEncoding.INSTANCE.contains(name) &&
-                        MacRomanEncoding.INSTANCE.contains(name) &&
-                        StandardEncoding.INSTANCE.contains(name)))
+                               MacRomanEncoding.INSTANCE.contains(name) &&
+                               StandardEncoding.INSTANCE.contains(name)))
                     {
                         return true;
                     }
@@ -297,12 +308,12 @@ public abstract class PDSimpleFont extends PDFont
             if (name != null)
             {
                 Log.w("PdfBox-Android", "No Unicode mapping for " + name + " (" + code + ") in font " +
-                    getName());
+                        getName());
             }
             else
             {
                 Log.w("PdfBox-Android", "No Unicode mapping for character code " + code + " in font " +
-                    getName());
+                        getName());
             }
         }
 

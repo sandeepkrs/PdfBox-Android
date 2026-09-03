@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSString;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
 /**
  * A font descriptor.
  *
@@ -849,7 +848,7 @@ public final class PDFontDescriptor implements COSObjectable
      */
     public PDPanose getPanose()
     {
-        COSDictionary style = (COSDictionary)dic.getDictionaryObject(COSName.STYLE);
+        COSDictionary style = dic.getCOSDictionary(COSName.STYLE);
         if (style != null)
         {
             COSString panose = (COSString)style.getDictionaryObject(COSName.PANOSE);

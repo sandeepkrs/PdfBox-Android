@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
 import com.tom_roush.fontbox.afm.FontMetrics;
 import com.tom_roush.fontbox.pfb.PfbParser;
 import com.tom_roush.fontbox.type1.Type1Font;
@@ -34,7 +35,6 @@ import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.Encoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.GlyphList;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.Type1Encoding;
-
 /**
  * Embedded PDType1Font builder. Helper class to populate a PDType1Font from a PFB and AFM.
  *
@@ -54,7 +54,7 @@ class PDType1FontEmbedder
      * @throws IOException If there is an error loading the data.
      */
     PDType1FontEmbedder(PDDocument doc, COSDictionary dict, InputStream pfbStream,
-        Encoding encoding) throws IOException
+                        Encoding encoding) throws IOException
     {
         dict.setItem(COSName.SUBTYPE, COSName.TYPE1);
 
@@ -76,7 +76,6 @@ class PDType1FontEmbedder
         PDFontDescriptor fd = buildFontDescriptor(type1);
 
         PDStream fontStream = new PDStream(doc, pfbParser.getInputStream(), COSName.FLATE_DECODE);
-        fontStream.getCOSObject().setInt("Length", pfbParser.size());
         for (int i = 0; i < pfbParser.getLengths().length; i++)
         {
             fontStream.getCOSObject().setInt("Length" + (i + 1), pfbParser.getLengths()[i]);
@@ -108,7 +107,7 @@ class PDType1FontEmbedder
     static PDFontDescriptor buildFontDescriptor(Type1Font type1)
     {
         boolean isSymbolic = type1.getEncoding()
-            instanceof com.tom_roush.fontbox.encoding.BuiltInEncoding;
+                instanceof com.tom_roush.fontbox.encoding.BuiltInEncoding;
         BoundingBox bbox = type1.getFontBBox();
         PDFontDescriptor fd = new PDFontDescriptor();
 

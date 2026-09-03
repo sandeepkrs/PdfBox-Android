@@ -32,7 +32,6 @@ import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.util.Vector;
-
 /**
  * A CIDFont. A CIDFont is a PDF object that contains information about a CIDFont program. Although
  * its Type value is Font, a CIDFont is not actually a font.
@@ -43,6 +42,7 @@ import com.tom_roush.pdfbox.util.Vector;
  */
 public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFont
 {
+
     protected final PDType0Font parent;
 
     private Map<Integer, Float> widths;
@@ -71,6 +71,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
 
     private void readWidths()
     {
+        // see 9.7.4.3, "Glyph Metrics in CIDFonts"
         widths = new HashMap<Integer, Float>();
         COSBase wBase = dict.getDictionaryObject(COSName.W);
         if (wBase instanceof COSArray)
@@ -217,7 +218,7 @@ public abstract class PDCIDFont implements COSObjectable, PDFontLike, PDVectorFo
     {
         if (fontDescriptor == null)
         {
-            COSDictionary fd = (COSDictionary) dict.getDictionaryObject(COSName.FONT_DESC);
+            COSDictionary fd = dict.getCOSDictionary(COSName.FONT_DESC);
             if (fd != null)
             {
                 fontDescriptor = new PDFontDescriptor(fd);

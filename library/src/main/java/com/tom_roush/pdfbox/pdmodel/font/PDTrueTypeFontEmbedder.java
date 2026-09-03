@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import com.tom_roush.fontbox.ttf.HorizontalMetricsTable;
 import com.tom_roush.fontbox.ttf.TrueTypeFont;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -31,7 +33,6 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.Encoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.GlyphList;
-
 /**
  * Embedded PDTrueTypeFont builder. Helper class to populate a PDTrueTypeFont from a TTF.
  *
@@ -52,7 +53,7 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
      * @throws IOException if the TTF could not be read
      */
     PDTrueTypeFontEmbedder(PDDocument document, COSDictionary dict, TrueTypeFont ttf,
-        Encoding encoding) throws IOException
+                           Encoding encoding) throws IOException
     {
         super(document, dict, ttf, false);
         dict.setItem(COSName.SUBTYPE, COSName.TRUE_TYPE);
@@ -79,9 +80,9 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
         HorizontalMetricsTable hmtx = ttf.getHorizontalMetrics();
 
         Map<Integer, String> codeToName = getFontEncoding().getCodeToNameMap();
-
-        int firstChar = Collections.min(codeToName.keySet());
-        int lastChar = Collections.max(codeToName.keySet());
+        Set<Integer> codes = codeToName.keySet();
+        int firstChar = Collections.min(codes);
+        int lastChar = Collections.max(codes);
 
         List<Integer> widths = new ArrayList<Integer>(lastChar - firstChar + 1);
         for (int i = 0; i < lastChar - firstChar + 1; i++)
@@ -99,10 +100,14 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
             if (code >= firstChar && code <= lastChar)
             {
                 String uni = glyphList.toUnicode(name);
-                int charCode = uni.codePointAt(0);
-                int gid = cmapLookup.getGlyphId(charCode);
+                int gid = 0;
+                if (uni != null)
+                {
+                    int charCode = uni.codePointAt(0);
+                    gid = cmapLookup.getGlyphId(charCode);
+                }
                 widths.set(entry.getKey() - firstChar,
-                    Math.round(hmtx.getAdvanceWidth(gid) * scaling));
+                           Math.round(hmtx.getAdvanceWidth(gid) * scaling));
             }
         }
 
@@ -121,7 +126,7 @@ final class PDTrueTypeFontEmbedder extends TrueTypeEmbedder
 
     @Override
     protected void buildSubset(InputStream ttfSubset, String tag,
-        Map<Integer, Integer> gidToCid) throws IOException
+                            Map<Integer, Integer> gidToCid) throws IOException
     {
         // use PDType0Font instead
         throw new UnsupportedOperationException();
