@@ -15,8 +15,8 @@ jobs:
       - name: Configure JDK
         uses: actions/setup-java@v3.11.0
         with:
-          java-version: 11
-          distribution: 'adopt'
+          java-version: 17
+          distribution: 'temurin'
 
       - name: Set Release Version Name
         run: sed -e s/-SNAPSHOT//g -i gradle.properties;
