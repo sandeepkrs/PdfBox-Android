@@ -30,6 +30,33 @@ public class PDDeviceCMYKTest extends TestCase
 {
    public void testCMYK() throws IOException
    {
+      PDDeviceCMYK cmyk = PDDeviceCMYK.INSTANCE;
+
+      float[] white = cmyk.toRGB(new float[] { 0, 0, 0, 0 });
+      assertEquals(1.0f, white[0], 0.001f);
+      assertEquals(1.0f, white[1], 0.001f);
+      assertEquals(1.0f, white[2], 0.001f);
+
+      float[] black = cmyk.toRGB(new float[] { 0, 0, 0, 1 });
+      assertEquals(0.0f, black[0], 0.001f);
+      assertEquals(0.0f, black[1], 0.001f);
+      assertEquals(0.0f, black[2], 0.001f);
+
+      float[] cyan = cmyk.toRGB(new float[] { 1, 0, 0, 0 });
+      assertEquals(0.0f, cyan[0], 0.001f);
+      assertEquals(1.0f, cyan[1], 0.001f);
+      assertEquals(1.0f, cyan[2], 0.001f);
+
+      float[] magenta = cmyk.toRGB(new float[] { 0, 1, 0, 0 });
+      assertEquals(1.0f, magenta[0], 0.001f);
+      assertEquals(0.0f, magenta[1], 0.001f);
+      assertEquals(1.0f, magenta[2], 0.001f);
+
+      float[] yellow = cmyk.toRGB(new float[] { 0, 0, 1, 0 });
+      assertEquals(1.0f, yellow[0], 0.001f);
+      assertEquals(1.0f, yellow[1], 0.001f);
+      assertEquals(0.0f, yellow[2], 0.001f);
+
       PDDeviceCMYK.INSTANCE = new CustomDeviceCMYK();
    }
 

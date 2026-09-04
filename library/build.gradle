@@ -92,9 +92,9 @@ tasks.withType(Test) {
 }
 
 dependencies {
-    api "org.bouncycastle:bcprov-jdk15to18:1.85.2"
+    api "org.bouncycastle:bcprov-jdk15to18:1.85"
     api "org.bouncycastle:bcpkix-jdk15to18:1.85"
-    api "org.bouncycastle:bcutil-jdk15to18:1.85.1"
+    api "org.bouncycastle:bcutil-jdk15to18:1.85"
     // for jpeg2000 decode/encode
     compileOnly files('libs/jp2-android-1.0.3.aar')
 
