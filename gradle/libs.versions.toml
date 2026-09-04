@@ -1,0 +1,24 @@
+[versions]
+agp = "8.7.3"
+bouncycastle = "1.85"
+appcompat = "1.7.0"
+junit = "4.13.2"
+mockito = "5.12.0"
+diffutils = "1.3.0"
+testRunner = "1.6.2"
+jp2Android = "1.0.5"
+
+[libraries]
+bouncycastle-bcprov = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bouncycastle" }
+bouncycastle-bcutil = { module = "org.bouncycastle:bcutil-jdk15to18", version.ref = "bouncycastle" }
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+jp2-android = { module = "dev.keiji.jp2:jp2-android", version.ref = "jp2Android" }
+junit = { module = "junit:junit", version.ref = "junit" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+java-diffutils = { module = "com.googlecode.java-diff-utils:diffutils", version.ref = "diffutils" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }

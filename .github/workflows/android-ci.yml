@@ -18,8 +18,8 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v3.11.0
         with:
-          java-version: 11
-          distribution: 'adopt'
+          java-version: 17
+          distribution: 'temurin'
 
       - name: Build & Test
         run: ./gradlew build test
@@ -42,8 +42,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3.11.0
         with:
-          java-version: 11
-          distribution: 'adopt'
+          java-version: 17
+          distribution: 'temurin'
 
       - name: Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -79,8 +79,8 @@ jobs:
       - name: Configure JDK
         uses: actions/setup-java@v3.11.0
         with:
-          java-version: 11
-          distribution: 'adopt'
+          java-version: 17
+          distribution: 'temurin'
 
       - name: Upload Snapshot
         run: ./gradlew publish

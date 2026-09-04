@@ -36,13 +36,19 @@ Reading JPX Images
 
 Android does not come with native support for handling JPX images. These images can be read using the [JP2Android library](https://github.com/ThalesGroup/JP2ForAndroid). As JPX is not a common image format, this library is not included with PdfBox-Android by default. If the JP2Android library is not on the classpath of your application, JPX images will be ignored and a warning will be logged.
 
-To include the JP2Android library in your own application, either build it from its [source repository](https://github.com/ThalesGroup/JP2ForAndroid) or copy the prebuilt AAR vendored in this repository (`sample/libs/jp2-android-1.0.3.aar`) and reference it as a file dependency:
-```gradle
+To include the JP2Android library with 16 KB page-size alignment in your own application, add the Maven Central dependency:
+```kotlin
 dependencies {
-    implementation files('libs/jp2-android-1.0.3.aar')
+    implementation("dev.keiji.jp2:jp2-android:1.0.5")
 }
 ```
-Note: the library was originally distributed through JCenter, which no longer hosts the artifact. The vendored copy is unmodified and is licensed under the BSD 2-Clause license (Copyright (c) 2018 Gemalto s.r.o., see the [upstream repository](https://github.com/ThalesGroup/JP2ForAndroid) for the full license text).
+Or in Groovy DSL:
+```groovy
+dependencies {
+    implementation 'dev.keiji.jp2:jp2-android:1.0.5'
+}
+```
+Note: `dev.keiji.jp2:jp2-android` is distributed through Maven Central and includes 16 KB page-size aligned ELF LOAD segments for modern Android (Android 15+) compatibility.
 
 Important notes
 ==============
