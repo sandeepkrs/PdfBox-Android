@@ -80,7 +80,7 @@ public class ValidateXImage
         writeOk = ximage.getImage().compress(compressFormat, 100,
             new NullOutputStream());
             assertTrue(writeOk);
-        writeOk = ximage.getOpaqueImage().compress(compressFormat, 100,
+        writeOk = ximage.getOpaqueImage(null, 1).compress(compressFormat, 100,
             new NullOutputStream());
         assertTrue(writeOk);
     }

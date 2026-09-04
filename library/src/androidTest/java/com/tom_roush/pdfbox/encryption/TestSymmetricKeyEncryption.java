@@ -40,6 +40,7 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.text.PDFTextStripper;
 import com.tom_roush.pdfbox.pdmodel.PDDocumentCatalog;
 import com.tom_roush.pdfbox.pdmodel.PDDocumentNameDictionary;
 import com.tom_roush.pdfbox.pdmodel.PDEmbeddedFilesNameTreeNode;
@@ -47,6 +48,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPage;
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDComplexFileSpecification;
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDEmbeddedFile;
 import com.tom_roush.pdfbox.pdmodel.encryption.AccessPermission;
+import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import com.tom_roush.pdfbox.pdmodel.encryption.PDEncryption;
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardProtectionPolicy;
 import com.tom_roush.pdfbox.pdmodel.encryption.StandardSecurityHandler;
@@ -59,6 +61,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -96,11 +99,9 @@ public class TestSymmetricKeyEncryption
         testResultsDir = new File(testContext.getCacheDir(), "pdfbox-test-output/crypto");
         testResultsDir.mkdirs();
 
-        if (Cipher.getMaxAllowedKeyLength("AES") != Integer.MAX_VALUE)
-        {
-            // we need strong encryption for these tests
-            fail("JCE unlimited strength jurisdiction policy files are not installed");
-        }
+        // we need strong encryption for these tests
+        assertEquals("JCE unlimited strength jurisdiction policy files are not installed",
+            Integer.MAX_VALUE, Cipher.getMaxAllowedKeyLength("AES"));
 
         permission = new AccessPermission();
         permission.setCanAssembleDocument(false);
@@ -132,37 +133,20 @@ public class TestSymmetricKeyEncryption
         restrAP.setCanExtractContent(false);
         restrAP.setCanModify(false);
 
-        byte[] inputFileAsByteArray = getFileResourceAsByteArray("PasswordSample-40bit.pdf");
-        checkPerms(inputFileAsByteArray, "owner", fullAP);
-        checkPerms(inputFileAsByteArray, "user", restrAP);
-        try
-        {
-            checkPerms(inputFileAsByteArray, "", null);
-            fail("wrong password not detected");
-        }
-        catch (IOException ex)
-        {
-            assertEquals("Cannot decrypt PDF, the password is incorrect", ex.getMessage());
-        }
+        checkSeveralPerms(getFileResourceAsByteArray("PasswordSample-40bit.pdf"), fullAP, restrAP);
 
         restrAP.setCanAssembleDocument(false);
         restrAP.setCanExtractForAccessibility(false);
         restrAP.setCanPrintFaithful(false);
 
-        inputFileAsByteArray = getFileResourceAsByteArray("PasswordSample-128bit.pdf");
-        checkPerms(inputFileAsByteArray, "owner", fullAP);
-        checkPerms(inputFileAsByteArray, "user", restrAP);
-        try
-        {
-            checkPerms(inputFileAsByteArray, "", null);
-            fail("wrong password not detected");
-        }
-        catch (IOException ex)
-        {
-            assertEquals("Cannot decrypt PDF, the password is incorrect", ex.getMessage());
-        }
+        checkSeveralPerms(getFileResourceAsByteArray("PasswordSample-128bit.pdf"), fullAP, restrAP);
 
-        inputFileAsByteArray = getFileResourceAsByteArray("PasswordSample-256bit.pdf");
+        checkSeveralPerms(getFileResourceAsByteArray("PasswordSample-256bit.pdf"), fullAP, restrAP);
+    }
+
+    private void checkSeveralPerms(byte[] inputFileAsByteArray, AccessPermission fullAP,
+        AccessPermission restrAP) throws IOException
+    {
         checkPerms(inputFileAsByteArray, "owner", fullAP);
         checkPerms(inputFileAsByteArray, "user", restrAP);
         try
@@ -170,7 +154,7 @@ public class TestSymmetricKeyEncryption
             checkPerms(inputFileAsByteArray, "", null);
             fail("wrong password not detected");
         }
-        catch (IOException ex)
+        catch (InvalidPasswordException ex)
         {
             assertEquals("Cannot decrypt PDF, the password is incorrect", ex.getMessage());
         }
@@ -485,11 +469,85 @@ public class TestSymmetricKeyEncryption
 
     private byte[] getFileResourceAsByteArray(String testFileName) throws IOException
     {
-        return IOUtils.toByteArray(testContext.getAssets().open("pdfbox/com/tom_roush/pdfbox/pdmodel/encryption/" + testFileName));
+        InputStream is = testContext.getAssets().open("pdfbox/com/tom_roush/pdfbox/pdmodel/encryption/" + testFileName);
+        try
+        {
+            return IOUtils.toByteArray(is);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(is);
+        }
     }
 
     private byte[] getFileAsByteArray(File f) throws IOException
     {
-        return IOUtils.toByteArray(new FileInputStream(f));
+        InputStream is = new FileInputStream(f);
+        try
+        {
+            return IOUtils.toByteArray(is);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(is);
+        }
+    }
+
+    /**
+     * PDFBOX-5955: test unusual RC4 encryption that has 40 or 48 bits instead of 128.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testPDFBox5955() throws IOException
+    {
+        File TARGETPDFDIR = new File(testContext.getCacheDir(), "pdfs");
+        TARGETPDFDIR.mkdirs();
+        File file40bit = TestResourceGenerator.downloadTestResource(TARGETPDFDIR, "PDFBOX-5955-40bit.pdf",
+            "https://issues.apache.org/jira/secure/attachment/13074727/R%3D4%2C%20V%3D4%2C%2040-bit%20RC4.pdf");
+        assumeTrue(file40bit.exists());
+        File file48bit = TestResourceGenerator.downloadTestResource(TARGETPDFDIR, "PDFBOX-5955-48bit.pdf",
+            "https://issues.apache.org/jira/secure/attachment/13074728/R%3D4%2C%20V%3D4%2C%2048-bit%20RC4.pdf");
+        assumeTrue(file48bit.exists());
+        PDDocument doc = PDDocument.load(file40bit);
+
+        PDFTextStripper stripper = new PDFTextStripper();
+        String text = stripper.getText(doc);
+        assertTrue(text.contains("0x0446615747"));
+        doc.close();
+        doc = PDDocument.load(file40bit);
+        stripper = new PDFTextStripper();
+        text = stripper.getText(doc);
+        assertTrue(text.contains("0x0446615747"));
+        doc.close();
+        doc = PDDocument.load(file48bit);
+        stripper = new PDFTextStripper();
+        text = stripper.getText(doc);
+        assertTrue(text.contains("0x02988E82AFF8"));
+        doc.close();
+        doc = PDDocument.load(file48bit);
+        stripper = new PDFTextStripper();
+        text = stripper.getText(doc);
+        assertTrue(text.contains("0x02988E82AFF8"));
+        doc.close();
+    }
+
+    /**
+     * test AESV3 with R=5 and excess bytes.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testPDFBox5639() throws IOException
+    {
+        File TARGETPDFDIR = new File(testContext.getCacheDir(), "pdfs");
+        TARGETPDFDIR.mkdirs();
+        File file = TestResourceGenerator.downloadTestResource(TARGETPDFDIR, "PDFBOX-5639.pdf",
+            "https://issues.apache.org/jira/secure/attachment/13061409/incorrect_password.pdf");
+        assumeTrue(file.exists());
+        PDDocument document = PDDocument.load(file, "JUL2023rfi");
+        assertEquals(2, document.getNumberOfPages());
+        document.close();
     }
 }
+

@@ -37,6 +37,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.tom_roush.fontbox.ttf.OTFParser;
+import com.tom_roush.fontbox.ttf.OpenTypeFont;
 import com.tom_roush.fontbox.ttf.TTFParser;
 import com.tom_roush.fontbox.ttf.TrueTypeCollection;
 import com.tom_roush.fontbox.ttf.TrueTypeFont;
@@ -156,7 +158,9 @@ public class PDFontTest
         PDPage page = new PDPage();
         PDPageContentStream contentStream = new PDPageContentStream(doc, page);
 
-        PDType1Font font = new PDType1Font(doc, new FileInputStream(fontFile), WinAnsiEncoding.INSTANCE);
+        InputStream is = new FileInputStream(fontFile);
+        PDType1Font font = new PDType1Font(doc, is, WinAnsiEncoding.INSTANCE);
+        is.close();
 
         contentStream.beginText();
         contentStream.setFont(font, 10);
@@ -459,4 +463,94 @@ public class PDFontTest
         Assert.assertTrue(area1.equals(area2)); // assertEquals does not test equals()
         doc.close();
     }
+
+    /**
+     * Check space width.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void PDFBOX5920Type0() throws IOException
+    {
+        InputStream is = testContext.getAssets().open(
+            "com/tom_roush/pdfbox/resources/ttf/LiberationSans-Regular.ttf");
+        PDDocument document = new PDDocument();
+        PDFont font = PDType0Font.load(document, is, false);
+        Assert.assertEquals(20064.0f,
+            font.getStringWidth("The quick brown fox jumps over the lazy dog."), 0.001f);
+        Assert.assertEquals(278.0f, font.getSpaceWidth(), 0.001f);
+        document.close();
+    }
+
+    /**
+     * Check space width.
+     *
+     * @throws IOException
+     */
+    @Test
+    public void PDFBOX5920TrueType() throws IOException
+    {
+        InputStream is = testContext.getAssets().open(
+            "com/tom_roush/pdfbox/resources/ttf/LiberationSans-Regular.ttf");
+        PDDocument document = new PDDocument();
+        PDFont font = PDTrueTypeFont.load(document, is, WinAnsiEncoding.INSTANCE);
+        Assert.assertEquals(20064.0f,
+            font.getStringWidth("The quick brown fox jumps over the lazy dog."), 0.001f);
+        Assert.assertEquals(278.0f, font.getSpaceWidth(), 0.001f);
+        document.close();
+    }
+
+    @Test
+    public void testSymbol() throws IOException
+    {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+        PDDocument doc = new PDDocument();
+        PDPage page = new PDPage();
+        PDPageContentStream contentStream = new PDPageContentStream(doc, page);
+        contentStream.beginText();
+        contentStream.setFont(PDType1Font.SYMBOL, 10);
+        contentStream.newLineAtOffset(10, 700);
+        // Note that the Alpha is the greek alpha, but the Omega is the Ohm symbol
+        // (Tested on Windows)
+        contentStream.showText("\u0391 \u2126");
+        contentStream.endText();
+        contentStream.close();
+        doc.addPage(page);
+        doc.save(baos);
+        doc.close();
+
+        doc = PDDocument.load(baos.toByteArray());
+        PDFTextStripper stripper = new PDFTextStripper();
+        String text = stripper.getText(doc);
+        Assert.assertEquals("\u0391 \u2126", text.trim());
+        doc.close();
+    }
+
+    // PDFBOX-6172: test that exception is thrown on otf font with CID and GID not identical.
+    @Test
+    public void testPDFBox6172() throws IOException
+    {
+        PDDocument document = new PDDocument();
+        File fontFile = TestResourceGenerator.downloadTestResource(IN_DIR, "NotoSansSC-Regular.otf",
+            "https://issues.apache.org/jira/secure/attachment/13081021/NotoSansSC-Regular.otf");
+        assumeTrue(fontFile.exists());
+        InputStream is = new FileInputStream(fontFile);
+        OpenTypeFont otf = new OTFParser().parse(is);
+        try
+        {
+            PDType0Font.load(document, otf, false);
+        }
+        catch (IllegalStateException ex)
+        {
+            Assert.assertEquals("CID and GID not identical: CID 628 != GID 372, use a ttf font instead", ex.getMessage());
+            return;
+        }
+        finally
+        {
+            document.close();
+        }
+        Assert.fail("should have thrown IllegalStateException");
+    }
 }
+

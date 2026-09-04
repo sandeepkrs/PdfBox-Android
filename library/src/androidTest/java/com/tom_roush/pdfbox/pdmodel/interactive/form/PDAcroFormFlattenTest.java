@@ -26,17 +26,22 @@ import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.io.OutputStream;
 import java.net.URL;
 
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import com.tom_roush.pdfbox.rendering.PDFRenderer;
 import com.tom_roush.pdfbox.rendering.TestRendering;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -281,12 +286,77 @@ public class PDAcroFormFlattenTest
     * @throws IOException
     */
    @Test
-   public void testFlattenPDFBox4889() throws IOException
+   public void flattenTestPDFBOX5254() throws IOException
    {
       String sourceUrl = "https://issues.apache.org/jira/secure/attachment/13005793/f1040sb%20test.pdf";
-      String targetFileName = "PDFBOX-4889.pdf";
+      String targetFileName = "PDFBOX-4889-5254.pdf";
 
-      flattenAndCompare(sourceUrl, targetFileName);
+      generateSamples(sourceUrl, targetFileName);
+
+      File inputFile = new File(IN_DIR, targetFileName);
+      File outputFile = new File(OUT_DIR, targetFileName);
+
+      PDDocument testPdf = PDDocument.load(inputFile);
+      testPdf.getDocumentCatalog().getAcroForm().flatten();
+      testPdf.setAllSecurityToBeRemoved(true);
+      testPdf.save(outputFile);
+      assertTrue(testPdf.getDocumentCatalog().getAcroForm().getFields().isEmpty());
+      assertEquals(72, testPdf.getPage(0).getAnnotations().size());
+      testPdf.close();
+
+      // compare rendering
+      TestRendering testRendering = new TestRendering();
+      testRendering.setUp();
+      testRendering.render(outputFile);
+
+      removeAllRenditions(inputFile);
+      inputFile.delete();
+      outputFile.delete();
+   }
+
+   /**
+    * Check that only VN_Name is removed in the field tree and in the annotations list. That field
+    * has an "orphan" widget that belongs to no page.
+    *
+    * @throws IOException
+    */
+   @Test
+   public void flattenTestPDFBOX5225() throws IOException
+   {
+      String sourceUrl = "https://issues.apache.org/jira/secure/attachment/13027311/SourceFailure.pdf";
+      String targetFileName = "PDFBOX-5225.pdf";
+
+      generateSamples(sourceUrl, targetFileName);
+
+      File inputFile = new File(IN_DIR, targetFileName);
+      File outputFile = new File(OUT_DIR, targetFileName);
+
+      PDDocument testPdf = PDDocument.load(inputFile);
+      PDAcroForm acroForm = testPdf.getDocumentCatalog().getAcroForm();
+      List<PDField> list = new ArrayList<PDField>();
+      list.add(acroForm.getField("VN_NAME"));
+      acroForm.flatten(list, false);
+      testPdf.setAllSecurityToBeRemoved(true);
+      testPdf.save(outputFile);
+      int count = 0;
+      Iterator<PDField> iterator = acroForm.getFieldTree().iterator();
+      while (iterator.hasNext())
+      {
+         iterator.next();
+         ++count;
+      }
+      assertEquals(76, count);
+      assertEquals(59, testPdf.getPage(0).getAnnotations().size());
+      testPdf.close();
+
+      // compare rendering
+      TestRendering testRendering = new TestRendering();
+      testRendering.setUp();
+      testRendering.render(outputFile);
+
+      removeAllRenditions(inputFile);
+      inputFile.delete();
+      outputFile.delete();
    }
 
    /**
