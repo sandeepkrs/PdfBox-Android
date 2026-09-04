@@ -19,12 +19,11 @@ package com.tom_roush.pdfbox.contentstream.operator.graphics;
 import java.io.IOException;
 import java.util.List;
 
+import com.tom_roush.pdfbox.contentstream.operator.Operator;
+import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImage;
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDInlineImage;
-import com.tom_roush.pdfbox.contentstream.operator.Operator;
-import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
-
 /**
  * BI Begins an inline image.
  *
@@ -40,8 +39,12 @@ public final class BeginInlineImage extends GraphicsOperatorProcessor
             return;
         }
         PDImage image = new PDInlineImage(operator.getImageParameters(),
-            operator.getImageData(),
-            context.getResources());
+                                          operator.getImageData(),
+                                          context.getResources());
+        if (!image.isStencil() && !context.isShouldProcessColorOperators())
+        {
+            return;
+        }
         context.drawImage(image);
     }
 

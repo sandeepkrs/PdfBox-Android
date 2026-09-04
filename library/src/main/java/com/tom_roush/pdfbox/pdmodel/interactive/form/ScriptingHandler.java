@@ -1,4 +1,3 @@
-package com.tom_roush.pdfbox.pdmodel.interactive.form;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,43 +14,44 @@ package com.tom_roush.pdfbox.pdmodel.interactive.form;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
+package com.tom_roush.pdfbox.pdmodel.interactive.form;
 
+import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionJavaScript;
 public interface ScriptingHandler
 {
-   /**
-    * Handle the fields keyboard event action.
-    *
-    * @param javaScriptAction the keyboard event action script
-    * @param value the current field value
-    * @return the resulting field value
-    */
-   String keyboard(PDActionJavaScript javaScriptAction, String value);
+    /**
+     * Handle the fields keyboard event action.
+     *
+     * @param javaScriptAction the keyboard event action script
+     * @param value the current field value
+     * @return the resulting field value
+     */
+    String keyboard(PDActionJavaScript javaScriptAction, String value);
 
-   /**
-    * Handle the fields format event action.
-    *
-    * @param javaScriptAction the format event action script
-    * @param value the current field value
-    * @return the formatted field value
-    */
-   String format(PDActionJavaScript javaScriptAction, String value);
+    /**
+     * Handle the fields format event action.
+     *
+     * @param javaScriptAction the format event action script
+     * @param value the current field value
+     * @return the formatted field value
+     */
+    String format(PDActionJavaScript javaScriptAction, String value);
 
-   /**
-    * Handle the fields validate event action.
-    *
-    * @param javaScriptAction the validate event action script
-    * @param value the current field value
-    * @return the result of the validity check
-    */
-   boolean validate(PDActionJavaScript javaScriptAction, String value);
+    /**
+     * Handle the fields validate event action.
+     *
+     * @param javaScriptAction the validate event action script
+     * @param value the current field value
+     * @return the result of the validity check
+     */
+    boolean validate(PDActionJavaScript javaScriptAction, String value);
 
-   /**
-    * Handle the fields calculate event action.
-    *
-    * @param javaScriptAction the calculate event action script
-    * @param value the current field value
-    * @return the result of the field calculation
-    */
-   String calculate(PDActionJavaScript javaScriptAction, String value);
+    /**
+     * Handle the fields calculate event action.
+     *
+     * @param javaScriptAction the calculate event action script
+     * @param value the current field value
+     * @return the result of the field calculation
+     */
+    String calculate(PDActionJavaScript javaScriptAction, String value);
 }

@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDLineAppearanceHandler;
-
 /**
  * This is the class that represents a line annotation. Introduced in PDF 1.3 specification
  *
@@ -147,7 +146,7 @@ public class PDAnnotationLine extends PDAnnotationMarkup
      */
     public float[] getLine()
     {
-        COSArray l = (COSArray) getCOSObject().getDictionaryObject(COSName.L);
+        COSArray l = getCOSObject().getCOSArray(COSName.L);
         return l.toFloatArray();
     }
 
@@ -391,7 +390,7 @@ public class PDAnnotationLine extends PDAnnotationMarkup
      */
     public void setCaptionHorizontalOffset(float offset)
     {
-        COSArray array = (COSArray) this.getCOSObject().getDictionaryObject(COSName.CO);
+        COSArray array = this.getCOSObject().getCOSArray(COSName.CO);
         if (array == null)
         {
             array = new COSArray();
@@ -412,7 +411,7 @@ public class PDAnnotationLine extends PDAnnotationMarkup
     public float getCaptionHorizontalOffset()
     {
         float retval = 0.f;
-        COSArray array = (COSArray) this.getCOSObject().getDictionaryObject(COSName.CO);
+        COSArray array = this.getCOSObject().getCOSArray(COSName.CO);
         if (array != null)
         {
             retval = array.toFloatArray()[0];
@@ -428,7 +427,7 @@ public class PDAnnotationLine extends PDAnnotationMarkup
      */
     public void setCaptionVerticalOffset(float offset)
     {
-        COSArray array = (COSArray) this.getCOSObject().getDictionaryObject(COSName.CO);
+        COSArray array = this.getCOSObject().getCOSArray(COSName.CO);
         if (array == null)
         {
             array = new COSArray();
@@ -449,7 +448,7 @@ public class PDAnnotationLine extends PDAnnotationMarkup
     public float getCaptionVerticalOffset()
     {
         float retval = 0.f;
-        COSArray array = (COSArray) this.getCOSObject().getDictionaryObject(COSName.CO);
+        COSArray array = this.getCOSObject().getCOSArray(COSName.CO);
         if (array != null)
         {
             retval = array.toFloatArray()[1];

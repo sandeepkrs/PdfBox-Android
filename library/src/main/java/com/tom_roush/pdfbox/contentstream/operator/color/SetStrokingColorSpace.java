@@ -19,13 +19,12 @@ package com.tom_roush.pdfbox.contentstream.operator.color;
 import java.io.IOException;
 import java.util.List;
 
-import com.tom_roush.pdfbox.cos.COSBase;
-import com.tom_roush.pdfbox.cos.COSName;
-import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import com.tom_roush.pdfbox.contentstream.operator.Operator;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorProcessor;
-
+import com.tom_roush.pdfbox.cos.COSBase;
+import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
 /**
  * CS: Set color space for stroking operations.
  *
@@ -37,6 +36,10 @@ public class SetStrokingColorSpace extends OperatorProcessor
     @Override
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {
+        if (!context.isShouldProcessColorOperators())
+        {
+            return;
+        }
         if (arguments.isEmpty())
         {
             return;

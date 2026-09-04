@@ -18,7 +18,6 @@ package com.tom_roush.pdfbox.cos;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 /**
  * This class represents an integer number in a PDF document.
  *
@@ -70,12 +69,12 @@ public final class COSInteger extends COSNumber
     /**
      * Constant for an out of range value which is bigger than Log.MAX_VALUE.
      */
-    protected static final COSInteger OUT_OF_RANGE_MAX = getInvalid(true);
+    static final COSInteger OUT_OF_RANGE_MAX = getInvalid(true);
 
     /**
      * Constant for an out of range value which is smaller than Log.MIN_VALUE.
      */
-    protected static final COSInteger OUT_OF_RANGE_MIN = getInvalid(false);
+    static final COSInteger OUT_OF_RANGE_MIN = getInvalid(false);
 
     /**
      * Returns a COSInteger instance with the given value.
@@ -101,7 +100,7 @@ public final class COSInteger extends COSNumber
     private static COSInteger getInvalid(boolean maxValue)
     {
         return maxValue ? new COSInteger(Long.MAX_VALUE, false)
-            : new COSInteger(Long.MIN_VALUE, false);
+                : new COSInteger(Long.MIN_VALUE, false);
     }
 
     private final long value;

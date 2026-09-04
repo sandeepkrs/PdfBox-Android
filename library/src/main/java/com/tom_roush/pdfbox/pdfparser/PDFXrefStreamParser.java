@@ -28,7 +28,6 @@ import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSObjectKey;
 import com.tom_roush.pdfbox.cos.COSStream;
-
 /**
  * This will parse a PDF 1.5 (or better) Xref stream and
  * extract the xref information from the stream.
@@ -51,7 +50,7 @@ public class PDFXrefStreamParser extends BaseParser
      * @throws IOException If there is an error initializing the stream.
      */
     public PDFXrefStreamParser(COSStream stream, COSDocument document, XrefTrailerResolver resolver)
-        throws IOException
+            throws IOException
     {
         super(new InputStreamSource(stream.createInputStream()));
         this.document = document;
@@ -77,7 +76,7 @@ public class PDFXrefStreamParser extends BaseParser
         if (wArray.size() != 3)
         {
             throw new IOException(
-                "Wrong number of values for /W array in XRef: " + Arrays.toString(w));
+                    "Wrong number of values for /W array in XRef: " + Arrays.toString(w));
         }
         for (int i = 0; i < 3; i++)
         {
@@ -85,6 +84,11 @@ public class PDFXrefStreamParser extends BaseParser
         }
         if (w[0] < 0 || w[1] < 0 || w[2] < 0)
         {
+            throw new IOException("Incorrect /W array in XRef: " + Arrays.toString(w));
+        }
+        if (w[0] + w[1] + w[2] > 20)
+        {
+            // PDFBOX-6037
             throw new IOException("Incorrect /W array in XRef: " + Arrays.toString(w));
         }
 
@@ -99,7 +103,7 @@ public class PDFXrefStreamParser extends BaseParser
         if (indexArray.size() == 0 || indexArray.size() % 2 == 1)
         {
             throw new IOException(
-                "Wrong number of values for /Index array in XRef: " + Arrays.toString(w));
+                    "Wrong number of values for /Index array in XRef: " + Arrays.toString(w));
         }
         // create an Iterator for all object numbers using the index array
         objectNumbers = new ObjectNumbers(indexArray);
@@ -171,7 +175,6 @@ public class PDFXrefStreamParser extends BaseParser
         private int currentRange = 0;
         private long currentEnd = 0;
         private long currentNumber = 0;
-        private long maxValue = 0;
 
         private ObjectNumbers(COSArray indexArray) throws IOException
         {
@@ -198,29 +201,33 @@ public class PDFXrefStreamParser extends BaseParser
                 }
                 long sizeValue = ((COSInteger) base).longValue();
                 start[counter] = startValue;
-                end[counter++] = startValue + sizeValue;
+                end[counter] = startValue + sizeValue;
+                counter++;
             }
             currentNumber = start[0];
             currentEnd = end[0];
-            maxValue = end[counter - 1];
         }
 
         @Override
         public boolean hasNext()
         {
-            return currentNumber < maxValue;
+            if (start.length == 1)
+            {
+                return currentNumber < currentEnd;
+            }
+            return currentRange < start.length - 1 || currentNumber < currentEnd;
         }
 
         @Override
         public Long next()
         {
-            if (currentNumber >= maxValue)
-            {
-                throw new NoSuchElementException();
-            }
             if (currentNumber < currentEnd)
             {
                 return currentNumber++;
+            }
+            if (currentRange >= start.length - 1)
+            {
+                throw new NoSuchElementException();
             }
             currentNumber = start[++currentRange];
             currentEnd = end[currentRange];

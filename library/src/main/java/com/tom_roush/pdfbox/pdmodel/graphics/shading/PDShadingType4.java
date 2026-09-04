@@ -20,6 +20,7 @@ import android.graphics.PointF;
 import android.util.Log;
 
 import java.io.EOFException;
+import java.io.InputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,9 +110,9 @@ public class PDShadingType4 extends PDTriangleBasedShadingType
         List<ShadedTriangle> list = new ArrayList<ShadedTriangle>();
         long maxSrcCoord = (long) Math.pow(2, getBitsPerCoordinate()) - 1;
         long maxSrcColor = (long) Math.pow(2, getBitsPerComponent()) - 1;
-        COSStream stream = (COSStream) dict;
+        InputStream imageStream = ((COSStream) dict).createInputStream();
 
-        ImageInputStream mciis = new MemoryCacheImageInputStream(stream.createInputStream());
+        ImageInputStream mciis = new MemoryCacheImageInputStream(imageStream);
         try
         {
             byte flag = (byte) 0;
@@ -164,7 +165,8 @@ public class PDShadingType4 extends PDTriangleBasedShadingType
                             lastIndex = list.size() - 1;
                             if (lastIndex < 0)
                             {
-                                Log.e("PdfBox-Android", "broken data stream: " + list.size());
+                                Log.e("PdfBox-Android", "broken data stream: " + list.size() + ", aborting");
+                                eof = true;
                             }
                             else
                             {
@@ -182,7 +184,8 @@ public class PDShadingType4 extends PDTriangleBasedShadingType
                             }
                             break;
                         default:
-                            Log.w("PdfBox-Android", "bad flag: " + flag);
+                            Log.w("PdfBox-Android", "bad flag " + flag + ", aborting");
+                            eof = true;
                             break;
                     }
                 }
@@ -195,6 +198,8 @@ public class PDShadingType4 extends PDTriangleBasedShadingType
         finally
         {
             mciis.close();
+            // MemoryCacheImageInputStream doesn't close the wrapped stream
+            imageStream.close();
         }
         return list;
     }

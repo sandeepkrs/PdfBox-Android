@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -37,7 +38,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionar
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 /**
  * This represents an FDF field that is part of the FDF document.
  *
@@ -802,30 +802,30 @@ public class FDFField implements COSObjectable
             char c = input.charAt(i);
             switch (c)
             {
-                case '<':
-                    escapedXML.append("&lt;");
-                    break;
-                case '>':
-                    escapedXML.append("&gt;");
-                    break;
-                case '\"':
-                    escapedXML.append("&quot;");
-                    break;
-                case '&':
-                    escapedXML.append("&amp;");
-                    break;
-                case '\'':
-                    escapedXML.append("&apos;");
-                    break;
-                default:
-                    if (c > 0x7e)
-                    {
-                        escapedXML.append("&#").append((int) c).append(";");
-                    }
-                    else
-                    {
-                        escapedXML.append(c);
-                    }
+            case '<':
+                escapedXML.append("&lt;");
+                break;
+            case '>':
+                escapedXML.append("&gt;");
+                break;
+            case '\"':
+                escapedXML.append("&quot;");
+                break;
+            case '&':
+                escapedXML.append("&amp;");
+                break;
+            case '\'':
+                escapedXML.append("&apos;");
+                break;
+            default:
+                if (c > 0x7e)
+                {
+                    escapedXML.append("&#").append((int) c).append(';');
+                }
+                else
+                {
+                    escapedXML.append(c);
+                }
             }
         }
         return escapedXML.toString();

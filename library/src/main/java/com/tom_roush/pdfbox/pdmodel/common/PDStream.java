@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +42,6 @@ import com.tom_roush.pdfbox.filter.FilterFactory;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDFileSpecification;
-
 /**
  * A PDStream represents a stream in a PDF document. Streams are tied to a single PDF document.
  *
@@ -49,6 +49,7 @@ import com.tom_roush.pdfbox.pdmodel.common.filespecification.PDFileSpecification
  */
 public class PDStream implements COSObjectable
 {
+
     private final COSStream stream;
 
     /**
@@ -252,6 +253,10 @@ public class PDStream implements COSObjectable
      */
     public InputStream createInputStream(List<String> stopFilters) throws IOException
     {
+        if (stopFilters == null)
+        {
+            stopFilters = Collections.emptyList();
+        }
         InputStream is = stream.createRawInputStream();
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         List<COSName> filters = getFilters();
@@ -260,7 +265,7 @@ public class PDStream implements COSObjectable
             for (int i = 0; i < filters.size(); i++)
             {
                 COSName nextFilter = filters.get(i);
-                if ((stopFilters != null) && stopFilters.contains(nextFilter.getName()))
+                if (stopFilters.contains(nextFilter.getName()))
                 {
                     break;
                 }
@@ -404,7 +409,7 @@ public class PDStream implements COSObjectable
     public void setDecodeParms(List<?> decodeParams)
     {
         stream.setItem(COSName.DECODE_PARMS,
-            COSArrayList.converterToCOSArray(decodeParams));
+                COSArrayList.converterToCOSArray(decodeParams));
     }
 
     /**
@@ -444,12 +449,12 @@ public class PDStream implements COSObjectable
         {
             COSName name = (COSName) filters;
             retval = new COSArrayList<String>(name.getName(), name, stream,
-                COSName.F_FILTER);
+                    COSName.F_FILTER);
         }
         else if (filters instanceof COSArray)
         {
             retval = COSArrayList
-                .convertCOSNameCOSArrayToList((COSArray) filters);
+                    .convertCOSNameCOSArrayToList((COSArray) filters);
         }
         return retval;
     }
@@ -521,7 +526,7 @@ public class PDStream implements COSObjectable
         else if (mdStream != null)
         {
             throw new IllegalStateException("Expected a COSStream but was a "
-                + mdStream.getClass().getSimpleName());
+                            + mdStream.getClass().getSimpleName());
         }
         return retval;
     }

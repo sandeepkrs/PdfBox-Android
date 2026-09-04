@@ -65,6 +65,11 @@ public final class PDImageXObject extends PDXObject implements PDImage
 {
     private SoftReference<Bitmap> cachedImage;
     private PDColorSpace colorSpace;
+    // indicates whether this image has an JPX-based filter applied
+    private boolean hasJPXFilter = false;
+    // is set to true after reading some values from a JPX-based image
+    private boolean jpxValuesInitialized = false;
+    private Bitmap jpxSMask = null;
 
     // initialize to MAX_VALUE as we prefer lower subsampling when keeping/replacing cache.
     private int cachedImageSubsampling = Integer.MAX_VALUE;
@@ -129,38 +134,49 @@ public final class PDImageXObject extends PDXObject implements PDImage
         super(stream, COSName.IMAGE);
         this.resources = resources;
         List<COSName> filters = stream.getFilters();
-        // JPX would be decode twice in rending. here is no need. just to ensure no parameters is missing.
         if (filters != null && !filters.isEmpty() && COSName.JPX_DECODE.equals(filters.get(filters.size() - 1)))
         {
-            // skip decode jpx is no parameters is missing. see PDFBOX-5375 PDFBOX-3340
-            List<COSName> requireKeys = Arrays.asList(COSName.WIDTH, COSName.HEIGHT, COSName.COLORSPACE);
-            boolean needDecode = false;
-            COSStream cos = stream.getCOSObject();
-            for (COSName k : requireKeys)
+            hasJPXFilter = true;
+        }
+    }
+
+    /**
+     * Initializes the values of the image dictionary, colorspace and SMask (if any) if this is a
+     * JPX-based image, so that they can be used without decoding the image again later.
+     */
+    private void initJPXValues()
+    {
+        if (!hasJPXFilter || jpxValuesInitialized)
+        {
+            return;
+        }
+        // some of the dictionary values of the COSStream may be overwritten by values which are extracted from the
+        // image itself, such as
+        // width and height of the image
+        // bits per component
+        // the colorspace of the image is used if the dictionary doesn't provide any value
+        PDStream stream = getStream();
+        COSInputStream is = null;
+        try
+        {
+            is = stream.createInputStream();
+            DecodeResult decodeResult = is.getDecodeResult();
+            stream.getCOSObject().addAll(decodeResult.getParameters());
+            if (colorSpace == null)
             {
-                if (!cos.containsKey(k))
-                {
-                    needDecode = true;
-                    break;
-                }
-            }
-            if (!needDecode)
-            {
-                return;
-            }
-            COSInputStream is = null;
-            try
-            {
-                is = stream.createInputStream();
-                DecodeResult decodeResult = is.getDecodeResult();
-                stream.getCOSObject().addAll(decodeResult.getParameters());
                 // getJPXColorSpace would be null in most cases
-                this.colorSpace = decodeResult.getJPXColorSpace();
+                colorSpace = decodeResult.getJPXColorSpace();
             }
-            finally
-            {
-                IOUtils.closeQuietly(is);
-            }
+            jpxSMask = decodeResult.getJPXSMask();
+            jpxValuesInitialized = true;
+        }
+        catch (IOException exception)
+        {
+            Log.d("PdfBox-Android", "Can't initialize JPX based values", exception);
+        }
+        finally
+        {
+            IOUtils.closeQuietly(is);
         }
     }
 
@@ -495,17 +511,25 @@ public final class PDImageXObject extends PDXObject implements PDImage
         final Bitmap image;
         final PDImageXObject softMask = getSoftMask();
         final PDImageXObject mask = getMask();
+        initJPXValues();
+        if (jpxSMask != null)
+        {
+            // PDFBOX-5657: handle JPEG2000 SMaskInData
+            image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),
+                jpxSMask, false, true, null);
+        }
         // soft mask (overrides explicit mask)
-        if (softMask != null)
+        else if (softMask != null)
         {
             image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),
-                softMask.getOpaqueImage(), softMask.getInterpolate(), true, extractMatte(softMask));
+                softMask.getOpaqueImage(region, subsampling), softMask.getInterpolate(), true,
+                extractMatte(softMask));
         }
         // explicit mask - to be applied only if /ImageMask true
         else if (mask != null && mask.isStencil())
         {
             image = applyMask(SampledImageReader.getRGBImage(this, region, subsampling, getColorKeyMask()),
-                mask.getOpaqueImage(), mask.getInterpolate(), false, null);
+                mask.getOpaqueImage(region, subsampling), mask.getInterpolate(), false, null);
         }
         else
         {
@@ -572,7 +596,25 @@ public final class PDImageXObject extends PDXObject implements PDImage
      */
     public Bitmap getOpaqueImage() throws IOException
     {
-        return SampledImageReader.getRGBImage(this, null);
+        return getOpaqueImage(null, 1);
+    }
+
+    /**
+     * Returns an RGB image containing the opaque image stream without any masks applied. If this Image XObject
+     * is a mask then the image will contain the raw mask.
+     *
+     * @param region The region of the source image to get, or null if the entire image is needed. The actual region
+     * will be clipped to the dimensions of the source image.
+     *
+     * @param subsampling The amount of rows and columns to advance for every output pixel, a value of 1 meaning every
+     * pixel will be read. It must not be larger than the image width or height.
+     *
+     * @return the image without any masks applied
+     * @throws IOException if the image cannot be read
+     */
+    public Bitmap getOpaqueImage(Rect region, int subsampling) throws IOException
+    {
+        return SampledImageReader.getRGBImage(this, region, subsampling, null);
     }
 
     /**
@@ -778,6 +820,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
         }
         else
         {
+            initJPXValues();
             return getCOSObject().getInt(COSName.BITS_PER_COMPONENT, COSName.BPC);
         }
     }
@@ -818,9 +861,13 @@ public final class PDImageXObject extends PDXObject implements PDImage
             else if (isStencil())
             {
                 // stencil mask color space must be gray, it is often missing
-                return PDDeviceGray.INSTANCE;
+                colorSpace = PDDeviceGray.INSTANCE;
             }
             else
+            {
+                initJPXValues();
+            }
+            if (colorSpace == null)
             {
                 // an image without a color space is always broken
                 throw new IOException("could not determine color space");
@@ -864,6 +911,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public int getHeight()
     {
+        initJPXValues();
         return getCOSObject().getInt(COSName.HEIGHT);
     }
 
@@ -876,6 +924,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
     @Override
     public int getWidth()
     {
+        initJPXValues();
         return getCOSObject().getInt(COSName.WIDTH);
     }
 

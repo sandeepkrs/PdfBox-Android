@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSObject;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This class represents the optional content properties dictionary.
  *
@@ -112,6 +111,11 @@ public class PDOptionalContentProperties implements COSObjectable
         return this.dict;
     }
 
+    /**
+     * Return the /OCGs array.
+     *
+     * @return /OCGs array, never null.
+     */
     private COSArray getOCGs()
     {
         COSArray ocgs = this.dict.getCOSArray(COSName.OCGS);
@@ -123,6 +127,11 @@ public class PDOptionalContentProperties implements COSObjectable
         return ocgs;
     }
 
+    /**
+     * Return the /D dictionary.
+     *
+     * @return the /D dictionary, never null.
+     */
     private COSDictionary getD()
     {
         COSBase base = this.dict.getDictionaryObject(COSName.D);
@@ -154,6 +163,10 @@ public class PDOptionalContentProperties implements COSObjectable
         for (COSBase o : ocgs)
         {
             COSDictionary ocg = toDictionary(o);
+            if (ocg == null)
+            {
+                continue;
+            }
             String groupName = ocg.getString(COSName.NAME);
             if (groupName.equals(name))
             {
@@ -173,7 +186,7 @@ public class PDOptionalContentProperties implements COSObjectable
         ocgs.add(ocg.getCOSObject());
 
         //By default, add new group to the "Order" entry so it appears in the user interface
-        COSArray order = (COSArray)getD().getDictionaryObject(COSName.ORDER);
+        COSArray order = getD().getCOSArray(COSName.ORDER);
         if (order == null)
         {
             order = new COSArray();
@@ -192,19 +205,23 @@ public class PDOptionalContentProperties implements COSObjectable
         COSArray ocgs = getOCGs();
         for (COSBase base : ocgs)
         {
-            coll.add(new PDOptionalContentGroup(toDictionary(base)));
+            COSDictionary dictionary = toDictionary(base);
+            if (dictionary != null)
+            {
+                coll.add(new PDOptionalContentGroup(dictionary));
+            }
         }
         return coll;
     }
 
     /**
      * Returns the base state for optional content groups.
-     * @return the base state
+     * @return the base state, never null.
      */
     public BaseState getBaseState()
     {
         COSDictionary d = getD();
-        COSName name = (COSName)d.getItem(COSName.BASE_STATE);
+        COSName name = d.getCOSName(COSName.BASE_STATE, COSName.ON);
         return BaseState.valueOf(name);
     }
 
@@ -235,7 +252,14 @@ public class PDOptionalContentProperties implements COSObjectable
         {
             COSBase obj = ocgs.get(i);
             COSDictionary ocg = toDictionary(obj);
-            groups[i] = ocg.getString(COSName.NAME);
+            if (ocg == null)
+            {
+                groups[i] = "";
+            }
+            else
+            {
+                groups[i] = ocg.getString(COSName.NAME);
+            }
         }
         return groups;
     }
@@ -273,6 +297,10 @@ public class PDOptionalContentProperties implements COSObjectable
         for (COSBase o : ocgs)
         {
             COSDictionary ocg = toDictionary(o);
+            if (ocg == null)
+            {
+                continue;
+            }
             String name = ocg.getString(COSName.NAME);
             if (groupName.equals(name) && isGroupEnabled(new PDOptionalContentGroup(ocg)))
             {
@@ -333,14 +361,20 @@ public class PDOptionalContentProperties implements COSObjectable
 
     private COSDictionary toDictionary(COSBase o)
     {
+        COSBase base;
         if (o instanceof COSObject)
         {
-            return (COSDictionary)((COSObject)o).getObject();
+            base = ((COSObject) o).getObject();
         }
         else
         {
-            return (COSDictionary)o;
+            base = o;
         }
+        if (base instanceof COSDictionary)
+        {
+            return (COSDictionary) base;
+        }
+        return null;
     }
 
     /**
@@ -358,6 +392,10 @@ public class PDOptionalContentProperties implements COSObjectable
         for (COSBase o : ocgs)
         {
             COSDictionary ocg = toDictionary(o);
+            if (ocg == null)
+            {
+                continue;
+            }
             String name = ocg.getString(COSName.NAME);
             if (groupName.equals(name) && setGroupEnabled(new PDOptionalContentGroup(ocg), enable))
             {

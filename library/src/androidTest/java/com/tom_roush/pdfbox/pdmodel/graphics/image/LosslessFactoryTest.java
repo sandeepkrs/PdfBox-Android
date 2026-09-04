@@ -172,7 +172,7 @@ public class LosslessFactoryTest
         validate(ximage, 8, argbImage.getWidth(), argbImage.getHeight(), "png",
             PDDeviceRGB.INSTANCE.getName());
         checkIdent(argbImage, ximage.getImage());
-        checkIdentRGB(argbImage, ximage.getOpaqueImage());
+        checkIdentRGB(argbImage, ximage.getOpaqueImage(null, 1));
 
         assertNotNull(ximage.getSoftMask());
         validate(ximage.getSoftMask(), 8, argbImage.getWidth(), argbImage.getHeight(), "png",
@@ -180,6 +180,7 @@ public class LosslessFactoryTest
         assertTrue(colorCount(ximage.getSoftMask().getImage()) > image.getHeight() / 10);
 
         doWritePDF(document, ximage, testResultsDir, "intargb.pdf");
+        document.close();
     }
 
     // testCreateLosslessFromImageBITMASK_INT_ARGB: Android does not have bitmask transparency
@@ -224,13 +225,14 @@ public class LosslessFactoryTest
 
         validate(ximage, 8, w, h, "png", PDDeviceRGB.INSTANCE.getName());
         checkIdent(argbImage, ximage.getImage());
-        checkIdentRGB(argbImage, ximage.getOpaqueImage());
+        checkIdentRGB(argbImage, ximage.getOpaqueImage(null, 1));
 
         assertNotNull(ximage.getSoftMask());
         validate(ximage.getSoftMask(), 8, w, h, "png", PDDeviceGray.INSTANCE.getName());
         assertTrue(colorCount(ximage.getSoftMask().getImage()) > image.getHeight() / 10);
 
         doWritePDF(document, ximage, testResultsDir, "4babgr.pdf");
+        document.close();
     }
 
     /**
@@ -268,11 +270,12 @@ public class LosslessFactoryTest
 
         validate(ximage, 8, w, h, "png", PDDeviceRGB.INSTANCE.getName());
         checkIdent(rgbImage, ximage.getImage());
-        checkIdentRGB(rgbImage, ximage.getOpaqueImage());
+        checkIdentRGB(rgbImage, ximage.getOpaqueImage(null, 1));
 
         assertNull(ximage.getSoftMask());
 
         doWritePDF(document, ximage, testResultsDir, "ushort555rgb.pdf");
+        document.close();
     }
 
     // TODO: PdfBox-Android : testCreateLosslessFromTransparentGIF: GIF images not currently supported
@@ -385,12 +388,13 @@ public class LosslessFactoryTest
         int h = image.getHeight();
         validate(ximage, 8, w, h, "png", PDDeviceRGB.INSTANCE.getName());
         checkIdent(compareImage, ximage.getImage());
-        checkIdentRGB(compareImage, ximage.getOpaqueImage());
+        checkIdentRGB(compareImage, ximage.getOpaqueImage(null, 1));
 
         assertNotNull(ximage.getSoftMask());
         validate(ximage.getSoftMask(), 8, w, h, "png", PDDeviceGray.INSTANCE.getName());
 //        assertEquals(35, colorCount(ximage.getSoftMask().getImage())); TODO: PdfBox-Android
 
         doWritePDF(document, ximage, testResultsDir, "png16bit.pdf");
+        document.close();
     }
 }

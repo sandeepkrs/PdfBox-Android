@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.pdmodel.fdf;
 import android.util.Log;
 
 import java.io.IOException;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -29,9 +28,7 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLine;
-
 import org.w3c.dom.Element;
-
 /**
  * This represents a Polyline FDF annotation.
  *
@@ -90,12 +87,8 @@ public class FDFAnnotationPolyline extends FDFAnnotation
             {
                 throw new IOException("Error: missing element 'vertices'");
             }
-            String[] verticesValues = vertices.split(",|;");
-            float[] values = new float[verticesValues.length];
-            for (int i = 0; i < verticesValues.length; i++)
-            {
-                values[i] = Float.parseFloat(verticesValues[i]);
-            }
+            String[] verticesValues = vertices.split("[,;]");
+            float[] values = parseFloats(verticesValues);
             setVertices(values);
         }
         catch (XPathExpressionException e)
@@ -263,16 +256,6 @@ public class FDFAnnotationPolyline extends FDFAnnotation
      */
     public AWTColor getInteriorColor()
     {
-        AWTColor retval = null;
-        COSArray array = (COSArray) annot.getDictionaryObject(COSName.IC);
-        if (array != null)
-        {
-            float[] rgb = array.toFloatArray();
-            if (rgb.length >= 3)
-            {
-                retval = new AWTColor(rgb[0], rgb[1], rgb[2]);
-            }
-        }
-        return retval;
+        return getColor(COSName.IC);
     }
 }

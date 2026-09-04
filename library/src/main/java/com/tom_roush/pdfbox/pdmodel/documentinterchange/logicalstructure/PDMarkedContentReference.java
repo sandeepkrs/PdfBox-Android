@@ -20,7 +20,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * A marked-content reference.
  *
@@ -67,7 +66,7 @@ public class PDMarkedContentReference implements COSObjectable
      */
     public PDPage getPage()
     {
-        COSDictionary pg = (COSDictionary) this.getCOSObject().getDictionaryObject(COSName.PG);
+        COSDictionary pg = this.getCOSObject().getCOSDictionary(COSName.PG);
         if (pg != null)
         {
             return new PDPage(pg);
@@ -102,6 +101,10 @@ public class PDMarkedContentReference implements COSObjectable
      */
     public void setMCID(int mcid)
     {
+        if (mcid < 0)
+        {
+            throw new IllegalArgumentException("MCID is negative");
+        }
         this.getCOSObject().setInt(COSName.MCID, mcid);
     }
 

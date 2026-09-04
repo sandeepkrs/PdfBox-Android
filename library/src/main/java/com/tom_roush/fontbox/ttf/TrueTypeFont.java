@@ -31,7 +31,6 @@ import java.util.Map;
 
 import com.tom_roush.fontbox.FontBoxFont;
 import com.tom_roush.fontbox.util.BoundingBox;
-
 /**
  * A TrueType font file.
  *
@@ -67,7 +66,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
     protected void finalize() throws Throwable
     {
         super.finalize();
-        // PDFBOX-4963: risk of memory leaks due to SoftReference in FontCache 
+        // PDFBOX-4963: risk of memory leaks due to SoftReference in FontCache
         close();
     }
 
@@ -321,7 +320,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
 
     /**
      * Get the data of the TrueType Font
-     * program representing the stream used to build this 
+     * program representing the stream used to build this
      * object (normally from the TTFParser object).
      *
      * @return COSStream TrueType font program stream
@@ -330,7 +329,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
      */
     public InputStream getOriginalData() throws IOException
     {
-        return data.getOriginalData();
+       return data.getOriginalData();
     }
 
     /**
@@ -341,7 +340,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
      */
     public long getOriginalDataSize()
     {
-        return data.getOriginalDataSize();
+       return data.getOriginalDataSize();
     }
 
     /**
@@ -548,7 +547,7 @@ public class TrueTypeFont implements FontBoxFont, Closeable
             if (table != null)
             {
                 return new SubstitutingCmapLookup(cmap, (GlyphSubstitutionTable) table,
-                    Collections.unmodifiableList(enabledGsubFeatures));
+                        Collections.unmodifiableList(enabledGsubFeatures));
             }
         }
         return cmap;
@@ -570,28 +569,34 @@ public class TrueTypeFont implements FontBoxFont, Closeable
         }
 
         CmapSubtable cmap = cmapTable.getSubtable(CmapTable.PLATFORM_UNICODE,
-            CmapTable.ENCODING_UNICODE_2_0_FULL);
+                                                  CmapTable.ENCODING_UNICODE_2_0_FULL);
         if (cmap == null)
         {
             cmap = cmapTable.getSubtable(CmapTable.PLATFORM_WINDOWS,
-                CmapTable.ENCODING_WIN_UNICODE_FULL);
+                                         CmapTable.ENCODING_WIN_UNICODE_FULL);
         }
         if (cmap == null)
         {
             cmap = cmapTable.getSubtable(CmapTable.PLATFORM_UNICODE,
-                CmapTable.ENCODING_UNICODE_2_0_BMP);
+                                         CmapTable.ENCODING_UNICODE_2_0_BMP);
         }
         if (cmap == null)
         {
             cmap = cmapTable.getSubtable(CmapTable.PLATFORM_WINDOWS,
-                CmapTable.ENCODING_WIN_UNICODE_BMP);
+                                         CmapTable.ENCODING_WIN_UNICODE_BMP);
         }
         if (cmap == null)
         {
             // Microsoft's "Recommendations for OpenType Fonts" says that "Symbol" encoding
             // actually means "Unicode, non-standard character set"
             cmap = cmapTable.getSubtable(CmapTable.PLATFORM_WINDOWS,
-                CmapTable.ENCODING_WIN_SYMBOL);
+                                         CmapTable.ENCODING_WIN_SYMBOL);
+        }
+        if (cmap == null)
+        {
+            // PDFBOX-6015
+            cmap = cmapTable.getSubtable(CmapTable.PLATFORM_UNICODE,
+                                         CmapTable.ENCODING_UNICODE_1_1);
         }
         if (cmap == null)
         {
@@ -631,6 +636,12 @@ public class TrueTypeFont implements FontBoxFont, Closeable
         {
             CmapLookup cmap = getUnicodeCmapLookup(false);
             return cmap.getGlyphId(uni);
+        }
+
+        // PDFBOX-5604: assume gnnnnn is a gid
+        if (name.matches("g\\d+"))
+        {
+            return Integer.parseInt(name.substring(1));
         }
 
         return 0;

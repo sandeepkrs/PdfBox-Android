@@ -21,7 +21,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.PDRange;
-
 /**
  * This represents an Icon fit dictionary for an FDF field.
  *
@@ -167,7 +166,7 @@ public class FDFIconFit implements COSObjectable
     }
 
     /**
-     * This will set frational space to allocate.
+     * This will set fractional space to allocate.
      *
      * @param space The space to allocate.
      */

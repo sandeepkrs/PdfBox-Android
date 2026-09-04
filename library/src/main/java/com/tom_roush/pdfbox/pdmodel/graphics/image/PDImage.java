@@ -28,7 +28,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.filter.DecodeOptions;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
-
 /**
  * An image in a PDF document.
  *
@@ -38,7 +37,7 @@ public interface PDImage extends COSObjectable
 {
     /**
      * Returns the content of this image as a Bitmap with ARGB_8888.
-     * The size of the returned image is the larger of the size of the image itself or its mask. 
+     * The size of the returned image is the larger of the size of the image itself or its mask.
      * @return content of this image as a buffered image.
      * @throws IOException
      */
@@ -112,7 +111,7 @@ public interface PDImage extends COSObjectable
     boolean isStencil();
 
     /**
-     * Sets whether or not the image is a stencil.
+     * Sets whether the image is a stencil.
      * This corresponds to the {@code ImageMask} entry in the image stream's dictionary.
      * @param isStencil True to make the image a stencil.
      */
@@ -147,7 +146,9 @@ public interface PDImage extends COSObjectable
     int getHeight();
 
     /**
-     * Sets the height of the image.
+     * Sets the height of the image. This is for internal PDFBox usage and not to set the size of
+     * the image on the page.
+     *
      * @param height The height of the image.
      */
     void setHeight(int height);
@@ -158,7 +159,9 @@ public interface PDImage extends COSObjectable
     int getWidth();
 
     /**
-     * Sets the width of the image.
+     * Sets the width of the image. This is for internal PDFBox usage and not to set the size of
+     * the image on the page.
+     *
      * @param width The width of the image.
      */
     void setWidth(int width);

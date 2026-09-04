@@ -28,9 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.tom_roush.fontbox.util.Charsets;
-
 /**
- * This class represents a parser for a CFF font. 
+ * This class represents a parser for a CFF font.
  * @author Villu Ruusmann
  */
 public class CFFParser
@@ -223,8 +222,8 @@ public class CFFParser
             if (length < 0)
             {
                 throw new IOException("Negative index data length + " + length + " at " +
-                    i + ": offsets[" + (i + 1) + "]=" + offsets[i + 1] +
-                    ", offsets[" + i + "]=" + offsets[i]);
+                        i + ": offsets[" + (i + 1) + "]=" + offsets[i + 1] +
+                        ", offsets[" + i + "]=" + offsets[i]);
             }
             indexDataValues[i] = new String(input.readBytes(length), Charsets.ISO_8859_1);
         }
@@ -346,53 +345,53 @@ public class CFFParser
             {
                 switch (nibble)
                 {
-                    case 0x0:
-                    case 0x1:
-                    case 0x2:
-                    case 0x3:
-                    case 0x4:
-                    case 0x5:
-                    case 0x6:
-                    case 0x7:
-                    case 0x8:
-                    case 0x9:
-                        sb.append(nibble);
-                        exponentMissing = false;
+                case 0x0:
+                case 0x1:
+                case 0x2:
+                case 0x3:
+                case 0x4:
+                case 0x5:
+                case 0x6:
+                case 0x7:
+                case 0x8:
+                case 0x9:
+                    sb.append(nibble);
+                    exponentMissing = false;
+                    break;
+                case 0xa:
+                    sb.append('.');
+                    break;
+                case 0xb:
+                    if (hasExponent)
+                    {
+                        Log.w("PdfBox-Android", "duplicate 'E' ignored after " + sb);
                         break;
-                    case 0xa:
-                        sb.append(".");
+                    }
+                    sb.append('E');
+                    exponentMissing = true;
+                    hasExponent = true;
+                    break;
+                case 0xc:
+                    if (hasExponent)
+                    {
+                        Log.w("PdfBox-Android", "duplicate 'E-' ignored after " + sb);
                         break;
-                    case 0xb:
-                        if (hasExponent)
-                        {
-                            Log.w("PdfBox-Android", "duplicate 'E' ignored after " + sb);
-                            break;
-                        }
-                        sb.append("E");
-                        exponentMissing = true;
-                        hasExponent = true;
-                        break;
-                    case 0xc:
-                        if (hasExponent)
-                        {
-                            Log.w("PdfBox-Android", "duplicate 'E-' ignored after " + sb);
-                            break;
-                        }
-                        sb.append("E-");
-                        exponentMissing = true;
-                        hasExponent = true;
-                        break;
-                    case 0xd:
-                        break;
-                    case 0xe:
-                        sb.append("-");
-                        break;
-                    case 0xf:
-                        done = true;
-                        break;
-                    default:
-                        // can only be a programming error because a nibble is between 0 and F 
-                        throw new IllegalArgumentException("illegal nibble " + nibble);
+                    }
+                    sb.append("E-");
+                    exponentMissing = true;
+                    hasExponent = true;
+                    break;
+                case 0xd:
+                    break;
+                case 0xe:
+                    sb.append('-');
+                    break;
+                case 0xf:
+                    done = true;
+                    break;
+                default:
+                    // can only be a programming error because a nibble is between 0 and F
+                    throw new IllegalArgumentException("illegal nibble " + nibble);
                 }
             }
         }
@@ -401,7 +400,7 @@ public class CFFParser
             // the exponent is missing, just append "0" to avoid an exception
             // not sure if 0 is the correct value, but it seems to fit
             // see PDFBOX-1522
-            sb.append("0");
+            sb.append('0');
         }
         if (sb.length() == 0)
         {
@@ -470,11 +469,11 @@ public class CFFParser
         font.addValueToTopDict("PaintType", topDict.getNumber("PaintType", 0));
         font.addValueToTopDict("CharstringType", topDict.getNumber("CharstringType", 2));
         font.addValueToTopDict("FontMatrix", topDict.getArray("FontMatrix", Arrays.<Number>asList(
-            0.001, (double) 0, (double) 0, 0.001,
-            (double) 0, (double) 0)));
+                                                      0.001, (double) 0, (double) 0, 0.001,
+                                                      (double) 0, (double) 0)));
         font.addValueToTopDict("UniqueID", topDict.getNumber("UniqueID", null));
         font.addValueToTopDict("FontBBox", topDict.getArray("FontBBox",
-            Arrays.<Number> asList(0, 0, 0, 0)));
+                                                    Arrays.<Number> asList(0, 0, 0, 0)));
         font.addValueToTopDict("StrokeWidth", topDict.getNumber("StrokeWidth", 0));
         font.addValueToTopDict("XUID", topDict.getArray("XUID", null));
 
@@ -556,8 +555,8 @@ public class CFFParser
                 {
                     // default
                     font.addValueToTopDict("FontMatrix", topDict.getArray("FontMatrix",
-                        Arrays.<Number>asList(0.001, (double) 0, (double) 0, 0.001,
-                            (double) 0, (double) 0)));
+                            Arrays.<Number>asList(0.001, (double) 0, (double) 0, 0.001,
+                                    (double) 0, (double) 0)));
                 }
             }
             else if (privMatrix != null)
@@ -609,7 +608,7 @@ public class CFFParser
      * Parse dictionaries specific to a CIDFont.
      */
     private void parseCIDFontDicts(CFFDataInput input, DictData topDict, CFFCIDFont font, int nrOfcharStrings)
-        throws IOException
+            throws IOException
     {
         // In a CIDKeyed Font, the Private dictionary isn't in the Top Dict but in the Font dict
         // which can be accessed by a lookup using FDArray and FDSelect
@@ -631,17 +630,11 @@ public class CFFParser
         List<Map<String, Object>> privateDictionaries = new LinkedList<Map<String, Object>>();
         List<Map<String, Object>> fontDictionaries = new LinkedList<Map<String, Object>>();
 
+        boolean privateDictPopulated = false;
         for (byte[] bytes : fdIndex)
         {
             CFFDataInput fontDictInput = new CFFDataInput(bytes);
             DictData fontDict = readDictData(fontDictInput);
-
-            // read private dict
-            DictData.Entry privateEntry = fontDict.getEntry("Private");
-            if (privateEntry == null || privateEntry.size() < 2)
-            {
-                throw new IOException("Font DICT invalid without \"Private\" entry");
-            }
 
             // font dict
             Map<String, Object> fontDictMap = new LinkedHashMap<String, Object>(4);
@@ -652,12 +645,23 @@ public class CFFParser
             // TODO OD-4 : Add here other keys
             fontDictionaries.add(fontDictMap);
 
+            // read private dict
+            DictData.Entry privateEntry = fontDict.getEntry("Private");
+            if (privateEntry == null || privateEntry.size() < 2)
+            {
+                // PDFBOX-5843 don't abort here, and don't skip empty bytes entries, because
+                // getLocalSubrIndex() expects subr at a specific index
+                privateDictionaries.add(new HashMap<String, Object>());
+                continue;
+            }
+
             int privateOffset = privateEntry.getNumber(1).intValue();
             input.setPosition(privateOffset);
             int privateSize = privateEntry.getNumber(0).intValue();
             DictData privateDict = readDictData(input, privateSize);
 
             // populate private dict
+            privateDictPopulated = true;
             Map<String, Object> privDict = readPrivateDict(privateDict);
             privateDictionaries.add(privDict);
 
@@ -668,6 +672,11 @@ public class CFFParser
                 input.setPosition(privateOffset + (Integer) localSubrOffset);
                 privDict.put("Subrs", readIndexData(input));
             }
+        }
+
+        if (!privateDictPopulated)
+        {
+            throw new IOException("Font DICT invalid without \"Private\" entry");
         }
 
         // font-dict (FD) select
@@ -716,13 +725,13 @@ public class CFFParser
      * Parse dictionaries specific to a Type 1-equivalent font.
      */
     private void parseType1Dicts(CFFDataInput input, DictData topDict, CFFType1Font font, CFFCharset charset)
-        throws IOException
+            throws IOException
     {
         // encoding
         DictData.Entry encodingEntry = topDict.getEntry("Encoding");
         CFFEncoding encoding;
         int encodingId = encodingEntry != null && encodingEntry.hasOperands() ?
-            encodingEntry.getNumber(0).intValue() : 0;
+                encodingEntry.getNumber(0).intValue() : 0;
         switch (encodingId)
         {
             case 0:
@@ -806,7 +815,7 @@ public class CFFParser
     }
 
     private Format0Encoding readFormat0Encoding(CFFDataInput dataInput, CFFCharset charset,
-        int format) throws IOException
+                                                int format) throws IOException
     {
         Format0Encoding encoding = new Format0Encoding();
         encoding.format = format;
@@ -826,7 +835,7 @@ public class CFFParser
     }
 
     private Format1Encoding readFormat1Encoding(CFFDataInput dataInput, CFFCharset charset,
-        int format) throws IOException
+                                                int format) throws IOException
     {
         Format1Encoding encoding = new Format1Encoding();
         encoding.format = format;
@@ -899,7 +908,7 @@ public class CFFParser
      * @throws IOException
      */
     private static Format0FDSelect readFormat0FDSelect(CFFDataInput dataInput, int format, int nGlyphs, CFFCIDFont ros)
-        throws IOException
+            throws IOException
     {
         Format0FDSelect fdselect = new Format0FDSelect(ros);
         fdselect.format = format;
@@ -922,7 +931,7 @@ public class CFFParser
      * @throws IOException
      */
     private static Format3FDSelect readFormat3FDSelect(CFFDataInput dataInput, int format, int nGlyphs, CFFCIDFont ros)
-        throws IOException
+            throws IOException
     {
         Format3FDSelect fdselect = new Format3FDSelect(ros);
         fdselect.format = format;
@@ -990,7 +999,7 @@ public class CFFParser
         public String toString()
         {
             return getClass().getName() + "[format=" + format + " nbRanges=" + nbRanges + ", range3="
-                + Arrays.toString(range3) + " sentinel=" + sentinel + "]";
+                    + Arrays.toString(range3) + " sentinel=" + sentinel + "]";
         }
     }
 
@@ -1041,7 +1050,7 @@ public class CFFParser
     }
 
     private CFFCharset readCharset(CFFDataInput dataInput, int nGlyphs, boolean isCIDFont)
-        throws IOException
+            throws IOException
     {
         int format = dataInput.readCard8();
         switch (format)
@@ -1058,7 +1067,7 @@ public class CFFParser
     }
 
     private Format0Charset readFormat0Charset(CFFDataInput dataInput, int format, int nGlyphs,
-        boolean isCIDFont) throws IOException
+                                              boolean isCIDFont) throws IOException
     {
         Format0Charset charset = new Format0Charset(isCIDFont);
         charset.format = format;
@@ -1087,7 +1096,7 @@ public class CFFParser
     }
 
     private Format1Charset readFormat1Charset(CFFDataInput dataInput, int format, int nGlyphs,
-        boolean isCIDFont) throws IOException
+                                              boolean isCIDFont) throws IOException
     {
         Format1Charset charset = new Format1Charset(isCIDFont);
         charset.format = format;
@@ -1123,7 +1132,7 @@ public class CFFParser
     }
 
     private Format2Charset readFormat2Charset(CFFDataInput dataInput, int format, int nGlyphs,
-        boolean isCIDFont) throws IOException
+                                              boolean isCIDFont) throws IOException
     {
         Format2Charset charset = new Format2Charset(isCIDFont);
         charset.format = format;
@@ -1159,7 +1168,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class holding the header of a CFF font. 
+     * Inner class holding the header of a CFF font.
      */
     private static class Header
     {
@@ -1172,12 +1181,12 @@ public class CFFParser
         public String toString()
         {
             return getClass().getName() + "[major=" + major + ", minor=" + minor + ", hdrSize=" + hdrSize
-                + ", offSize=" + offSize + "]";
+                    + ", offSize=" + offSize + "]";
         }
     }
 
     /**
-     * Inner class holding the DictData of a CFF font. 
+     * Inner class holding the DictData of a CFF font.
      */
     private static class DictData
     {
@@ -1230,7 +1239,7 @@ public class CFFParser
         }
 
         /**
-         * Inner class holding an operand of a CFF font. 
+         * Inner class holding an operand of a CFF font.
          */
         private static class Entry
         {
@@ -1304,7 +1313,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a font's built-in CFF encoding. 
+     * Inner class representing a font's built-in CFF encoding.
      */
     abstract static class CFFBuiltInEncoding extends CFFEncoding
     {
@@ -1312,7 +1321,7 @@ public class CFFParser
         private Supplement[] supplement;
 
         /**
-         * Inner class representing a supplement for an encoding. 
+         * Inner class representing a supplement for an encoding.
          */
         static class Supplement
         {
@@ -1344,7 +1353,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a Format0 encoding. 
+     * Inner class representing a Format0 encoding.
      */
     private static class Format0Encoding extends CFFBuiltInEncoding
     {
@@ -1355,12 +1364,12 @@ public class CFFParser
         public String toString()
         {
             return getClass().getName() + "[format=" + format + ", nCodes=" + nCodes
-                + ", supplement=" + Arrays.toString(super.supplement) + "]";
+                    + ", supplement=" + Arrays.toString(super.supplement) + "]";
         }
     }
 
     /**
-     * Inner class representing a Format1 encoding. 
+     * Inner class representing a Format1 encoding.
      */
     private static class Format1Encoding extends CFFBuiltInEncoding
     {
@@ -1371,7 +1380,7 @@ public class CFFParser
         public String toString()
         {
             return getClass().getName() + "[format=" + format + ", nRanges=" + nRanges
-                + ", supplement=" + Arrays.toString(super.supplement) + "]";
+                    + ", supplement=" + Arrays.toString(super.supplement) + "]";
         }
     }
 
@@ -1411,7 +1420,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a Format0 charset. 
+     * Inner class representing a Format0 charset.
      */
     private static class Format0Charset extends EmbeddedCharset
     {
@@ -1430,7 +1439,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a Format1 charset. 
+     * Inner class representing a Format1 charset.
      */
     private static class Format1Charset extends EmbeddedCharset
     {
@@ -1482,7 +1491,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a Format2 charset. 
+     * Inner class representing a Format2 charset.
      */
     private static class Format2Charset extends EmbeddedCharset
     {
@@ -1529,7 +1538,7 @@ public class CFFParser
     }
 
     /**
-     * Inner class representing a rang mapping for a CID charset. 
+     * Inner class representing a rang mapping for a CID charset.
      */
     private static final class RangeMapping
     {

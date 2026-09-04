@@ -22,11 +22,11 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSStream;
+import com.tom_roush.pdfbox.pdmodel.PDPage;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationUnknown;
-
 /**
  * An object reference.
  * <p>
@@ -108,7 +108,7 @@ public class PDObjectReference implements COSObjectable
              * what else can be the target of the object reference?
              */
             if (!(annotation instanceof PDAnnotationUnknown)
-                || COSName.ANNOT.equals(objDictionary.getDictionaryObject(COSName.TYPE)))
+                    || COSName.ANNOT.equals(objDictionary.getDictionaryObject(COSName.TYPE)))
             {
                 return annotation;
             }
@@ -140,4 +140,30 @@ public class PDObjectReference implements COSObjectable
         this.getCOSObject().setItem(COSName.OBJ, xobject);
     }
 
+    /**
+     * Get the page on which the object shall be rendered.
+     *
+     * @return the referenced page or null.
+     */
+    public PDPage getPage()
+    {
+        COSDictionary pageDict = this.getCOSObject().getCOSDictionary(COSName.PG);
+        if (pageDict != null)
+        {
+            return new PDPage(pageDict);
+        }
+        return null;
+    }
+
+    /**
+     * Sets the page on which the object shall be rendered. This is optional and overrides the /PG
+     * entry in the structure element containing the object reference; shall be used if the
+     * structure element contained no such entry.
+     *
+     * @param page
+     */
+    public void setPage(PDPage page)
+    {
+        this.getCOSObject().setItem(COSName.PG, page);
+    }
 }

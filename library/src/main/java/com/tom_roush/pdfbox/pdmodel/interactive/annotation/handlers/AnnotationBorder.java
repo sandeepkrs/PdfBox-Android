@@ -21,7 +21,6 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
-
 /**
  * Class to collect all sort of border info about annotations.
  *
@@ -29,60 +28,65 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictiona
  */
 class AnnotationBorder
 {
-   float[] dashArray = null;
-   boolean underline = false;
-   float width = 0;
+    float[] dashArray = null;
+    boolean underline = false;
+    float width = 0;
 
-   // return border info. BorderStyle must be provided as parameter because
-   // method is not available in the base class
-   static AnnotationBorder getAnnotationBorder(PDAnnotation annotation,
-       PDBorderStyleDictionary borderStyle)
-   {
-      AnnotationBorder ab = new AnnotationBorder();
-      if (borderStyle == null)
-      {
-         COSArray border = annotation.getBorder();
-         if (border.size() >= 3 && border.getObject(2) instanceof COSNumber)
-         {
-            ab.width = ((COSNumber) border.getObject(2)).floatValue();
-         }
-         if (border.size() > 3)
-         {
-            COSBase base3 = border.getObject(3);
-            if (base3 instanceof COSArray)
+    // return border info. BorderStyle must be provided as parameter because
+    // method is not available in the base class
+    static AnnotationBorder getAnnotationBorder(PDAnnotation annotation,
+            PDBorderStyleDictionary borderStyle)
+    {
+        AnnotationBorder ab = new AnnotationBorder();
+        if (borderStyle == null)
+        {
+            COSArray border = annotation.getBorder();
+            if (border.size() >= 3)
             {
-               ab.dashArray = ((COSArray) base3).toFloatArray();
+                COSBase base = border.getObject(2);
+                if (base instanceof COSNumber)
+                {
+                    ab.width = ((COSNumber) base).floatValue();
+                }
             }
-         }
-      }
-      else
-      {
-         ab.width = borderStyle.getWidth();
-         if (borderStyle.getStyle().equals(PDBorderStyleDictionary.STYLE_DASHED))
-         {
-            ab.dashArray = borderStyle.getDashStyle().getDashArray();
-         }
-         if (borderStyle.getStyle().equals(PDBorderStyleDictionary.STYLE_UNDERLINE))
-         {
-            ab.underline = true;
-         }
-      }
-      if (ab.dashArray != null)
-      {
-         boolean allZero = true;
-         for (float f : ab.dashArray)
-         {
-            if (Float.compare(f, 0) != 0)
+            if (border.size() > 3)
             {
-               allZero = false;
-               break;
+                COSBase base3 = border.getObject(3);
+                if (base3 instanceof COSArray)
+                {
+                    ab.dashArray = ((COSArray) base3).toFloatArray();
+                }
             }
-         }
-         if (allZero)
-         {
-            ab.dashArray = null;
-         }
-      }
-      return ab;
-   }
+        }
+        else
+        {
+            ab.width = borderStyle.getWidth();
+            String style = borderStyle.getStyle();
+            if (style.equals(PDBorderStyleDictionary.STYLE_DASHED))
+            {
+                ab.dashArray = borderStyle.getDashStyle().getDashArray();
+            }
+            if (style.equals(PDBorderStyleDictionary.STYLE_UNDERLINE))
+            {
+                ab.underline = true;
+            }
+        }
+        if (ab.dashArray != null)
+        {
+            boolean allZero = true;
+            for (float f : ab.dashArray)
+            {
+                if (Float.compare(f, 0) != 0)
+                {
+                    allZero = false;
+                    break;
+                }
+            }
+            if (allZero)
+            {
+                ab.dashArray = null;
+            }
+        }
+        return ab;
+    }
 }

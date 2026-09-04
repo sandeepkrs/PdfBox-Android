@@ -19,7 +19,6 @@ package com.tom_roush.fontbox.ttf;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * A vertical origin 'VORG' table in an OpenType font.
  *
@@ -91,13 +90,7 @@ public class VerticalOriginTable extends TTFTable
      */
     public int getOriginY(int gid)
     {
-        if (origins.containsKey(gid))
-        {
-            return origins.get(gid);
-        }
-        else
-        {
-            return defaultVertOriginY;
-        }
+        Integer originY = origins.get(gid);
+        return originY != null ? originY : defaultVertOriginY;
     }
 }

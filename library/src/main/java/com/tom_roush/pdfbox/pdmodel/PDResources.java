@@ -31,15 +31,14 @@ import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
 import com.tom_roush.pdfbox.pdmodel.font.PDFont;
 import com.tom_roush.pdfbox.pdmodel.font.PDFontFactory;
-import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
-import com.tom_roush.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
-import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import com.tom_roush.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentGroup;
 import com.tom_roush.pdfbox.pdmodel.graphics.pattern.PDAbstractPattern;
 import com.tom_roush.pdfbox.pdmodel.graphics.shading.PDShading;
-import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
-
+import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 /**
  * A set of resources available at the page/pages/stream level.
  *
@@ -53,8 +52,7 @@ public final class PDResources implements COSObjectable
 
     // PDFBOX-3442 cache fonts that are not indirect objects, as these aren't cached in ResourceCache
     // and this would result in huge memory footprint in text extraction
-    private final Map <COSName,SoftReference<PDFont>> directFontCache =
-        new HashMap<COSName, SoftReference<PDFont>>();
+    private final Map<COSName, SoftReference<PDFont>> directFontCache;
 
     /**
      * Constructor for embedding.
@@ -63,6 +61,7 @@ public final class PDResources implements COSObjectable
     {
         resources = new COSDictionary();
         cache = null;
+        directFontCache = new HashMap<COSName, SoftReference<PDFont>>();
     }
 
     /**
@@ -78,6 +77,7 @@ public final class PDResources implements COSObjectable
         }
         resources = resourceDictionary;
         cache = null;
+        directFontCache = new HashMap<COSName, SoftReference<PDFont>>();
     }
 
     /**
@@ -94,6 +94,30 @@ public final class PDResources implements COSObjectable
         }
         resources = resourceDictionary;
         cache = resourceCache;
+        directFontCache = new HashMap<COSName, SoftReference<PDFont>>();
+    }
+
+    /**
+     * Constructor for reading.
+     *
+     * @param resourceDictionary The cos dictionary for this resource.
+     * @param resourceCache The document's resource cache, may be null.
+     * @param directFontCache The document's direct font cache. Must be mutable
+     */
+    public PDResources(COSDictionary resourceDictionary, ResourceCache resourceCache,
+            Map<COSName, SoftReference<PDFont>> directFontCache)
+    {
+        if (resourceDictionary == null)
+        {
+            throw new IllegalArgumentException("resourceDictionary is null");
+        }
+        if (directFontCache == null)
+        {
+            throw new IllegalArgumentException("directFontCache is null");
+        }
+        resources = resourceDictionary;
+        cache = resourceCache;
+        this.directFontCache = directFontCache;
     }
 
     /**
@@ -246,7 +270,7 @@ public final class PDResources implements COSObjectable
         COSBase base = get(COSName.EXT_G_STATE, name);
         if (base instanceof COSDictionary)
         {
-            extGState = new PDExtendedGraphicsState((COSDictionary) base);
+            extGState = new PDExtendedGraphicsState((COSDictionary) base, getResourceCache());
         }
 
         if (cache != null && indirect != null)
@@ -706,7 +730,7 @@ public final class PDResources implements COSObjectable
             return dict.getKeyForValue(object.getCOSObject());
         }
 
-        // PDFBOX-4509: It could exist as an indirect object, happens when a font is taken from the 
+        // PDFBOX-4509: It could exist as an indirect object, happens when a font is taken from the
         // AcroForm default resources of a loaded PDF.
         if (dict != null && COSName.FONT.equals(kind))
         {

@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.pdfparser;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 /**
  * A SequentialSource provides access to sequential data for parsing.
  */
@@ -56,7 +55,7 @@ interface SequentialSource extends Closeable
     /**
      * Returns offset of next byte to be returned by a read method.
      *
-     * @return offset of next byte which will be returned with next {@link #read()} (if no more 
+     * @return offset of next byte which will be returned with next {@link #read()} (if no more
      * bytes are left it returns a value &gt;= length of source).
      * @throws IOException If there was an error while reading the data.
      */
@@ -112,4 +111,11 @@ interface SequentialSource extends Closeable
      * @throws IOException If there is an error reading the next byte.
      */
     boolean isEOF() throws IOException;
+
+    /**
+     * Returns true if this source has been closed.
+     *
+     * @return true if the source has been closed
+     */
+    boolean isClosed() throws IOException;
 }

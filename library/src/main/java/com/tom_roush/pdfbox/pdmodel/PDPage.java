@@ -47,7 +47,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.measurement.PDViewportDictionary
 import com.tom_roush.pdfbox.pdmodel.interactive.pagenavigation.PDThreadBead;
 import com.tom_roush.pdfbox.pdmodel.interactive.pagenavigation.PDTransition;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * A page in a PDF document.
  *
@@ -528,7 +527,7 @@ public class PDPage implements COSObjectable, PDContentStream
      */
     public List<PDThreadBead> getThreadBeads()
     {
-        COSArray beads = (COSArray) page.getDictionaryObject(COSName.B);
+        COSArray beads = page.getCOSArray(COSName.B);
         if (beads == null)
         {
             beads = new COSArray();
@@ -692,17 +691,28 @@ public class PDPage implements COSObjectable, PDContentStream
             {
                 continue;
             }
-            PDAnnotation createdAnnotation = PDAnnotation.createAnnotation(item);
-            if (annotationFilter.accept(createdAnnotation))
+            try
             {
-                actuals.add(createdAnnotation);
+                PDAnnotation createdAnnotation = PDAnnotation.createAnnotation(item);
+                if (annotationFilter.accept(createdAnnotation))
+                {
+                    actuals.add(createdAnnotation);
+                }
+            }
+            catch (IOException ex)
+            {
+                Log.e("PdfBox-Android", ex.getMessage(), ex);
             }
         }
         return new COSArrayList<PDAnnotation>(actuals, annots);
     }
 
     /**
-     * This will set the list of annotations.
+     * This will set the list of annotations. Although this is optional, you should take care that
+     * any newly created annotations link back to this page by calling
+     * {@link PDAnnotation#setPage(com.tom_roush.pdfbox.pdmodel.PDPage)}. Not doing it
+     * <a href="https://stackoverflow.com/questions/74836898/">can cause trouble when PDFs get
+     * signed</a>.
      *
      * @param annotations The new list of annotations.
      */
@@ -746,7 +756,7 @@ public class PDPage implements COSObjectable, PDContentStream
             return null;
         }
         COSArray array = (COSArray) base;
-        List<PDViewportDictionary> viewports = new ArrayList<PDViewportDictionary>();
+        List<PDViewportDictionary> viewports = new ArrayList<PDViewportDictionary>(array.size());
         for (int i = 0; i < array.size(); ++i)
         {
             COSBase base2 = array.getObject(i);

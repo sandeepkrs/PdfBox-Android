@@ -35,7 +35,6 @@ import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /*
 TODO There are further Form XObjects to implement:
 
@@ -119,21 +118,32 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     }
 
     /**
-     * Returns the group attributes dictionary.
+     * Returns the transparency group attributes dictionary.
      *
-     * @return the group attributes dictionary
+     * @return the transparency group attributes dictionary, never null.
      */
     public PDTransparencyGroupAttributes getGroup()
     {
         if( group == null )
         {
-            COSDictionary dic = (COSDictionary) getCOSObject().getDictionaryObject(COSName.GROUP);
+            COSDictionary dic = getCOSObject().getCOSDictionary(COSName.GROUP);
             if( dic != null )
             {
                 group = new PDTransparencyGroupAttributes(dic);
             }
         }
         return group;
+    }
+
+    /**
+     * Sets the transparency group attributes dictionary.
+     *
+     * @param group a transparency group attributes dictionary.
+     */
+    public void setGroup(PDTransparencyGroupAttributes group)
+    {
+        this.group = group;
+        getCOSObject().setItem(COSName.GROUP, group);
     }
 
     public PDStream getContentStream()
@@ -191,7 +201,7 @@ public class PDFormXObject extends PDXObject implements PDContentStream
     public PDRectangle getBBox()
     {
         PDRectangle retval = null;
-        COSArray array = (COSArray) getCOSObject().getDictionaryObject(COSName.BBOX);
+        COSArray array = getCOSObject().getCOSArray(COSName.BBOX);
         if (array != null)
         {
             retval = new PDRectangle(array);

@@ -25,7 +25,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.cos.COSString;
 import com.tom_roush.pdfbox.pdmodel.PDResources;
-
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 /**
  * Base class for fields which use "Variable Text".
  * These fields construct an appearance stream dynamically at viewing time.
@@ -107,7 +107,7 @@ public abstract class PDVariableText extends PDTerminalField
     /**
      * Set the default appearance.
      *
-     * This will set the local default appearance for the variable text field only, not 
+     * This will set the local default appearance for the variable text field only, not
      * affecting a default appearance in the parent hierarchy.
      *
      * Providing null as the value will remove the local default appearance.
@@ -127,6 +127,19 @@ public abstract class PDVariableText extends PDTerminalField
     public void setDefaultAppearance(String daValue)
     {
         getCOSObject().setString(COSName.DA, daValue);
+
+        // PDFBOX-5797: Sejda files have a /DA entry in kid widgets
+        if (getCOSObject().containsKey(COSName.KIDS))
+        {
+            for (PDAnnotationWidget widget : getWidgets())
+            {
+                COSDictionary widgetDict = widget.getCOSObject();
+                if (widgetDict.containsKey(COSName.DA))
+                {
+                    widgetDict.setString(COSName.DA, daValue);
+                }
+            }
+        }
     }
 
     /**
@@ -139,8 +152,7 @@ public abstract class PDVariableText extends PDTerminalField
      */
     public String getDefaultStyleString()
     {
-        COSString defaultStyleString = (COSString) getCOSObject().getDictionaryObject(COSName.DS);
-        return defaultStyleString.getString();
+        return getCOSObject().getString(COSName.DS);
     }
 
     /**

@@ -25,7 +25,6 @@ import java.util.Calendar;
 import java.util.TimeZone;
 
 import com.tom_roush.fontbox.util.Charsets;
-
 /**
  * An interface into a data stream.
  *
@@ -33,6 +32,8 @@ import com.tom_roush.fontbox.util.Charsets;
  */
 abstract class TTFDataStream implements Closeable
 {
+    private static final TimeZone TIMEZONE_UTC = TimeZone.getTimeZone("UTC"); // clone before using
+
     TTFDataStream()
     {
     }
@@ -118,9 +119,10 @@ abstract class TTFDataStream implements Closeable
     }
 
     /**
-     * Read a unsigned byte. Similar to {@link #read()}, but throws an exception if EOF is unexpectedly reached.
+     * Read an unsigned byte. Similar to {@link #read()}, but throws an exception if EOF is
+     * unexpectedly reached.
      *
-     * @return A unsigned byte.
+     * @return An unsigned byte.
      * @throws IOException If there is an error reading the data.
      */
     public int readUnsignedByte() throws IOException
@@ -147,7 +149,8 @@ abstract class TTFDataStream implements Closeable
         long byte4 = read();
         if (byte4 < 0)
         {
-            throw new EOFException();
+            throw new EOFException("EOF at " + getCurrentPosition() +
+                    ", b1: " + byte1 + ", b2: " + byte2 + ", b3: " + byte3 + ", b4: " + byte4);
         }
         return (byte1 << 24) + (byte2 << 16) + (byte3 << 8) + byte4;
     }
@@ -195,9 +198,9 @@ abstract class TTFDataStream implements Closeable
     }
 
     /**
-     * Read an signed short.
+     * Read a signed short.
      *
-     * @return An signed short.
+     * @return A signed short.
      * @throws IOException If there is an error reading the data.
      */
     public abstract short readSignedShort() throws IOException;
@@ -205,13 +208,13 @@ abstract class TTFDataStream implements Closeable
     /**
      * Read an eight byte international date.
      *
-     * @return An signed short.
+     * @return A signed short.
      * @throws IOException If there is an error reading the data.
      */
     public Calendar readInternationalDate() throws IOException
     {
         long secondsSince1904 = readLong();
-        Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        Calendar cal = Calendar.getInstance((TimeZone) TIMEZONE_UTC.clone());
         cal.set(1904, 0, 1, 0, 0, 0);
         cal.set(Calendar.MILLISECOND, 0);
         long millisFor1904 = cal.getTimeInMillis();
@@ -251,7 +254,7 @@ abstract class TTFDataStream implements Closeable
         int totalAmountRead = 0;
         // read at most numberOfBytes bytes from the stream.
         while (totalAmountRead < numberOfBytes
-            && (amountRead = read(data, totalAmountRead, numberOfBytes - totalAmountRead)) != -1)
+                && (amountRead = read(data, totalAmountRead, numberOfBytes - totalAmountRead)) != -1)
         {
             totalAmountRead += amountRead;
         }

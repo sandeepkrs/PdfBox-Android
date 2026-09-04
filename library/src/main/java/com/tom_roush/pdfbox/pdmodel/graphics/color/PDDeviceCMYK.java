@@ -76,15 +76,38 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
       float y = value[2];
       float k = value[3];
 
-      float r = 255 * (1 - c) * (1 - k);
-      float g = 255 * (1 - m) * (1 - k);
-      float b = 255 * (1 - y) * (1 - k);
+      float r = (1 - c) * (1 - k);
+      float g = (1 - m) * (1 - k);
+      float b = (1 - y) * (1 - k);
       return new float[] { r, g, b };
    }
 
    @Override
    public Bitmap toRGBImage(Bitmap raster) throws IOException
    {
-      return raster;
+      int width = raster.getWidth();
+      int height = raster.getHeight();
+      int[] imgPixels = new int[width];
+      Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+      int[] outPixels = new int[width];
+
+      for (int y = 0; y < height; y++)
+      {
+         raster.getPixels(imgPixels, 0, width, 0, y, width, 1);
+         for (int x = 0; x < width; x++)
+         {
+            int pixel = imgPixels[x];
+            float c = android.graphics.Color.red(pixel) / 255.0f;
+            float m = android.graphics.Color.green(pixel) / 255.0f;
+            float yVal = android.graphics.Color.blue(pixel) / 255.0f;
+            float k = android.graphics.Color.alpha(pixel) / 255.0f;
+            int r = Math.round(255 * (1 - c) * (1 - k));
+            int g = Math.round(255 * (1 - m) * (1 - k));
+            int b = Math.round(255 * (1 - yVal) * (1 - k));
+            outPixels[x] = android.graphics.Color.argb(255, r, g, b);
+         }
+         image.setPixels(outPixels, 0, width, 0, y, width, 1);
+      }
+      return image;
    }
 }

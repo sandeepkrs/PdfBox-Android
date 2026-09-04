@@ -16,23 +16,24 @@
  */
 package com.tom_roush.pdfbox.text;
 
+import android.graphics.Point;
+
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Deque;
 
-import com.tom_roush.pdfbox.cos.COSDictionary;
-import com.tom_roush.pdfbox.cos.COSName;
-import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
-import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequence;
 import com.tom_roush.pdfbox.contentstream.operator.markedcontent.BeginMarkedContentSequenceWithProperties;
 import com.tom_roush.pdfbox.contentstream.operator.markedcontent.DrawObject;
 import com.tom_roush.pdfbox.contentstream.operator.markedcontent.EndMarkedContentSequence;
-
+import com.tom_roush.pdfbox.cos.COSDictionary;
+import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
+import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 /**
  * This is an stream engine to extract the marked content of a pdf.
  *
@@ -183,11 +184,11 @@ public class PDFMarkedContentExtractor extends LegacyPDFStreamEngine
                 float charY = sameTextCharacter.getY();
                 //only want to suppress
                 if( charCharacter != null &&
-                    //charCharacter.equals( textCharacter ) &&
-                    within( charX, textX, tolerance ) &&
-                    within( charY,
-                        textY,
-                        tolerance ) )
+                        //charCharacter.equals( textCharacter ) &&
+                        within( charX, textX, tolerance ) &&
+                        within( charY,
+                                textY,
+                                tolerance ) )
                 {
                     suppressCharacter = true;
                     break;
@@ -200,48 +201,9 @@ public class PDFMarkedContentExtractor extends LegacyPDFStreamEngine
             }
         }
 
-        if( showCharacter )
+        if (showCharacter && !this.currentMarkedContents.isEmpty())
         {
-            List<TextPosition> textList = new ArrayList<TextPosition>();
-
-            /* In the wild, some PDF encoded documents put diacritics (accents on
-             * top of characters) into a separate Tj element.  When displaying them
-             * graphically, the two chunks get overlaid.  With text output though,
-             * we need to do the overlay. This code recombines the diacritic with
-             * its associated character if the two are consecutive.
-             */
-            if(textList.isEmpty())
-            {
-                textList.add(text);
-            }
-            else
-            {
-                /* test if we overlap the previous entry.
-                 * Note that we are making an assumption that we need to only look back
-                 * one TextPosition to find what we are overlapping.
-                 * This may not always be true. */
-                TextPosition previousTextPosition = textList.get(textList.size()-1);
-                if(text.isDiacritic() && previousTextPosition.contains(text))
-                {
-                    previousTextPosition.mergeDiacritic(text);
-                }
-                /* If the previous TextPosition was the diacritic, merge it into this
-                 * one and remove it from the list. */
-                else if(previousTextPosition.isDiacritic() && text.contains(previousTextPosition))
-                {
-                    text.mergeDiacritic(previousTextPosition);
-                    textList.remove(textList.size()-1);
-                    textList.add(text);
-                }
-                else
-                {
-                    textList.add(text);
-                }
-            }
-            if (!this.currentMarkedContents.isEmpty())
-            {
-                this.currentMarkedContents.peek().addText(text);
-            }
+            this.currentMarkedContents.peek().addText(text);
         }
     }
 

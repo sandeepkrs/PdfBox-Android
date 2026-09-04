@@ -24,7 +24,6 @@ import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDLineDashPattern;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
-
 /**
  * The Box Style specifies visual characteristics for displaying box areas.
  *
@@ -81,7 +80,7 @@ public class PDBoxStyle implements COSObjectable
      */
     public PDColor getGuidelineColor()
     {
-        COSArray colorValues = (COSArray) dictionary.getDictionaryObject(COSName.C);
+        COSArray colorValues = dictionary.getCOSArray(COSName.C);
         if( colorValues == null )
         {
             colorValues = new COSArray();
@@ -163,7 +162,7 @@ public class PDBoxStyle implements COSObjectable
     public PDLineDashPattern getLineDashPattern()
     {
         PDLineDashPattern pattern;
-        COSArray d = (COSArray) dictionary.getDictionaryObject(COSName.D);
+        COSArray d = dictionary.getCOSArray(COSName.D);
         if( d == null )
         {
             d = new COSArray();

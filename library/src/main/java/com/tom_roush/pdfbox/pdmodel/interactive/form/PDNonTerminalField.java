@@ -26,17 +26,15 @@ import java.util.List;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
-import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.fdf.FDFField;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
-
 /**
  * A non terminal field in an interactive form.
  *
  * A non terminal field is a node in the fields tree node whose descendants
- * are fields. 
+ * are fields.
  *
  * The attributes such as FT (field type) or V (field value) do not logically
  * belong to the non terminal field but are inheritable attributes
@@ -44,6 +42,7 @@ import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
  */
 public class PDNonTerminalField extends PDField
 {
+
     /**
      * Constructor.
      *
@@ -69,14 +68,8 @@ public class PDNonTerminalField extends PDField
     @Override
     public int getFieldFlags()
     {
-        int retval = 0;
-        COSInteger ff = (COSInteger) getCOSObject().getDictionaryObject(COSName.FF);
-        if (ff != null)
-        {
-            retval = ff.intValue();
-        }
         // There is no need to look up the parent hierarchy within a non terminal field
-        return retval;
+        return getCOSObject().getInt(COSName.FF, 0);
     }
 
     @Override
@@ -220,7 +213,7 @@ public class PDNonTerminalField extends PDField
         // todo: construct appearances of children?
     }
 
-    /**
+   /**
      * Sets the plain text value of this field.
      *
      * @param value Plain text
@@ -256,7 +249,7 @@ public class PDNonTerminalField extends PDField
      */
     public void setDefaultValue(COSBase value)
     {
-        getCOSObject().setItem(COSName.V, value);
+        getCOSObject().setItem(COSName.DV, value);
     }
 
     @Override

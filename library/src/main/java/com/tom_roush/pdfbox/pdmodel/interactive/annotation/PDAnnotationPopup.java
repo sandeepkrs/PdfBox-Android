@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * This is the class that represents a popup annotation. Introduced in PDF 1.3 specification
  *
@@ -89,17 +88,21 @@ public class PDAnnotationPopup extends PDAnnotation
      */
     public PDAnnotationMarkup getParent()
     {
-        PDAnnotationMarkup am = null;
         try
         {
-            am = (PDAnnotationMarkup) PDAnnotation.createAnnotation(getCOSObject()
-                .getDictionaryObject(COSName.PARENT, COSName.P));
+            PDAnnotation ann = PDAnnotation.createAnnotation(getCOSObject()
+                    .getDictionaryObject(COSName.PARENT, COSName.P));
+            if (!(ann instanceof PDAnnotationMarkup))
+            {
+                return null;
+            }
+            return (PDAnnotationMarkup) ann;
         }
         catch (IOException ioe)
         {
             // Couldn't construct the annotation, so return null i.e. do nothing
+            return null;
         }
-        return am;
     }
 
 }

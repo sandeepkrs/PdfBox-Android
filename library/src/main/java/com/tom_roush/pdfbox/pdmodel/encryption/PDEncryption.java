@@ -18,6 +18,7 @@
 package com.tom_roush.pdfbox.pdmodel.encryption;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
@@ -26,7 +27,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSString;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This class is a specialized view of the encryption dictionary of a PDF document.
  * It contains a low level dictionary (COSDictionary) and provides the methods to
@@ -106,6 +106,7 @@ public class PDEncryption implements COSObjectable
     {
         if (securityHandler == null)
         {
+            // Don't change this text, it's used by Apache Tika (TIKA-4082)
             throw new IOException("No security handler for filter " + getFilter());
         }
         return securityHandler;
@@ -265,7 +266,7 @@ public class PDEncryption implements COSObjectable
         return dictionary.getInt( COSName.R, DEFAULT_VERSION );
     }
 
-    /**
+     /**
      * This will set the O entry in the standard encryption dictionary.
      *
      * @param o A 32 byte array or null if there is no owner key.
@@ -291,6 +292,15 @@ public class PDEncryption implements COSObjectable
         if( owner != null )
         {
             o = owner.getBytes();
+            int r = getRevision();
+            if (r <= 4)
+            {
+                o = Arrays.copyOf(o, 32);
+            }
+            else if (r == 5 || r == 6)
+            {
+                o = Arrays.copyOf(o, 48);
+            }
         }
         return o;
     }
@@ -321,6 +331,15 @@ public class PDEncryption implements COSObjectable
         if( user != null )
         {
             u = user.getBytes();
+            int r = getRevision();
+            if (r <= 4)
+            {
+                u = Arrays.copyOf(u, 32);
+            }
+            else if (r == 5 || r == 6)
+            {
+                u = Arrays.copyOf(u, 48);
+            }
         }
         return u;
     }
@@ -350,7 +369,7 @@ public class PDEncryption implements COSObjectable
         COSString ownerEncryptionKey = (COSString)dictionary.getDictionaryObject( COSName.OE );
         if( ownerEncryptionKey != null )
         {
-            oe = ownerEncryptionKey.getBytes();
+            oe = Arrays.copyOf(ownerEncryptionKey.getBytes(), 32);
         }
         return oe;
     }
@@ -380,7 +399,7 @@ public class PDEncryption implements COSObjectable
         COSString userEncryptionKey = (COSString)dictionary.getDictionaryObject( COSName.UE );
         if( userEncryptionKey != null )
         {
-            ue = userEncryptionKey.getBytes();
+            ue = Arrays.copyOf(userEncryptionKey.getBytes(), 32);
         }
         return ue;
     }
@@ -557,7 +576,7 @@ public class PDEncryption implements COSObjectable
      */
     public COSName getStreamFilterName()
     {
-        COSName stmF = (COSName) dictionary.getDictionaryObject( COSName.STM_F );
+        COSName stmF = dictionary.getCOSName(COSName.STM_F );
         if (stmF == null)
         {
             stmF = COSName.IDENTITY;
@@ -583,7 +602,7 @@ public class PDEncryption implements COSObjectable
      */
     public COSName getStringFilterName()
     {
-        COSName strF = (COSName) dictionary.getDictionaryObject( COSName.STR_F );
+        COSName strF = dictionary.getCOSName(COSName.STR_F);
         if (strF == null)
         {
             strF = COSName.IDENTITY;

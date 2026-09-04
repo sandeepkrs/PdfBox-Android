@@ -25,7 +25,6 @@ import java.util.Map;
 
 import com.tom_roush.fontbox.encoding.BuiltInEncoding;
 import com.tom_roush.fontbox.encoding.StandardEncoding;
-
 /**
  * Parses an Adobe Type 1 (.pfb) font. It is used exclusively by Type1Font.
  *
@@ -218,16 +217,19 @@ final class Type1Parser
             // we have to check "readonly" and "def" too
             // as some fonts don't provide any dup-values, see PDFBOX-2134
             while (!(lexer.peekKind(Token.NAME) &&
-                (lexer.peekToken().getText().equals("dup") ||
+                    (lexer.peekToken().getText().equals("dup") ||
                     lexer.peekToken().getText().equals("readonly") ||
                     lexer.peekToken().getText().equals("def"))))
             {
-                lexer.nextToken();
+                if ( lexer.nextToken() == null )
+                {
+                    throw new IOException( "Incomplete data while reading encoding of type 1 font" );
+                }
             }
 
             Map<Integer, String> codeToName = new HashMap<Integer, String>();
             while (lexer.peekKind(Token.NAME) &&
-                lexer.peekToken().getText().equals("dup"))
+                    lexer.peekToken().getText().equals("dup"))
             {
                 read(Token.NAME, "dup");
                 int code = read(Token.INTEGER).intValue();
@@ -246,7 +248,7 @@ final class Type1Parser
      */
     private List<Number> arrayToNumbers(List<Token> value) throws IOException
     {
-        List<Number> numbers = new ArrayList<Number>();
+        List<Number> numbers = new ArrayList<Number>(value.size());
         for (int i = 1, size = value.size() - 1; i < size; i++)
         {
             Token token = value.get(i);
@@ -261,7 +263,7 @@ final class Type1Parser
             else
             {
                 throw new IOException("Expected INTEGER or REAL but got " + token +
-                    " at array position " + i);
+                        " at array position " + i);
             }
         }
         return numbers;
@@ -327,6 +329,13 @@ final class Type1Parser
         int length = read(Token.INTEGER).intValue();
         read(Token.NAME, "dict");
         readMaybe(Token.NAME, "dup");
+
+        if (readMaybe(Token.NAME, "def") != null)
+        {
+            // PDFBOX-5942 empty dict
+            return dict;
+        }
+
         read(Token.NAME, "begin");
 
         for (int i = 0; i < length; i++)
@@ -336,7 +345,7 @@ final class Type1Parser
                 break;
             }
             if (lexer.peekKind(Token.NAME) &&
-                !lexer.peekToken().getText().equals("end"))
+               !lexer.peekToken().getText().equals("end"))
             {
                 read(Token.NAME);
             }
@@ -642,9 +651,12 @@ final class Type1Parser
         // sometimes followed by "put". Either way, we just skip until
         // the /CharStrings dict is found
         while (!(lexer.peekKind(Token.LITERAL)
-            && lexer.peekToken().getText().equals("CharStrings")))
+                && lexer.peekToken().getText().equals("CharStrings")))
         {
-            lexer.nextToken();
+            if ( lexer.nextToken() == null )
+            {
+                throw new IOException( "Missing 'CharStrings' dictionary in type 1 font" );
+            }
         }
 
         // CharStrings dict
@@ -733,7 +745,7 @@ final class Type1Parser
                 break;
             }
             if (!(lexer.peekKind(Token.NAME) &&
-                lexer.peekToken().getText().equals("dup")))
+                  lexer.peekToken().getText().equals("dup")))
             {
                 break;
             }
@@ -891,8 +903,6 @@ final class Type1Parser
     /**
      * Reads the next token and throws an exception if it is not of the given kind
      * and does not have the given value.
-     *
-     * @return token, never null
      */
     private void read(Token.Kind kind, String name) throws IOException
     {
@@ -969,7 +979,7 @@ final class Type1Parser
         {
             byte by = bytes[i];
             if (by != 0x0a && by != 0x0d && by != 0x20 && by != '\t' &&
-                Character.digit((char) by, 16) == -1)
+                    Character.digit((char) by, 16) == -1)
             {
                 return true;
             }

@@ -22,7 +22,6 @@ import java.io.OutputStream;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 /**
  * Decrypts data encrypted by a security handler, reproducing the data as it was before encryption.
  * @author Adam Nichols
@@ -31,9 +30,9 @@ final class CryptFilter extends Filter
 {
     @Override
     public DecodeResult decode(InputStream encoded, OutputStream decoded,
-        COSDictionary parameters, int index) throws IOException
+                                         COSDictionary parameters, int index) throws IOException
     {
-        COSName encryptionName = (COSName) parameters.getDictionaryObject(COSName.NAME);
+        COSName encryptionName = parameters.getCOSName(COSName.NAME);
         if(encryptionName == null || encryptionName.equals(COSName.IDENTITY))
         {
             // currently the only supported implementation is the Identity crypt filter
@@ -46,9 +45,9 @@ final class CryptFilter extends Filter
 
     @Override
     protected void encode(InputStream input, OutputStream encoded, COSDictionary parameters)
-        throws IOException
+            throws IOException
     {
-        COSName encryptionName = (COSName) parameters.getDictionaryObject(COSName.NAME);
+        COSName encryptionName = parameters.getCOSName(COSName.NAME);
         if(encryptionName == null || encryptionName.equals(COSName.IDENTITY))
         {
             // currently the only supported implementation is the Identity crypt filter

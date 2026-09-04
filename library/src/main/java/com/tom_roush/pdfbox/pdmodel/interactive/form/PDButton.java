@@ -32,7 +32,6 @@ import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceDictionary;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceEntry;
-
 /**
  * A button field represents an interactive control on the screen
  * that the user can manipulate with the mouse.
@@ -185,7 +184,7 @@ public abstract class PDButton extends PDTerminalField
     {
         checkValue(value);
 
-        // if there are export values/an Opt entry there is a different 
+        // if there are export values/an Opt entry there is a different
         // approach to setting the value
         boolean hasExportValues = getExportValues().size() > 0;
 
@@ -203,7 +202,7 @@ public abstract class PDButton extends PDTerminalField
     /**
      * Set the selected option given its index, and try to update the visual appearance.
      *
-     * NOTE: this method is only usable if there are export values and used for 
+     * NOTE: this method is only usable if there are export values and used for
      * radio buttons with FLAG_RADIOS_IN_UNISON not set.
      *
      * @param index index of option to be selected
@@ -212,18 +211,18 @@ public abstract class PDButton extends PDTerminalField
      */
     public void setValue(int index) throws IOException
     {
-        if (getExportValues().isEmpty() || index < 0 || index >= getExportValues().size())
+        List<String> exportValues = getExportValues();
+        if (exportValues.isEmpty() || index < 0 || index >= exportValues.size())
         {
             throw new IllegalArgumentException("index '" + index
-                + "' is not a valid index for the field " + getFullyQualifiedName()
-                + ", valid indices are from 0 to " + (getExportValues().size() - 1));
+                    + "' is not a valid index for the field " + getFullyQualifiedName()
+                    + ", valid indices are from 0 to " + (exportValues.size() - 1));
         }
 
         updateByValue(String.valueOf(index));
 
         applyChange();
     }
-
 
 
     /**
@@ -269,7 +268,7 @@ public abstract class PDButton extends PDTerminalField
      * <p>The export values are defined in the field dictionaries /Opt key.</p>
      *
      * <p>The option values are used to define the export values
-     * for the field to 
+     * for the field to
      * <ul>
      *  <li>hold values in non-Latin writing systems as name objects, which represent the field value, are limited
      *      to PDFDocEncoding
@@ -288,8 +287,13 @@ public abstract class PDButton extends PDTerminalField
 
         if (value instanceof COSString)
         {
+            String stringValue = ((COSString)value).getString();
+            if (stringValue.isEmpty())
+            {
+                return Collections.emptyList();
+            }
             List<String> array = new ArrayList<String>();
-            array.add(((COSString) value).getString());
+            array.add(stringValue);
             return array;
         }
         else if (value instanceof COSArray)
@@ -322,27 +326,23 @@ public abstract class PDButton extends PDTerminalField
     @Override
     void constructAppearances() throws IOException
     {
-        List<String> exportValues = getExportValues();
-        if (exportValues.size() > 0)
+        for (PDAnnotationWidget widget : getWidgets())
         {
-            // the value is the index value of the option. So we need to get that
-            // and use it to set the value
-            try
+            PDAppearanceDictionary appearance = widget.getAppearance();
+            if (appearance == null)
             {
-                int optionsIndex = Integer.parseInt(getValue());
-                if (optionsIndex < exportValues.size())
-                {
-                    updateByOption(exportValues.get(optionsIndex));
-                }
-            } catch (NumberFormatException e)
-            {
-                // silently ignore that
-                // and don't update the appearance
+                continue;
             }
-        }
-        else
-        {
-            updateByValue(getValue());
+            PDAppearanceEntry appearanceEntry = appearance.getNormalAppearance();
+            COSName value = getCOSObject().getCOSName(COSName.V);
+            if (((COSDictionary) appearanceEntry.getCOSObject()).containsKey(value))
+            {
+                widget.setAppearanceState(value);
+            }
+            else
+            {
+                widget.setAppearanceState(COSName.Off);
+            }
         }
     }
 
@@ -353,7 +353,7 @@ public abstract class PDButton extends PDTerminalField
      * a PDF name object. The Off value shall always be 'Off'. If not set or not part of the normal
      * appearance keys 'Off' is the default</p>
      *
-     * @return the potential values setting the check box to the On state. 
+     * @return the potential values setting the check box to the On state.
      *         If an empty Set is returned there is no appearance definition.
      */
     public Set<String> getOnValues()
@@ -370,7 +370,7 @@ public abstract class PDButton extends PDTerminalField
         List<PDAnnotationWidget> widgets = this.getWidgets();
         for (PDAnnotationWidget widget : widgets)
         {
-            onValues.add(getOnValueForWidget(widget));
+        	onValues.add(getOnValueForWidget(widget));
         }
         return onValues;
     }
@@ -425,31 +425,85 @@ public abstract class PDButton extends PDTerminalField
         if (COSName.Off.getName().compareTo(value) != 0 && !onValues.contains(value))
         {
             throw new IllegalArgumentException("value '" + value
-                + "' is not a valid option for the field " + getFullyQualifiedName()
-                + ", valid values are: " + onValues + " and " + COSName.Off.getName());
+                    + "' is not a valid option for the field " + getFullyQualifiedName()
+                    + ", valid values are: " + onValues + " and " + COSName.Off.getName());
         }
     }
 
     private void updateByValue(String value) throws IOException
     {
-        getCOSObject().setName(COSName.V, value);
+        // Find the matching appearance key from the first widget that has it
+        COSName matchingKey = null;
+
         // update the appearance state (AS)
         for (PDAnnotationWidget widget : getWidgets())
         {
-            if (widget.getAppearance() == null)
+            PDAppearanceDictionary appearance = widget.getAppearance();
+            if (appearance == null)
             {
                 continue;
             }
             PDAppearanceEntry appearanceEntry = widget.getAppearance().getNormalAppearance();
-            if (((COSDictionary) appearanceEntry.getCOSObject()).containsKey(value))
+            COSDictionary appearanceDict = (COSDictionary) appearanceEntry.getCOSObject();
+
+            // Find the matching appearance key by searching through the actual keys
+            // and comparing their decoded names. This handles encoding differences:
+            // the appearance key might be ISO-8859-1 encoded (e.g. /m#e4nnlich for "männlich")
+            // while the value String is UTF-8.
+            COSName widgetMatchingKey = findMatchingAppearanceKey(appearanceDict, value);
+
+            // Save the first matching key to use for the V entry
+            if (widgetMatchingKey != null && matchingKey == null)
             {
-                widget.setAppearanceState(value);
+                matchingKey = widgetMatchingKey;
+            }
+
+            if (widgetMatchingKey != null)
+            {
+                // Use the exact COSName from the appearance dictionary to preserve encoding
+                widget.setAppearanceState(widgetMatchingKey);
             }
             else
             {
-                widget.setAppearanceState(COSName.Off.getName());
+                // Fall back to Off if no match found for this widget
+                widget.setAppearanceState(COSName.Off);
             }
         }
+
+        // Set the V entry once using the first matching key found
+        if (matchingKey != null)
+        {
+            getCOSObject().setItem(COSName.V, matchingKey);
+        }
+        else
+        {
+            // Fall back to UTF-8 encoding if no match found in any widget
+            getCOSObject().setName(COSName.V, value);
+        }
+
+    }
+
+    /**
+     * Find the appearance dictionary key that matches the given value String.
+     * This method handles encoding differences - the value might be UTF-8 while
+     * appearance keys in the PDF could be ISO-8859-1 or other encodings.
+     *
+     * @param appearanceDict the appearance dictionary with keys to search
+     * @param value the value String to match against (typically UTF-8)
+     * @return the matching COSName key, or null if no match found
+     */
+    private COSName findMatchingAppearanceKey(COSDictionary appearanceDict, String value)
+    {
+        // Search all keys in the appearance dictionary and compare their decoded names
+        // COSName.getName() uses UTF-8 decoding with ISO-8859-1 fallback for non-UTF-8 bytes
+        for (COSName key : appearanceDict.keySet())
+        {
+            if (value.equals(key.getName()))
+            {
+                return key;
+            }
+        }
+        return null;
     }
 
     private void updateByOption(String value) throws IOException

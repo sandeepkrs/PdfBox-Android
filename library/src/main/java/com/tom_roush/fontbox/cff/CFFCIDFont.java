@@ -20,13 +20,12 @@ package com.tom_roush.fontbox.cff;
 import android.graphics.Path;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.tom_roush.fontbox.type1.Type1CharStringReader;
-
 /**
  * A Type 0 CIDFont represented in a CFF file. Thread safe.
  *
@@ -39,12 +38,12 @@ public class CFFCIDFont extends CFFFont
     private String ordering;
     private int supplement;
 
-    private List<Map<String, Object>> fontDictionaries = new LinkedList<Map<String,Object>>();
-    private List<Map<String, Object>> privateDictionaries = new LinkedList<Map<String,Object>>();
+    private List<Map<String, Object>> fontDictionaries = Collections.emptyList();
+    private List<Map<String, Object>> privateDictionaries = Collections.emptyList();
     private FDSelect fdSelect;
 
     private final Map<Integer, CIDKeyedType2CharString> charStringCache =
-        new ConcurrentHashMap<Integer, CIDKeyedType2CharString>();
+            new ConcurrentHashMap<Integer, CIDKeyedType2CharString>();
 
     private final PrivateType1CharStringReader reader = new PrivateType1CharStringReader();
 
@@ -175,12 +174,12 @@ public class CFFCIDFont extends CFFFont
     private int getDefaultWidthX(int gid)
     {
         int fdArrayIndex = this.fdSelect.getFDIndex(gid);
-        if (fdArrayIndex == -1)
+        if (fdArrayIndex == -1 || fdArrayIndex >= this.privateDictionaries.size())
         {
             return 1000;
         }
-        Map<String, Object> privDict = this.privateDictionaries.get(fdArrayIndex);
-        return privDict.containsKey("defaultWidthX") ? ((Number)privDict.get("defaultWidthX")).intValue() : 1000;
+        Object privDictValue = this.privateDictionaries.get(fdArrayIndex).get("defaultWidthX");
+        return privDictValue instanceof Number ? ((Number) privDictValue).intValue() : 1000;
     }
 
     /**
@@ -191,12 +190,12 @@ public class CFFCIDFont extends CFFFont
     private int getNominalWidthX(int gid)
     {
         int fdArrayIndex = this.fdSelect.getFDIndex(gid);
-        if (fdArrayIndex == -1)
+        if (fdArrayIndex == -1 || fdArrayIndex >= this.privateDictionaries.size())
         {
             return 0;
         }
-        Map<String, Object> privDict = this.privateDictionaries.get(fdArrayIndex);
-        return privDict.containsKey("nominalWidthX") ? ((Number)privDict.get("nominalWidthX")).intValue() : 0;
+        Object privDictValue = this.privateDictionaries.get(fdArrayIndex).get("nominalWidthX");
+        return privDictValue instanceof Number ? ((Number) privDictValue).intValue() : 0;
     }
 
     /**
@@ -207,7 +206,7 @@ public class CFFCIDFont extends CFFFont
     private byte[][] getLocalSubrIndex(int gid)
     {
         int fdArrayIndex = this.fdSelect.getFDIndex(gid);
-        if (fdArrayIndex == -1)
+        if (fdArrayIndex == -1 || fdArrayIndex >= this.privateDictionaries.size())
         {
             return null;
         }
@@ -237,7 +236,7 @@ public class CFFCIDFont extends CFFFont
             Type2CharStringParser parser = new Type2CharStringParser(fontName, cid);
             List<Object> type2seq = parser.parse(bytes, globalSubrIndex, getLocalSubrIndex(gid));
             type2 = new CIDKeyedType2CharString(reader, fontName, cid, gid, type2seq,
-                getDefaultWidthX(gid), getNominalWidthX(gid));
+                                                getDefaultWidthX(gid), getNominalWidthX(gid));
             charStringCache.put(cid, type2);
         }
         return type2;

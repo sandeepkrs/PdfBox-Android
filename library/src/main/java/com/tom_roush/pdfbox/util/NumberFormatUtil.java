@@ -15,6 +15,7 @@
  */
 package com.tom_roush.pdfbox.util;
 
+
 /**
  * This class contains methods to format numbers.
  *
@@ -63,7 +64,7 @@ public class NumberFormatUtil
      * {@link #MAX_FRACTION_DIGITS}.
      *
      * When the number contains more fractional digits than {@code maxFractionDigits} the value will
-     * be rounded. Rounding is done to the nearest possible value, with the tie breaking rule of 
+     * be rounded. Rounding is done to the nearest possible value, with the tie breaking rule of
      * rounding away from zero.
      *
      * @param value The float value to format
@@ -75,10 +76,10 @@ public class NumberFormatUtil
     public static int formatFloatFast(float value, int maxFractionDigits, byte[] asciiBuffer)
     {
         if (Float.isNaN(value) ||
-            Float.isInfinite(value) ||
-            value > Long.MAX_VALUE ||
-            value <= Long.MIN_VALUE ||
-            maxFractionDigits > MAX_FRACTION_DIGITS)
+                Float.isInfinite(value) ||
+                value > Long.MAX_VALUE ||
+                value <= Long.MIN_VALUE ||
+                maxFractionDigits > MAX_FRACTION_DIGITS)
         {
             return -1;
         }
@@ -93,7 +94,7 @@ public class NumberFormatUtil
             integerPart = -integerPart;
         }
 
-        //extract fraction part 
+        //extract fraction part
         long fractionPart = (long) ((Math.abs((double)value) - integerPart) * POWER_OF_TENS[maxFractionDigits] + 0.5d);
 
         //Check for rounding to next integer
@@ -132,7 +133,7 @@ public class NumberFormatUtil
         int offset = startOffset;
         long remaining = number;
 
-        while (remaining > Integer.MAX_VALUE && (!omitTrailingZeros || remaining > 0))
+        while (remaining > Integer.MAX_VALUE)
         {
             long digit = remaining / POWER_OF_TENS[exp];
             remaining -= (digit * POWER_OF_TENS[exp]);

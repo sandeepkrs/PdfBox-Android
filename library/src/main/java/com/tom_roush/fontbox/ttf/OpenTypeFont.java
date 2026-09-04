@@ -20,7 +20,6 @@ package com.tom_roush.fontbox.ttf;
 import android.graphics.Path;
 
 import java.io.IOException;
-
 /**
  * An OpenType (OTF/TTF) font.
  */
@@ -81,7 +80,25 @@ public class OpenTypeFont extends TrueTypeFont
      */
     public boolean isPostScript()
     {
-        return tables.containsKey(CFFTable.TAG);
+        return isPostScript || tables.containsKey(CFFTable.TAG) || tables.containsKey("CFF2");
+    }
+
+    /**
+     * Returns true if this font is supported.
+     *
+     * There are 3 kind of OpenType fonts, fonts using TrueType outlines, fonts using CFF outlines (version 1 and 2)
+     *
+     * Fonts using CFF outlines version 2 aren't supported yet.
+     *
+     * @return true if the font is supported
+     */
+    public boolean isSupportedOTF()
+    {
+        // OTF using CFF2 based outlines aren't yet supported
+        return !(isPostScript //
+                && !tables.containsKey(CFFTable.TAG) //
+                && tables.containsKey("CFF2") //
+        );
     }
 
     /**
@@ -90,9 +107,9 @@ public class OpenTypeFont extends TrueTypeFont
     public boolean hasLayoutTables()
     {
         return tables.containsKey("BASE") ||
-            tables.containsKey("GDEF") ||
-            tables.containsKey("GPOS") ||
-            tables.containsKey("GSUB") ||
-            tables.containsKey("JSTF");
+               tables.containsKey("GDEF") ||
+               tables.containsKey("GPOS") ||
+               tables.containsKey("GSUB") ||
+               tables.containsKey("JSTF");
     }
 }

@@ -19,7 +19,6 @@ package com.tom_roush.fontbox.ttf;
 import android.util.Log;
 
 import java.io.IOException;
-
 /**
  * A table in a true type font.
  *
@@ -68,7 +67,11 @@ public class PostScriptTable extends TTFTable
         mimMemType1 = data.readUnsignedInt();
         maxMemType1 = data.readUnsignedInt();
 
-        if (formatType == 1.0f)
+        if (data.getCurrentPosition() == data.getOriginalDataSize())
+        {
+            Log.w("PdfBox-Android", "No PostScript name data is provided for the font " + ttf.getName());
+        }
+        else if (formatType == 1.0f)
         {
             /*
              * This TrueType font file contains exactly the 258 glyphs in the standard Macintosh TrueType.
@@ -108,7 +111,7 @@ public class PostScriptTable extends TTFTable
                     {
                         // PDFBOX-4851: EOF
                         Log.w("PdfBox-Android", "Error reading names in PostScript table at entry " + i + " of " +
-                            nameArray.length + ", setting remaining entries to .notdef", ex);
+                                 nameArray.length + ", setting remaining entries to .notdef", ex);
                         for (int j = i; j < nameArray.length; ++j)
                         {
                             nameArray[j] = ".notdef";
@@ -159,7 +162,7 @@ public class PostScriptTable extends TTFTable
                 else
                 {
                     Log.d("PdfBox-Android", "incorrect glyph name index " + index +
-                        ", valid numbers 0.." + WGL4Names.NUMBER_OF_MAC_GLYPHS);
+                              ", valid numbers 0.." + WGL4Names.NUMBER_OF_MAC_GLYPHS);
                 }
             }
         }

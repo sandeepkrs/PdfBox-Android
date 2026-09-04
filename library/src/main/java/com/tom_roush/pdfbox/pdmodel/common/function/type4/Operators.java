@@ -17,7 +17,6 @@
 package com.tom_roush.pdfbox.pdmodel.common.function.type4;
 
 import java.util.Map;
-
 /**
  * This class provides all the supported operators.
  */
@@ -74,7 +73,7 @@ public class Operators
     private static final Operator POP = new StackOperators.Pop();
     private static final Operator ROLL = new StackOperators.Roll();
 
-    private final Map<String, Operator> operators = new java.util.HashMap<String, Operator>();
+    private final Map<String, Operator> operators = new java.util.HashMap<String, Operator>(42);
 
     /**
      * Creates a new Operators object with the default set of operators.

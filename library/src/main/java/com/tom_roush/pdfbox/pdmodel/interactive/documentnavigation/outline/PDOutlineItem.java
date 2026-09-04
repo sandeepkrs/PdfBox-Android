@@ -35,7 +35,6 @@ import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.P
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageXYZDestination;
-
 /**
  * This represents an outline item in a pdf document. The items at each level of the hierarchy form an iterable linked
  * list, chained together through their Prev and Next entries.
@@ -69,7 +68,7 @@ public final class PDOutlineItem extends PDOutlineNode
      * Insert a single sibling after this node.
      *
      * @param newSibling The item to insert.
-     * @throws IllegalArgumentException if the given sibling node is part of a list 
+     * @throws IllegalArgumentException if the given sibling node is part of a list
      * (i.e. if it has a previous or a next sibling)
      */
     public void insertSiblingAfter(PDOutlineItem newSibling)
@@ -96,7 +95,7 @@ public final class PDOutlineItem extends PDOutlineNode
      * Insert a single sibling before this node.
      *
      * @param newSibling The item to insert.
-     * @throws IllegalArgumentException if the given sibling node is part of a list 
+     * @throws IllegalArgumentException if the given sibling node is part of a list
      * (i.e. if it has a previous or a next sibling)
      */
     public void insertSiblingBefore(PDOutlineItem newSibling)
@@ -301,7 +300,7 @@ public final class PDOutlineItem extends PDOutlineNode
     public PDStructureElement getStructureElement()
     {
         PDStructureElement se = null;
-        COSDictionary dic = (COSDictionary) getCOSObject().getDictionaryObject(COSName.SE);
+        COSDictionary dic = getCOSObject().getCOSDictionary(COSName.SE);
         if( dic != null )
         {
             se = new PDStructureElement( dic );
@@ -327,7 +326,7 @@ public final class PDOutlineItem extends PDOutlineNode
      */
     public PDColor getTextColor()
     {
-        COSArray csValues = (COSArray) getCOSObject().getDictionaryObject(COSName.C);
+        COSArray csValues = getCOSObject().getCOSArray(COSName.C);
         if( csValues == null )
         {
             csValues = new COSArray();

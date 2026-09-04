@@ -283,4 +283,11 @@ public class CCITTFactoryTest extends TestCase
         }
         document.close();
     }
+
+//    /**
+//     * PDFBOX-6164: test support of TIFF-files with FillOrder=2
+//     * TODO: PdfBox-Android not ported: downloads Wing.tif from issues.apache.org and
+//     * compares against a javax.imageio-decoded reference image
+//     */
+//    public void testFillOrder2() throws IOException, URISyntaxException
 }

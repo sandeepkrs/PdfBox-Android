@@ -20,11 +20,10 @@ import java.io.IOException;
 import java.util.List;
 
 import com.tom_roush.pdfbox.contentstream.operator.MissingOperandException;
-import com.tom_roush.pdfbox.cos.COSBase;
-import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.contentstream.operator.Operator;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
-
+import com.tom_roush.pdfbox.cos.COSBase;
+import com.tom_roush.pdfbox.cos.COSName;
 /**
  * sh Fills the clipping area with the given shading pattern.
  *
@@ -39,7 +38,12 @@ public final class ShadingFill extends GraphicsOperatorProcessor
         {
             throw new MissingOperandException(operator, operands);
         }
-        context.shadingFill((COSName) operands.get(0));
+        COSBase base = operands.get(0);
+        if (!(base instanceof COSName))
+        {
+            throw new MissingOperandException(operator, operands);
+        }
+        context.shadingFill((COSName) base);
     }
 
     @Override

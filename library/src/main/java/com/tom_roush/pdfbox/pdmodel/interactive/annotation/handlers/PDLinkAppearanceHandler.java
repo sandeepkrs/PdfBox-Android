@@ -17,6 +17,7 @@
 
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers;
 
+import android.graphics.Rect;
 import android.util.Log;
 
 import java.io.IOException;
@@ -33,13 +34,13 @@ import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
-
 /**
  * Handler to generate the link annotations appearance.
  *
  */
 public class PDLinkAppearanceHandler extends PDAbstractAppearanceHandler
 {
+
     public PDLinkAppearanceHandler(PDAnnotation annotation)
     {
         super(annotation);
@@ -95,9 +96,9 @@ public class PDLinkAppearanceHandler extends PDAbstractAppearanceHandler
                     if (!rect.contains(pathsArray[i * 2], pathsArray[i * 2 + 1]))
                     {
                         Log.w("PdfBox-Android", "At least one /QuadPoints entry (" +
-                            pathsArray[i * 2] + ";" + pathsArray[i * 2 + 1] +
-                            ") is outside of rectangle, " + rect +
-                            ", /QuadPoints are ignored and /Rect is used instead");
+                                pathsArray[i * 2] + ";" + pathsArray[i * 2 + 1] +
+                                ") is outside of rectangle, " + rect +
+                                ", /QuadPoints are ignored and /Rect is used instead");
                         pathsArray = null;
                         break;
                     }
@@ -111,11 +112,11 @@ public class PDLinkAppearanceHandler extends PDAbstractAppearanceHandler
                 pathsArray[0] = borderEdge.getLowerLeftX();
                 pathsArray[1] = borderEdge.getLowerLeftY();
                 pathsArray[2] = borderEdge.getUpperRightX();
-                pathsArray[3] = borderEdge.getLowerLeftY();
-                pathsArray[4] = borderEdge.getUpperRightX();
+                pathsArray[3] = pathsArray[1];
+                pathsArray[4] = pathsArray[2];
                 pathsArray[5] = borderEdge.getUpperRightY();
-                pathsArray[6] = borderEdge.getLowerLeftX();
-                pathsArray[7] = borderEdge.getUpperRightY();
+                pathsArray[6] = pathsArray[0];
+                pathsArray[7] = pathsArray[5];
             }
 
             boolean underline = false;
@@ -161,11 +162,11 @@ public class PDLinkAppearanceHandler extends PDAbstractAppearanceHandler
     @Override
     public void generateDownAppearance()
     {
-        // No down appearance generated for a link annotation
+     // No down appearance generated for a link annotation
     }
 
     /**
-     * Get the line with of the border.
+     * Get the line width of the border.
      *
      * Get the width of the line used to draw a border around the annotation.
      * This may either be specified by the annotation dictionaries Border

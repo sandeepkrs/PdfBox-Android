@@ -32,6 +32,7 @@ import com.tom_roush.pdfbox.pdmodel.PDPageContentStream;
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream.AppendMode;
 import com.tom_roush.pdfbox.pdmodel.PDResources;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
 import com.tom_roush.pdfbox.pdmodel.font.PDFont;
 import com.tom_roush.pdfbox.pdmodel.font.PDType1Font;
 import com.tom_roush.pdfbox.pdmodel.graphics.optionalcontent.PDOptionalContentProperties.BaseState;
@@ -206,14 +207,23 @@ public class TestOptionalContentGroups extends TestCase
             PDFMarkedContentExtractor extractor = new PDFMarkedContentExtractor();
             extractor.processPage(page);
             List<PDMarkedContent> markedContents = extractor.getMarkedContents();
-            assertEquals("oc1", markedContents.get(0).getTag());
+            assertEquals("OC", markedContents.get(0).getTag());
+            PDOptionalContentGroup ocg1 =
+                    (PDOptionalContentGroup) PDPropertyList.create(markedContents.get(0).getProperties());
+            assertEquals("background", ocg1.getName());
             assertEquals("PDF 1.5: Optional Content Groups"
                     + "You should see a green textline, but no red text line.",
                 textPositionListToString(markedContents.get(0).getContents()));
-            assertEquals("oc2", markedContents.get(1).getTag());
+            assertEquals("OC", markedContents.get(1).getTag());
+            PDOptionalContentGroup ocg2 =
+                    (PDOptionalContentGroup) PDPropertyList.create(markedContents.get(1).getProperties());
+            assertEquals("enabled", ocg2.getName());
             assertEquals("This is from an enabled layer. If you see this, that's good.",
                 textPositionListToString(markedContents.get(1).getContents()));
-            assertEquals("oc3", markedContents.get(2).getTag());
+            assertEquals("OC", markedContents.get(2).getTag());
+            PDOptionalContentGroup ocg3 =
+                    (PDOptionalContentGroup) PDPropertyList.create(markedContents.get(2).getProperties());
+            assertEquals("disabled", ocg3.getName());
             assertEquals("This is from a disabled layer. If you see this, that's NOT good!",
                 textPositionListToString(markedContents.get(2).getContents()));
         }

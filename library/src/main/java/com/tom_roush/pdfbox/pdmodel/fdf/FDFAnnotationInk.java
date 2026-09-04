@@ -21,7 +21,6 @@ import android.util.Log;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -31,11 +30,9 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 /**
  * This represents a Ink FDF annotation.
  *
@@ -83,7 +80,7 @@ public class FDFAnnotationInk extends FDFAnnotation
         try
         {
             NodeList gestures = (NodeList) xpath.evaluate("inklist/gesture", element,
-                XPathConstants.NODESET);
+                    XPathConstants.NODESET);
             if (gestures.getLength() == 0)
             {
                 throw new IOException("Error: missing element 'gesture'");
@@ -95,12 +92,8 @@ public class FDFAnnotationInk extends FDFAnnotation
                 if (node instanceof Element)
                 {
                     String gesture = node.getFirstChild().getNodeValue();
-                    String[] gestureValues = gesture.split(",|;");
-                    float[] values = new float[gestureValues.length];
-                    for (int j = 0; j < gestureValues.length; j++)
-                    {
-                        values[j] = Float.parseFloat(gestureValues[j]);
-                    }
+                    String[] gestureValues = gesture.split("[,;]");
+                    float[] values = parseFloats(gestureValues);
                     inklist.add(values);
                 }
             }
@@ -143,7 +136,7 @@ public class FDFAnnotationInk extends FDFAnnotation
         COSArray array = (COSArray) annot.getDictionaryObject(COSName.INKLIST);
         if (array != null)
         {
-            List<float[]> retval = new ArrayList<float[]>();
+            List<float[]> retval = new ArrayList<float[]>(array.size());
             for (COSBase entry : array)
             {
                 retval.add(((COSArray) entry).toFloatArray());

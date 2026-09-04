@@ -24,7 +24,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This represents an FDF template that is part of the FDF page.
  *
@@ -97,10 +96,10 @@ public class FDFTemplate implements COSObjectable
     public List<FDFField> getFields()
     {
         List<FDFField> retval = null;
-        COSArray array = (COSArray) template.getDictionaryObject(COSName.FIELDS);
+        COSArray array = template.getCOSArray(COSName.FIELDS);
         if (array != null)
         {
-            List<FDFField> fields = new ArrayList<FDFField>();
+            List<FDFField> fields = new ArrayList<FDFField>(array.size());
             for (int i = 0; i < array.size(); i++)
             {
                 fields.add(new FDFField((COSDictionary) array.getObject(i)));

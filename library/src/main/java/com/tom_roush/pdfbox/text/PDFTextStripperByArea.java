@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.tom_roush.pdfbox.pdmodel.PDPage;
-
 /**
  * This will extract text from a specified region in the PDF.
  *
@@ -37,7 +36,7 @@ public class PDFTextStripperByArea extends PDFTextStripper
     private final List<String> regions = new ArrayList<String>();
     private final Map<String, RectF> regionArea = new HashMap<String, RectF>();
     private final Map<String, ArrayList<List<TextPosition>>> regionCharacterList
-        = new HashMap<String, ArrayList<List<TextPosition>>>();
+            = new HashMap<String, ArrayList<List<TextPosition>>>();
     private final Map<String, StringWriter> regionText = new HashMap<String, StringWriter>();
 
     /**
@@ -60,7 +59,7 @@ public class PDFTextStripperByArea extends PDFTextStripper
     {
     }
 
-    /**
+   /**
      * Add a new region to group text by.
      *
      * @param regionName The name of the region.
@@ -119,7 +118,7 @@ public class PDFTextStripperByArea extends PDFTextStripper
             setStartPage(getCurrentPageNo());
             setEndPage(getCurrentPageNo());
             // reset the stored text for the region so this class can be reused.
-            ArrayList<List<TextPosition>> regionCharactersByArticle = new ArrayList<List<TextPosition>>();
+            ArrayList<List<TextPosition>> regionCharactersByArticle = new ArrayList<List<TextPosition>>(1);
             regionCharactersByArticle.add( new ArrayList<TextPosition>() );
             regionCharacterList.put( regionName, regionCharactersByArticle );
             regionText.put( regionName, new StringWriter() );

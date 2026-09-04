@@ -33,12 +33,12 @@ import com.tom_roush.pdfbox.pdmodel.font.PDFont;
 import com.tom_roush.pdfbox.pdmodel.font.PDTrueTypeFont;
 import com.tom_roush.pdfbox.pdmodel.font.PDType0Font;
 import com.tom_roush.pdfbox.pdmodel.font.PDVectorFont;
-
 /**
  * This class provides a glyph to Path conversion for TrueType and OpenType fonts.
  */
 final class TTFGlyph2D implements Glyph2D
 {
+
     private final PDFont font;
     private final TrueTypeFont ttf;
     private PDVectorFont vectorFont;
@@ -132,7 +132,7 @@ final class TTFGlyph2D implements Glyph2D
                     int cid = ((PDType0Font) font).codeToCID(code);
                     String cidHex = String.format("%04x", cid);
                     Log.w("PdfBox-Android", "No glyph for code " + code + " (CID " + cidHex + ") in font " +
-                        font.getName());
+                            font.getName());
                 }
                 else
                 {
@@ -160,6 +160,10 @@ final class TTFGlyph2D implements Glyph2D
                 if (hasScaling)
                 {
                     AffineTransform atScale = AffineTransform.getScaleInstance(scale, scale);
+
+                    // PDFBOX-5567: copy to avoid repeated modification on cached path
+                    glyphPath = new Path(glyphPath);
+
                     glyphPath.transform(atScale.toMatrix());
                 }
 //                glyphs.put(gid, glyphPath); TODO: PdfBox-Android

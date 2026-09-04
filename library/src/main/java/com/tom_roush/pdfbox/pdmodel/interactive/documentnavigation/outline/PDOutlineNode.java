@@ -16,13 +16,14 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline;
 
+import android.util.Log;
+
 import java.util.Iterator;
 
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDDictionaryWrapper;
-
 /**
  * Base class for a node in the outline of a PDF document.
  *
@@ -291,6 +292,12 @@ public abstract class PDOutlineNode extends PDDictionaryWrapper
         PDOutlineNode parent = getParent();
         if (parent != null)
         {
+            if (getCOSObject() == parent.getCOSObject())
+            {
+                // PDFBOX-5939
+                Log.w("PdfBox-Android", "Outline parent points to itself");
+                return;
+            }
             if (parent.isNodeOpen())
             {
                 parent.setOpenCount(parent.getOpenCount() + delta);

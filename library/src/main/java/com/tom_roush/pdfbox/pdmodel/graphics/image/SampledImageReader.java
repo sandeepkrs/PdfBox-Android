@@ -75,10 +75,11 @@ final class SampledImageReader
         // avoid getting a Bitmap for the mask to lessen memory footprint.
         // Such masks are always bpc=1 and have no colorspace, but have a decode.
         // (see 8.9.6.2 Stencil Masking)
+        InputStream imageStream = pdImage.createInputStream();
         ImageInputStream iis = null;
         try
         {
-            iis = new MemoryCacheImageInputStream(pdImage.createInputStream());
+            iis = new MemoryCacheImageInputStream(imageStream);
             final float[] decode = getDecodeArray(pdImage);
             int value = decode[0] < decode[1] ? 1 : 0;
             int rowLen = width / 8;
@@ -125,6 +126,8 @@ final class SampledImageReader
             {
                 iis.close();
             }
+            // MemoryCacheImageInputStream doesn't close the wrapped stream
+            imageStream.close();
         }
 
         return masked;
@@ -144,7 +147,7 @@ final class SampledImageReader
         return getRGBImage(pdImage, null, 1, colorKey);
     }
 
-    private static Rect clipRegion(PDImage pdImage, Rect region)
+    static Rect clipRegion(PDImage pdImage, Rect region)
     {
         if (region == null)
         {
@@ -156,7 +159,7 @@ final class SampledImageReader
             int y = Math.max(0, region.top);
             int width = Math.min(region.width(), pdImage.getWidth() - x);
             int height = Math.min(region.height(), pdImage.getHeight() - y);
-            return new Rect(x, y, width, height);
+            return new Rect(x, y, x + width, y + height);
         }
     }
 
@@ -416,6 +419,27 @@ final class SampledImageReader
                 result[to] = bytes[from];
                 result[to + 1] = bytes[from + 1];
                 result[to + 2] = bytes[from + 2];
+            }
+            bytes = result;
+        }
+        else if (numComponents == 4)
+        {
+            byte[] result = new byte[originalWidth * originalHeight * 4];
+            for (int i = originalWidth * originalHeight - 1; i >= 0; i--)
+            {
+                int to = i * 4;
+                int from = i * 4;
+                float c = (bytes[from] & 0xFF) / 255.0f;
+                float m = (bytes[from + 1] & 0xFF) / 255.0f;
+                float y = (bytes[from + 2] & 0xFF) / 255.0f;
+                float k = (bytes[from + 3] & 0xFF) / 255.0f;
+                int r = Math.round(255 * (1 - c) * (1 - k));
+                int g = Math.round(255 * (1 - m) * (1 - k));
+                int b = Math.round(255 * (1 - y) * (1 - k));
+                result[to] = (byte) r;
+                result[to + 1] = (byte) g;
+                result[to + 2] = (byte) b;
+                result[to + 3] = (byte) 255;
             }
             bytes = result;
         }

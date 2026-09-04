@@ -27,7 +27,6 @@ import java.util.List;
 import com.tom_roush.pdfbox.contentstream.PDContentStream;
 import com.tom_roush.pdfbox.contentstream.operator.Operator;
 import com.tom_roush.pdfbox.cos.COSBase;
-import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSStream;
@@ -37,7 +36,6 @@ import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * A Type 3 character procedure. This is a standalone PDF content stream.
  *
@@ -45,6 +43,7 @@ import com.tom_roush.pdfbox.util.Matrix;
  */
 public final class PDType3CharProc implements COSObjectable, PDContentStream
 {
+
     private final PDType3Font font;
     private final COSStream charStream;
 
@@ -84,7 +83,7 @@ public final class PDType3CharProc implements COSObjectable, PDContentStream
             // PDFBOX-5294
             Log.w("PdfBox-Android", "Using resources dictionary found in charproc entry");
             Log.w("PdfBox-Android", "This should have been in the font or in the page dictionary");
-            return new PDResources((COSDictionary) charStream.getDictionaryObject(COSName.RESOURCES));
+            return new PDResources(charStream.getCOSDictionary(COSName.RESOURCES));
         }
         return font.getResources();
     }
@@ -123,10 +122,10 @@ public final class PDType3CharProc implements COSObjectable, PDContentStream
                     float x = ((COSNumber) arguments.get(2)).floatValue();
                     float y = ((COSNumber) arguments.get(3)).floatValue();
                     return new PDRectangle(
-                        x,
-                        y,
-                        ((COSNumber) arguments.get(4)).floatValue() - x,
-                        ((COSNumber) arguments.get(5)).floatValue() - y);
+                            x,
+                            y,
+                            ((COSNumber) arguments.get(4)).floatValue() - x,
+                            ((COSNumber) arguments.get(5)).floatValue() - y);
                 }
                 else
                 {

@@ -29,6 +29,7 @@ import com.tom_roush.fontbox.FontBoxFont;
 import com.tom_roush.fontbox.ttf.CmapSubtable;
 import com.tom_roush.fontbox.ttf.CmapTable;
 import com.tom_roush.fontbox.ttf.GlyphData;
+import com.tom_roush.fontbox.ttf.GlyphTable;
 import com.tom_roush.fontbox.ttf.PostScriptTable;
 import com.tom_roush.fontbox.ttf.TTFParser;
 import com.tom_roush.fontbox.ttf.TrueTypeFont;
@@ -47,9 +48,7 @@ import com.tom_roush.pdfbox.pdmodel.font.encoding.MacRomanEncoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.StandardEncoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.Type1Encoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.WinAnsiEncoding;
-
 import static com.tom_roush.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
-
 /**
  * TrueType font.
  *
@@ -57,6 +56,7 @@ import static com.tom_roush.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
 {
+
     private static final int START_RANGE_F000 = 0xF000;
     private static final int START_RANGE_F100 = 0xF100;
     private static final int START_RANGE_F200 = 0xF200;
@@ -87,7 +87,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      * @throws IOException If there is an error loading the data.
      */
     public static PDTrueTypeFont load(PDDocument doc, File file, Encoding encoding)
-        throws IOException
+            throws IOException
     {
         return new PDTrueTypeFont(doc, new TTFParser().parse(file), encoding, true);
     }
@@ -105,7 +105,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      * @throws IOException If there is an error loading the data.
      */
     public static PDTrueTypeFont load(PDDocument doc, InputStream input, Encoding encoding)
-        throws IOException
+            throws IOException
     {
         return new PDTrueTypeFont(doc, new TTFParser().parse(input), encoding, true);
     }
@@ -125,7 +125,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      * @throws IOException If there is an error loading the data.
      */
     public static PDTrueTypeFont load(PDDocument doc, TrueTypeFont ttf, Encoding encoding)
-        throws IOException
+            throws IOException
     {
         return new PDTrueTypeFont(doc, ttf, encoding, false);
     }
@@ -160,14 +160,14 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     public static PDTrueTypeFont loadTTF(PDDocument doc, InputStream input) throws IOException
     {
         return new PDTrueTypeFont(doc, new TTFParser().parse(input), WinAnsiEncoding.INSTANCE,
-            true);
+                true);
     }
 
     private CmapSubtable cmapWinUnicode = null;
     private CmapSubtable cmapWinSymbol = null;
     private CmapSubtable cmapMacRoman = null;
     private boolean cmapInitialized = false;
-    private Map<Integer, Integer> gidToCode; // for embedding
+    private final Map<Integer, Integer> gidToCode = new HashMap<Integer, Integer>(); // for embedding
 
     private final TrueTypeFont ttf;
     private final boolean isEmbedded;
@@ -214,13 +214,13 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
         if (ttfFont == null)
         {
             FontMapping<TrueTypeFont> mapping = FontMappers.instance()
-                .getTrueTypeFont(getBaseFont(),
-                    getFontDescriptor());
+                                                           .getTrueTypeFont(getBaseFont(),
+                                                                            getFontDescriptor());
             ttfFont = mapping.getFont();
 
             if (mapping.isFallback())
             {
-                Log.w("PdfBox-Android", "Using fallback font '" + ttfFont + "' for '" + getBaseFont() + "'");
+                Log.w("PdfBox-Android", "Using fallback font " + ttfFont + " for " + getBaseFont());
             }
         }
         ttf = ttfFont;
@@ -248,7 +248,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             // non-symbolic fonts don't have a built-in encoding per se, but there encoding is
             // assumed to be StandardEncoding by the PDF spec unless an explicit Encoding is present
             // which will override this anyway
-            if (getSymbolicFlag() != null &&!getSymbolicFlag())
+            if (Boolean.FALSE.equals(getSymbolicFlag()))
             {
                 return StandardEncoding.INSTANCE;
             }
@@ -293,11 +293,11 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      * Creates a new TrueType font for embedding.
      */
     private PDTrueTypeFont(PDDocument document, TrueTypeFont ttf, Encoding encoding,
-        boolean closeTTF)
-        throws IOException
+            boolean closeTTF)
+            throws IOException
     {
         PDTrueTypeFontEmbedder embedder = new PDTrueTypeFontEmbedder(document, dict, ttf,
-            encoding);
+                                                                     encoding);
         this.encoding = encoding;
         this.ttf = ttf;
         setFontDescriptor(embedder.getFontDescriptor());
@@ -340,7 +340,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             if (bbox != null)
             {
                 return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),
-                    bbox.getUpperRightX(), bbox.getUpperRightY());
+                        bbox.getUpperRightX(), bbox.getUpperRightY());
             }
         }
         return ttf.getFontBBox();
@@ -393,8 +393,8 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             if (!encoding.contains(getGlyphList().codePointToName(unicode)))
             {
                 throw new IllegalArgumentException(
-                    String.format("U+%04X is not available in this font's encoding: %s",
-                        unicode, encoding.getEncodingName()));
+                    String.format("U+%04X is not available in font %s encoding: %s",
+                                  unicode, getName(), encoding.getEncodingName()));
             }
 
             String name = getGlyphList().codePointToName(unicode);
@@ -407,7 +407,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
                 if (!ttf.hasGlyph(uniName))
                 {
                     throw new IllegalArgumentException(
-                        String.format("No glyph for U+%04X in font %s", unicode, getName()));
+                            String.format("No glyph for U+%04X in font %s", unicode, getName()));
                 }
             }
 
@@ -430,7 +430,7 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
             if (code == null)
             {
                 throw new IllegalArgumentException(
-                    String.format("U+%04X is not available in this font's Encoding", unicode));
+                    String.format("U+%04X is not available in font %s encoding", unicode, getName()));
             }
 
             return new byte[] { (byte)(int)code };
@@ -442,12 +442,10 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
      */
     protected Map<Integer, Integer> getGIDToCode() throws IOException
     {
-        if (gidToCode != null)
+        if (!gidToCode.isEmpty())
         {
             return gidToCode;
         }
-
-        gidToCode = new HashMap<Integer, Integer>();
         for (int code = 0; code <= 255; code++)
         {
             int gid = codeToGID(code);
@@ -469,7 +467,14 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
     public Path getPath(int code) throws IOException
     {
         int gid = codeToGID(code);
-        GlyphData glyph = ttf.getGlyph().getGlyph(gid);
+        GlyphTable glyphTable = ttf.getGlyph();
+        if (glyphTable == null)
+        {
+            // needs to be caught earlier, see PDFBOX-5587 and PDFBOX-3488
+            throw new IOException("glyf table is missing in font " + getName() +
+                    ", please report this file");
+        }
+        GlyphData glyph = glyphTable.getGlyph(gid);
 
         // some glyphs have no outlines (e.g. space, table, newline)
         if (glyph == null)
@@ -679,18 +684,18 @@ public class PDTrueTypeFont extends PDSimpleFont implements PDVectorFont
                     }
                 }
                 else if (CmapTable.PLATFORM_MACINTOSH == cmap.getPlatformId()
-                    && CmapTable.ENCODING_MAC_ROMAN == cmap.getPlatformEncodingId())
+                        && CmapTable.ENCODING_MAC_ROMAN == cmap.getPlatformEncodingId())
                 {
                     cmapMacRoman = cmap;
                 }
                 else if (CmapTable.PLATFORM_UNICODE == cmap.getPlatformId()
-                    && CmapTable.ENCODING_UNICODE_1_0 == cmap.getPlatformEncodingId())
+                        && CmapTable.ENCODING_UNICODE_1_0 == cmap.getPlatformEncodingId())
                 {
                     // PDFBOX-4755 / PDF.js #5501
                     cmapWinUnicode = cmap;
                 }
                 else if (CmapTable.PLATFORM_UNICODE == cmap.getPlatformId()
-                    && CmapTable.ENCODING_UNICODE_2_0_BMP == cmap.getPlatformEncodingId())
+                        && CmapTable.ENCODING_UNICODE_2_0_BMP == cmap.getPlatformEncodingId())
                 {
                     // PDFBOX-5484
                     cmapWinUnicode = cmap;

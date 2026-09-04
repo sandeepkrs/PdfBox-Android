@@ -20,30 +20,57 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
+import com.tom_roush.pdfbox.cos.COSInteger;
 import com.tom_roush.pdfbox.cos.COSName;
+import com.tom_roush.pdfbox.cos.COSObject;
 import com.tom_roush.pdfbox.io.MemoryUsageSetting;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.PDDocumentInformation;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
+import com.tom_roush.pdfbox.pdmodel.PDPageTree;
+import com.tom_roush.pdfbox.pdmodel.PDResources;
+import com.tom_roush.pdfbox.pdmodel.PDStructureElementNameTreeNode;
+import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
+import com.tom_roush.pdfbox.pdmodel.common.PDNameTreeNode;
+import com.tom_roush.pdfbox.pdmodel.common.PDNumberTreeNode;
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.logicalstructure.PDParentTreeValue;
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureElement;
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.logicalstructure.PDStructureTreeRoot;
+import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
+import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
+import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDAction;
+import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionFactory;
 import com.tom_roush.pdfbox.pdmodel.interactive.action.PDActionGoTo;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationMarkup;
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationPopup;
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationWidget;
+import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAppearanceStream;
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDDestination;
+import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDNamedDestination;
 import com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageDestination;
-
 /**
  * Split a document into several other documents.
  *
  * @author Mario Ivankovits
  * @author Ben Litchfield
+ * @author Tilman Hausherr
  */
 public class Splitter
 {
+
     private PDDocument sourceDocument;
     private PDDocument currentDestinationDocument;
 
@@ -51,6 +78,14 @@ public class Splitter
     private int startPage = Integer.MIN_VALUE;
     private int endPage = Integer.MAX_VALUE;
     private List<PDDocument> destinationDocuments;
+    private Map<COSDictionary, COSDictionary> pageDictMap; // map old page => new page for the current destination document
+    private List<Map<COSDictionary, COSDictionary>> pageDictMaps; // list of these maps for all destination documents
+    private Map<COSDictionary, COSDictionary> structDictMap;
+    private List<Map<COSDictionary, COSDictionary>> annotDictMaps; // map old annotation => new annotation for the current destination document
+    private Map<COSDictionary, COSDictionary> annotDictMap; // list of these maps for all destination documents
+    private Map<PDPageDestination,PDPage> destToFixMap;
+    private Set<String> idSet;
+    private Set<COSName> roleSet;
 
     private int currentPageNumber;
 
@@ -92,8 +127,496 @@ public class Splitter
         currentPageNumber = 0;
         destinationDocuments = new ArrayList<PDDocument>();
         sourceDocument = document;
+        pageDictMaps = new ArrayList<Map<COSDictionary, COSDictionary>>();
+        annotDictMaps = new ArrayList<Map<COSDictionary, COSDictionary>>();
+        destToFixMap = new HashMap<PDPageDestination,PDPage>();
+        idSet = new HashSet<String>();
+        roleSet = new HashSet<COSName>();
+
         processPages();
+
+        for (int i = 0; i < destinationDocuments.size(); ++i)
+        {
+            PDDocument destinationDocument = destinationDocuments.get(i);
+            pageDictMap = pageDictMaps.get(i);
+            annotDictMap = annotDictMaps.get(i);
+            cloneStructureTree(destinationDocument);
+            fixDestinations(destinationDocument);
+        }
+
         return destinationDocuments;
+    }
+
+    /**
+     * Replace the page destinations, if the source and destination pages are in the target
+     * document. This must be called after all pages (and its annotations) are processed.
+     *
+     * @param destinationDocument
+     */
+    private void fixDestinations(PDDocument destinationDocument)
+    {
+        PDPageTree pageTree = destinationDocument.getPages();
+        for (Map.Entry<PDPageDestination,PDPage> entry : destToFixMap.entrySet())
+        {
+            PDPageDestination pageDestination = entry.getKey();
+            // Find whether source page is inside or outside
+            PDPage srcPage = entry.getValue();
+            if (pageTree.indexOf(srcPage) < 0)
+            {
+                continue;
+            }
+            COSDictionary srcPageDict = pageDestination.getPage().getCOSObject();
+            COSDictionary dstPageDict = pageDictMap.get(srcPageDict);
+            PDPage dstPage = new PDPage(dstPageDict);
+            // Find whether destination page is inside or outside
+            if (pageTree.indexOf(dstPage) >= 0)
+            {
+                pageDestination.setPage(dstPage);
+            }
+            else
+            {
+                pageDestination.setPage(null);
+            }
+        }
+    }
+
+    /**
+     * Clone the structure tree from the source to the current destination document. This must be
+     * called after all pages are processed.
+     *
+     * @param destinationDocument
+     * @throws IOException
+     */
+    private void cloneStructureTree(PDDocument destinationDocument) throws IOException
+    {
+        PDStructureTreeRoot srcStructureTreeRoot = sourceDocument.getDocumentCatalog().getStructureTreeRoot();
+        if (srcStructureTreeRoot == null)
+        {
+            return;
+        }
+        structDictMap = new HashMap<COSDictionary, COSDictionary>();
+        PDStructureTreeRoot dstStructureTreeRoot = new PDStructureTreeRoot();
+        PDPageTree dstPageTree = destinationDocument.getPages();
+
+        // clone /K, also fills dictMap
+        COSBase k1 = srcStructureTreeRoot.getK();
+        COSBase k2 = new KCloner(dstPageTree).createClone(k1, dstStructureTreeRoot.getCOSObject(), null);
+        dstStructureTreeRoot.setK(k2);
+
+        // transfer ParentTree using the map because the dictionaries are all found in the /K structure.
+        PDNumberTreeNode srcParentTree = srcStructureTreeRoot.getParentTree();
+        Map<Integer, COSObjectable> srcNumberTreeAsMap = PDFMergerUtility.getNumberTreeAsMap(srcParentTree);
+        Map<Integer, COSObjectable> dstNumberTreeAsMap = new LinkedHashMap<Integer, COSObjectable>();
+        int dstPageTreeCount = dstPageTree.getCount();
+        for (int p = 0; p < dstPageTreeCount; ++p)
+        {
+            PDPage page = dstPageTree.get(p);
+            int sp1 = page.getStructParents();
+            if (sp1 != -1)
+            {
+                cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp1);
+            }
+            for (PDAnnotation ann : page.getAnnotations())
+            {
+                int sp2 = ann.getStructParent();
+                if (sp2 != -1)
+                {
+                    cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp2);
+                }
+                PDAppearanceStream normalAppearanceStream = ann.getNormalAppearanceStream();
+                if (normalAppearanceStream != null)
+                {
+                    processResources(normalAppearanceStream.getResources(),
+                            srcNumberTreeAsMap, dstNumberTreeAsMap, new HashSet<COSDictionary>());
+                }
+            }
+            processResources(page.getResources(),
+                    srcNumberTreeAsMap, dstNumberTreeAsMap, new HashSet<COSDictionary>());
+        }
+        PDNumberTreeNode dstNumberTreeNode = new PDNumberTreeNode(PDParentTreeValue.class);
+        dstNumberTreeNode.setNumbers(dstNumberTreeAsMap);
+        dstStructureTreeRoot.setParentTree(dstNumberTreeNode);
+        Integer upperLimit = dstNumberTreeNode.getUpperLimit();
+        if (upperLimit != null)
+        {
+            dstStructureTreeRoot.setParentTreeNextKey(upperLimit + 1);
+        }
+        dstStructureTreeRoot.setClassMap(srcStructureTreeRoot.getClassMap());
+        cloneRoleMap(srcStructureTreeRoot, dstStructureTreeRoot);
+        cloneIDTree(srcStructureTreeRoot, dstStructureTreeRoot);
+
+        destinationDocument.getDocumentCatalog().setStructureTreeRoot(dstStructureTreeRoot);
+    }
+
+    private void cloneIDTree(PDStructureTreeRoot srcStructTree, PDStructureTreeRoot destStructTree)
+            throws IOException
+    {
+        PDNameTreeNode<PDStructureElement> srcIDTree = srcStructTree.getIDTree();
+        if (srcIDTree == null)
+        {
+            return;
+        }
+        Map<String, PDStructureElement> srcIDTreeAsMap = PDFMergerUtility.getIDTreeAsMap(srcIDTree);
+        Map<String, PDStructureElement> destNames = new HashMap<String, PDStructureElement>();
+        for (Map.Entry<String, PDStructureElement> entry : srcIDTreeAsMap.entrySet())
+        {
+            String key = entry.getKey();
+            if (!idSet.contains(key))
+            {
+                continue;
+            }
+            COSDictionary dstDict = structDictMap.get(entry.getValue().getCOSObject());
+            if (dstDict != null)
+            {
+                destNames.put(key, new PDStructureElement(dstDict));
+            }
+        }
+        PDNameTreeNode<PDStructureElement> destIDTree = new PDStructureElementNameTreeNode();
+        destIDTree.setNames(destNames);
+        destStructTree.setIDTree(destIDTree);
+        // See comment at the end of PDFMergerUtility.mergeIDTree()
+    }
+
+    // needed because getRoleMap() and setRoleMap() habe different map types?!
+    private void cloneRoleMap(PDStructureTreeRoot srcStructTree, PDStructureTreeRoot destStructTree)
+    {
+        COSDictionary srcDict = srcStructTree.getCOSObject().getCOSDictionary(COSName.ROLE_MAP);
+        if (srcDict == null)
+        {
+            return;
+        }
+        COSDictionary dstDict = new COSDictionary();
+        for (Map.Entry<COSName, COSBase> entry : srcDict.entrySet())
+        {
+            if (roleSet.contains(entry.getKey()))
+            {
+                dstDict.setItem(entry.getKey(), entry.getValue());
+            }
+        }
+        destStructTree.getCOSObject().setItem(COSName.ROLE_MAP, dstDict);
+    }
+
+    // clone tree element using the map so that structure elements are replaced
+    private void cloneTreeElement(
+            Map<Integer, COSObjectable> srcNumberTreeAsMap,
+            Map<Integer, COSObjectable> dstNumberTreeAsMap,
+            int sp)
+    {
+        COSObjectable srcObj = srcNumberTreeAsMap.get(sp); // this is a PDParentTreeValue class
+        COSObjectable dstObj = null;
+        if (srcObj != null)
+        {
+            COSBase actualSrcObj = srcObj.getCOSObject();
+            // structure element or array
+            if (actualSrcObj instanceof COSArray)
+            {
+                // create a clone of the array
+                COSArray srcArray = (COSArray) actualSrcObj;
+                COSArray dstArray = new COSArray();
+                for (int i = 0; i < srcArray.size(); ++i)
+                {
+                    COSBase srcElement = srcArray.getObject(i);
+                    dstArray.add(structDictMap.get(srcElement)); // may be null
+                }
+                dstObj = dstArray;
+            }
+            else if (actualSrcObj instanceof COSDictionary)
+            {
+                // get the clone from the map
+                dstObj = structDictMap.get(actualSrcObj);
+                if (dstObj == null)
+                {
+                    // 164421.pdf, structure tree is weird.
+                    // also 250052.pdf, 250198.pdf, 257012.pdf, 271459.pdf (multiple),
+                    // 670045.pdf (multiple)
+                    // In 71459.pdf annotations on page 1 have StructParent numbers
+                    // that point to structure elements in the /ParentTree that point to
+                    // a different page.
+                    Log.w("PdfBox-Android", "ParentTree index " + sp + " dictionary not found in /K");
+                }
+            }
+            else
+            {
+                Log.w("PdfBox-Android", "tree element neither dictionary nor array, but " +
+                        (actualSrcObj == null ? "(null)" : actualSrcObj.getClass().getSimpleName()));
+            }
+            if (dstObj != null)
+            {
+                dstNumberTreeAsMap.put(sp, dstObj);
+            }
+        }
+    }
+
+    /**
+     * Class to help clone the /K tree. It clones structure elements and fills the structure
+     * elements map. Pages are replaced with the help of the page map. Elements with pages that
+     * don't belong to the destination are removed from the clone.
+     */
+    private class KCloner
+    {
+        PDPageTree dstPageTree;
+
+        KCloner(PDPageTree dstPageTree)
+        {
+            this.dstPageTree = dstPageTree;
+        }
+
+        /**
+         * Creates a clone of the source.
+         *
+         * @param src source dictionary or array.
+         * @param dstParent for the /P entry; parameter needed because arrays don't keep a parent.
+         * @param currentPageDict used to remember whether we have a page parent somewhere or not.
+         * Starts with null.
+         * @return a clone, or null if source is null or if there is no clone because it belongs to a
+         * different page or to no page.
+         */
+        COSBase createClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+            if (src instanceof COSArray)
+            {
+                return createArrayClone(src, dstParent, currentPageDict);
+            }
+            else if (src instanceof COSDictionary)
+            {
+                return createDictionaryClone(src, dstParent, currentPageDict);
+            }
+            else
+            {
+                return src;
+            }
+        }
+
+        private COSBase createArrayClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+            COSArray dst = new COSArray();
+            for (COSBase base2 : (COSArray) src)
+            {
+                COSBase rc;
+                if (base2 instanceof COSObject)
+                {
+                    rc = createClone(((COSObject) base2).getObject(), dstParent, currentPageDict);
+                }
+                else
+                {
+                    rc = createClone(base2, dstParent, currentPageDict);
+                }
+                // if this is null then they don't belong to the destination document
+                if (rc != null)
+                {
+                    dst.add(rc);
+                }
+            }
+            return dst.size() > 0 ? dst : null;
+        }
+
+        private COSBase createDictionaryClone(COSBase src, COSBase dstParent, COSDictionary currentPageDict)
+        {
+            COSDictionary srcDict = (COSDictionary) src;
+            COSDictionary dstDict = structDictMap.get(srcDict);
+            if (dstDict != null)
+            {
+                return dstDict;
+            }
+            COSDictionary srcPageDict = srcDict.getCOSDictionary(COSName.PG);
+            COSDictionary dstPageDict = null;
+            COSBase kid = srcDict.getDictionaryObject(COSName.K);
+            COSName type = srcDict.getCOSName(COSName.TYPE);
+            if (srcPageDict != null)
+            {
+                dstPageDict = pageDictMap.get(srcPageDict);
+                if (dstPageDict != null)
+                {
+                    PDPage dstPage = new PDPage(dstPageDict);
+                    if (dstPageTree.indexOf(dstPage) == -1)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    // PDFBOX-6009: "wrong" /Pg entry
+                    // quit if MCIDs because these need a /Pg entry
+                    // or if MCR/OBJR dicts
+                    if (COSName.MCR.equals(type) || COSName.OBJR.equals(type) || hasMCIDs(kid))
+                    {
+                        return null;
+                    }
+                    // else keep this as an intermediate element for now
+                }
+            }
+
+            // special handling for MCR items ("marked-content reference dictionary")
+            if (COSName.MCR.equals(type) && dstPageDict == null &&
+                dstParent instanceof COSDictionary && ((COSDictionary) dstParent).getCOSDictionary(COSName.PG) == null)
+            {
+                // PAC: Pg entry of marked-content reference and of parent structure is null
+                return null;
+            }
+
+            // Create and fill clone
+            dstDict = new COSDictionary();
+            structDictMap.put(srcDict, dstDict);
+            for (Map.Entry<COSName,COSBase> entry : srcDict.entrySet())
+            {
+                COSName key = entry.getKey();
+                if (!COSName.K.equals(key) &&
+                    !COSName.PG.equals(key) &&
+                    !COSName.P.equals(key))
+                {
+                    dstDict.setItem(key, entry.getValue());
+                }
+            }
+
+            // special handling for OBJR items ("object reference dictionary")
+            // see e.g. file 488300.pdf and Root/StructTreeRoot/K/K/[2]/K/[1]/K/[0]/Obj
+            if (COSName.OBJR.equals(type))
+            {
+                COSDictionary srcObj = srcDict.getCOSDictionary(COSName.OBJ);
+                COSDictionary dstObj = annotDictMap.get(srcObj);
+                if (dstObj != null)
+                {
+                    // replace annotation with clone
+                    dstDict.setItem(COSName.OBJ, dstObj);
+                }
+                else if (srcObj != null) // 079177.pdf
+                {
+                    removePossibleOrphanAnnotation(srcObj, srcDict, currentPageDict, dstDict);
+                }
+                if (dstDict.size() == 1)
+                {
+                    return null;
+                }
+                if (dstPageDict == null &&
+                    dstParent instanceof COSDictionary && ((COSDictionary) dstParent).getCOSDictionary(COSName.PG) == null)
+                {
+                    // Pg entry of object reference dictionary and of parent structure is null
+                    return null;
+                }
+            }
+
+            if (!COSName.OBJR.equals(type) && !COSName.MCR.equals(type))
+            {
+                // /P not needed for OBJR or MCR items
+                dstDict.setItem(COSName.P, dstParent);
+            }
+
+            dstDict.setItem(COSName.PG, dstPageDict);
+
+            // stack overflow here with 207658.pdf, too complex
+            COSBase cloneKid = createClone(kid, dstDict, dstPageDict != null ? dstPageDict : currentPageDict);
+            if (cloneKid == null && kid != null)
+            {
+                return null; // kids array wasn't empty, but is empty now => ignore
+            }
+
+            // removes orphan nodes, example:
+            // Root/StructTreeRoot/K/[7]/K/[3]/K/[5]/K/[2] in 271459.pdf
+            // decide about keeping source dictionaries with no /K and no /PG
+            if (dstPageDict == null && cloneKid == null && currentPageDict == null)
+            {
+                // if no parent page and no page here and no kids, assume this is an orphan
+                return null;
+            }
+            dstDict.setItem(COSName.K, cloneKid);
+            String id = dstDict.getString(COSName.ID);
+            if (id != null)
+            {
+                idSet.add(id);
+            }
+            COSName s = dstDict.getCOSName(COSName.S);
+            if (s != null)
+            {
+                roleSet.add(s);
+            }
+            return dstDict;
+        }
+
+        private boolean hasMCIDs(COSBase kid)
+        {
+            if (kid instanceof COSInteger)
+            {
+                return true;
+            }
+            if (kid instanceof COSArray)
+            {
+                COSArray ar = (COSArray) kid;
+                for (int i = 0; i < ar.size(); ++i)
+                {
+                    if (ar.getObject(i) instanceof COSInteger)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private void removePossibleOrphanAnnotation(COSDictionary srcObj, COSDictionary srcDict,
+                COSDictionary currentPageDict, COSDictionary dstDict)
+        {
+            // PDFBOX-5929: Check whether this is an "orphan" annotation that isn't in the page
+            COSBase objType = srcObj.getDictionaryObject(COSName.TYPE);
+            COSBase objSubtype = srcObj.getDictionaryObject(COSName.SUBTYPE);
+            if (COSName.ANNOT.equals(objType) || COSName.LINK.equals(objSubtype))
+            {
+                COSDictionary srcPageDict = srcDict.getCOSDictionary(COSName.PG);
+                if (srcPageDict == null)
+                {
+                    // /Pg entry is not always on this level
+                    srcPageDict = currentPageDict;
+                }
+                if (srcPageDict != null)
+                {
+                    COSArray annotationArray = srcPageDict.getCOSArray(COSName.ANNOTS);
+                    if (annotationArray == null || annotationArray.indexOfObject(srcObj) == -1)
+                    {
+                        // Ideally the entire OBJR entry should be removed.
+                        // Removing the OBJ entry is done to avoid potential page orphans
+                        // from the annotation destination.
+                        Log.w("PdfBox-Android", "An annotation OBJ that isn't in the page has been removed from the structure tree");
+                        dstDict.removeItem(COSName.OBJ);
+                    }
+                }
+            }
+        }
+    }
+
+    // Look for /StructParent and /StructParents and add them to the destination tree
+    private void processResources(PDResources res,
+            Map<Integer, COSObjectable> srcNumberTreeAsMap,
+            Map<Integer, COSObjectable> dstNumberTreeAsMap,
+            Set<COSDictionary> visited) throws IOException
+    {
+        if (res == null)
+        {
+            return;
+        }
+        if (visited.contains(res.getCOSObject()))
+        {
+            // avoid endless recursion, e.g. with 002874.pdf
+            return;
+        }
+        visited.add(res.getCOSObject());
+
+        for (COSName name : res.getXObjectNames())
+        {
+            PDXObject xObject = res.getXObject(name);
+            int sp2 = -1;
+            if (xObject instanceof PDFormXObject)
+            {
+                sp2 = ((PDFormXObject) xObject).getStructParents();
+                processResources(((PDFormXObject) xObject).getResources(), srcNumberTreeAsMap, dstNumberTreeAsMap, visited);
+            }
+            else if (xObject instanceof PDImageXObject)
+            {
+                sp2 = ((PDImageXObject) xObject).getStructParent();
+            }
+            if (sp2 != -1)
+            {
+                cloneTreeElement(srcNumberTreeAsMap, dstNumberTreeAsMap, sp2);
+            }
+        }
     }
 
     /**
@@ -134,13 +657,17 @@ public class Splitter
      * This will set the end page.
      *
      * @param end the 1-based end page
-     * @throws IllegalArgumentException if the end page is smaller than one.
+     * @throws IllegalArgumentException if the end page is smaller than one or than the start page.
      */
     public void setEndPage(int end)
     {
         if(end <= 0)
         {
             throw new IllegalArgumentException("End page is smaller than one");
+        }
+        if (end < startPage)
+        {
+            throw new IllegalArgumentException("End page is smaller than startPage");
         }
         endPage = end;
     }
@@ -184,6 +711,10 @@ public class Splitter
         {
             currentDestinationDocument = createNewDocument();
             destinationDocuments.add(currentDestinationDocument);
+            pageDictMap = new HashMap<COSDictionary, COSDictionary>();
+            pageDictMaps.add(pageDictMap);
+            annotDictMap = new HashMap<COSDictionary, COSDictionary>();
+            annotDictMaps.add(annotDictMap);
         }
     }
 
@@ -210,13 +741,13 @@ public class Splitter
     /**
      * Create a new document to write the split contents to.
      *
-     * @return the newly created PDDocument. 
+     * @return the newly created PDDocument.
      * @throws IOException If there is an problem creating the new document.
      */
     protected PDDocument createNewDocument() throws IOException
     {
         PDDocument document = memoryUsageSetting == null ?
-            new PDDocument() : new PDDocument(memoryUsageSetting);
+                                new PDDocument() : new PDDocument(memoryUsageSetting);
         document.getDocument().setVersion(getSourceDocument().getVersion());
         PDDocumentInformation sourceDocumentInformation = getSourceDocument().getDocumentInformation();
         if (sourceDocumentInformation != null)
@@ -231,9 +762,9 @@ public class Splitter
                 if (value instanceof COSDictionary)
                 {
                     Log.w("PdfBox-Android", "Nested entry for key '" + key.getName()
-                        + "' skipped in document information dictionary");
+                            + "' skipped in document information dictionary");
                     if (sourceDocument.getDocumentCatalog().getCOSObject() ==
-                        sourceDocument.getDocumentInformation().getCOSObject())
+                            sourceDocument.getDocumentInformation().getCOSObject())
                     {
                         Log.w("PdfBox-Android", "/Root and /Info share the same dictionary");
                     }
@@ -248,7 +779,13 @@ public class Splitter
             document.setDocumentInformation(new PDDocumentInformation(destDocumentInformationDictionary));
         }
         document.getDocumentCatalog().setViewerPreferences(
-            getSourceDocument().getDocumentCatalog().getViewerPreferences());
+                getSourceDocument().getDocumentCatalog().getViewerPreferences());
+        document.getDocumentCatalog().setLanguage(
+                getSourceDocument().getDocumentCatalog().getLanguage());
+        document.getDocumentCatalog().setMarkInfo(
+                getSourceDocument().getDocumentCatalog().getMarkInfo());
+        document.getDocumentCatalog().setMetadata(
+                getSourceDocument().getDocumentCatalog().getMetadata());
         return document;
     }
 
@@ -269,34 +806,175 @@ public class Splitter
             imported.setResources(page.getResources());
             Log.i("PdfBox-Android", "Resources imported in Splitter"); // follow-up to warning in importPage
         }
-        // remove page links to avoid copying not needed resources 
+        if (imported.getCOSObject().containsKey(COSName.B))
+        {
+            imported.getCOSObject().removeItem(COSName.B);
+            Log.w("PdfBox-Android", "/B entry (beads) removed by splitter");
+        }
+        // remove page links to avoid copying not needed resources
         processAnnotations(imported);
+
+        pageDictMap.put(page.getCOSObject(), imported.getCOSObject());
     }
 
+    /**
+     * Clone all annotations because of changes possibly made, and because the structure tree is
+     * cloned.
+     *
+     * @param imported
+     * @throws IOException
+     */
     private void processAnnotations(PDPage imported) throws IOException
     {
         List<PDAnnotation> annotations = imported.getAnnotations();
+        if (annotations.isEmpty())
+        {
+            return;
+        }
+        List<PDAnnotation> clonedAnnotations = new ArrayList<PDAnnotation>(annotations.size());
         for (PDAnnotation annotation : annotations)
         {
-            if (annotation instanceof PDAnnotationLink)
+            // create a shallow clone
+            COSDictionary clonedDict = new COSDictionary(annotation.getCOSObject());
+            PDAnnotation annotationClone = PDAnnotation.createAnnotation(clonedDict);
+            annotDictMap.put(annotation.getCOSObject(), clonedDict);
+            clonedAnnotations.add(annotationClone);
+            if (annotationClone instanceof PDAnnotationLink)
             {
-                PDAnnotationLink link = (PDAnnotationLink)annotation;
-                PDDestination destination = link.getDestination();
-                PDAction action = link.getAction();
-                if (destination == null && action instanceof PDActionGoTo)
+                PDAnnotationLink link = (PDAnnotationLink) annotationClone;
+                PDDestination srcDestination = null;
+                try
                 {
-                    destination = ((PDActionGoTo) action).getDestination();
+                    srcDestination = link.getDestination();
                 }
-                if (destination instanceof PDPageDestination)
+                catch (IOException ex)
                 {
-                    // TODO preserve links to pages within the split result  
-                    ((PDPageDestination) destination).setPage(null);
+                    Log.w("PdfBox-Android", "Incorrect destination in link annotation on page " +
+                            (currentPageNumber + 1) + " is removed", ex);
+                    link.setDestination(null);
+                }
+                PDAction action = null;
+                if (srcDestination == null)
+                {
+                    action = link.getAction();
+                    if (action instanceof PDActionGoTo)
+                    {
+                        PDActionGoTo goToAction = (PDActionGoTo) action;
+                        try
+                        {
+                            srcDestination = goToAction.getDestination();
+                        }
+                        catch (IOException ex)
+                        {
+                            Log.w("PdfBox-Android", "GoToAction with incorrect destination in link annotation on page " +
+                                    (currentPageNumber + 1) + " is removed", ex);
+                            link.setAction(null);
+                        }
+                    }
+                }
+                if (srcDestination instanceof PDNamedDestination)
+                {
+                    srcDestination = sourceDocument.getDocumentCatalog().
+                            findNamedDestinationPage((PDNamedDestination) srcDestination);
+                    // we do not use the named destination anymore because names get modified, e.g.
+                    // 0xAD becomes 0, see file 410609.pdf where the name no longer matches with the
+                    // entry in the new name tree; plus the original solution was 40 additional loc
+                }
+                if (srcDestination instanceof PDPageDestination)
+                {
+                    // preserve links to pages within the split result:
+                    // not fully possible here because we don't have the full target document yet.
+                    // However we're cloning as needed and remember what to do later.
+                    PDPage destinationPage = ((PDPageDestination) srcDestination).getPage();
+                    if (destinationPage != null)
+                    {
+                        // clone destination
+                        COSArray clonedDestinationArray = new COSArray();
+                        COSArray srcDestinationArray = ((PDPageDestination) srcDestination).getCOSObject();
+                        for (int i = 0; i < srcDestinationArray.size(); ++i)
+                        {
+                            clonedDestinationArray.add(srcDestinationArray.getObject(i));
+                        }
+                        PDPageDestination dstDestination =
+                                (PDPageDestination) PDDestination.create(clonedDestinationArray);
+
+                        // remember the destination to adjust / remove page later
+                        destToFixMap.put(dstDestination, imported);
+
+                        if (action != null)
+                        {
+                            // if action is not null, then the destination came from an action,
+                            // thus clone action as well, then assign destination clone, then action
+                            COSDictionary clonedActionDict = new COSDictionary(action.getCOSObject());
+                            PDActionGoTo dstAction =
+                                    (PDActionGoTo) PDActionFactory.createAction(clonedActionDict);
+                            dstAction.setDestination(dstDestination);
+                            link.setAction(dstAction);
+                        }
+                        else
+                        {
+                            // just assign destination clone
+                            link.setDestination(dstDestination);
+                        }
+                    }
                 }
             }
-            // TODO preserve links to pages within the split result  
-            annotation.setPage(null);
+            if (annotationClone instanceof PDAnnotationWidget &&
+                annotationClone.getCOSObject().containsKey(COSName.PARENT))
+            {
+                // remove non-terminal field /Parent reference, because this may lead to orphan pages
+                annotationClone.getCOSObject().removeItem(COSName.PARENT);
+            }
+            if (annotation.getPage() != null)
+            {
+                annotationClone.setPage(imported);
+            }
         }
+        // Second loop for markup and popup annotations, which reference annotations themselves
+        for (PDAnnotation annotation : clonedAnnotations)
+        {
+            if (annotation instanceof PDAnnotationMarkup)
+            {
+                PDAnnotationPopup annotationPopup = ((PDAnnotationMarkup) annotation).getPopup();
+                if (annotationPopup == null)
+                {
+                    continue;
+                }
+                COSDictionary clonedPopupDict = annotDictMap.get(annotationPopup.getCOSObject());
+                if (clonedPopupDict != null)
+                {
+                    annotation.getCOSObject().setItem(COSName.POPUP, clonedPopupDict);
+                }
+                else
+                {
+                    // orphan popup (not in annotation list); clone it and fix references
+                    clonedPopupDict = new COSDictionary(annotationPopup.getCOSObject());
+                    annotDictMap.put(annotationPopup.getCOSObject(), clonedPopupDict);
+                    PDAnnotationPopup annotationPopupClone =
+                            (PDAnnotationPopup) PDAnnotation.createAnnotation(clonedPopupDict);
+                    annotationPopupClone.setParent((PDAnnotationMarkup) annotation);
+                    ((PDAnnotationMarkup) annotation).setPopup(annotationPopupClone);
+                    if (annotationPopupClone.getPage() != null)
+                    {
+                        annotationPopupClone.setPage(imported);
+                    }
+                }
+            }
+            if (annotation instanceof PDAnnotationPopup)
+            {
+                PDAnnotationMarkup annotationMarkup = ((PDAnnotationPopup) annotation).getParent();
+                if (annotationMarkup == null)
+                {
+                    continue;
+                }
+                COSDictionary clonedMarkupDict = annotDictMap.get(annotationMarkup.getCOSObject());
+                // clonedMarkupDict will be null if markup annotation is an orphan (not in annotation list)
+                annotation.getCOSObject().setItem(COSName.PARENT, clonedMarkupDict);
+            }
+        }
+        imported.setAnnotations(clonedAnnotations);
     }
+
     /**
      * The source PDF document.
      *

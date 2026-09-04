@@ -35,7 +35,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  * Type 2 CIDFont (TrueType).
  *
@@ -43,6 +42,7 @@ import com.tom_roush.pdfbox.util.Matrix;
  */
 public class PDCIDFontType2 extends PDCIDFont
 {
+
     private final TrueTypeFont ttf;
     private final int[] cid2gid;
     private final boolean isEmbedded;
@@ -142,19 +142,25 @@ public class PDCIDFontType2 extends PDCIDFont
         TrueTypeFont ttfFont;
 
         CIDFontMapping mapping = FontMappers.instance()
-            .getCIDFont(getBaseFont(), getFontDescriptor(),
-                getCIDSystemInfo());
+                .getCIDFont(getBaseFont(), getFontDescriptor(),
+                        getCIDSystemInfo());
         if (mapping.isCIDFont())
         {
             ttfFont = mapping.getFont();
         }
         else
         {
-            ttfFont = (TrueTypeFont)mapping.getTrueTypeFont();
+            ttfFont = (TrueTypeFont) mapping.getTrueTypeFont();
+            if (ttfFont == null)
+            {
+                // shouldn't happen?!
+                throw new IOException("mapping.getTrueTypeFont() returns null, please report");
+            }
         }
         if (mapping.isFallback())
         {
-            Log.w("PdfBox-Android", "Using fallback font " + ttfFont.getName() + " for CID-keyed TrueType font " + getBaseFont());
+            Log.w("PdfBox-Android", "Using fallback font " + ttfFont.getName() +
+                    " for CID-keyed TrueType font " + getBaseFont());
         }
         return ttfFont;
     }
@@ -186,13 +192,13 @@ public class PDCIDFontType2 extends PDCIDFont
         {
             PDRectangle bbox = getFontDescriptor().getFontBoundingBox();
             if (bbox != null &&
-                (Float.compare(bbox.getLowerLeftX(), 0) != 0 ||
-                    Float.compare(bbox.getLowerLeftY(), 0) != 0 ||
-                    Float.compare(bbox.getUpperRightX(), 0) != 0 ||
-                    Float.compare(bbox.getUpperRightY(), 0) != 0))
+                    (Float.compare(bbox.getLowerLeftX(), 0) != 0 ||
+                     Float.compare(bbox.getLowerLeftY(), 0) != 0 ||
+                     Float.compare(bbox.getUpperRightX(), 0) != 0 ||
+                     Float.compare(bbox.getUpperRightY(), 0) != 0))
             {
                 return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),
-                    bbox.getUpperRightX(), bbox.getUpperRightY());
+                                       bbox.getUpperRightX(), bbox.getUpperRightY());
             }
         }
         return ttf.getFontBBox();
@@ -233,9 +239,13 @@ public class PDCIDFontType2 extends PDCIDFont
             // font's 'cmap' table. The means by which this is accomplished are implementation-
             // dependent.
             // omit the CID2GID mapping if the embedded font is replaced by an external font
-            if (cid2gid != null && !isDamaged)
+            String name = getName();
+            if (cid2gid != null && !isDamaged && name != null && name.equals(ttf.getName()))
             {
                 // Acrobat allows non-embedded GIDs - todo: can we find a test PDF for this?
+                // PDFBOX-5612: should happen only if it's really the same font
+                // this is not perfect, we may have to improve this because some identical fonts
+                // have different names
                 Log.w("PdfBox-Android", "Using non-embedded GIDs in font " + getName());
                 int cid = codeToCID(code);
                 if (cid < cid2gid.length)
@@ -293,16 +303,13 @@ public class PDCIDFontType2 extends PDCIDFont
             }
             else
             {
-                // "Identity" is the default CIDToGIDMap
-                if (cid < ttf.getNumberOfGlyphs())
+                // "Identity" is the default for CFF-based OpenTypeFonts
+                if (ttf instanceof OpenTypeFont && ((OpenTypeFont) ttf).isPostScript())
                 {
                     return cid;
                 }
-                else
-                {
-                    // out of range CIDs map to GID 0
-                    return 0;
-                }
+                // "Identity" is the default for TrueTypeFonts if the CID is within the range
+                return cid < ttf.getNumberOfGlyphs() ? cid : 0;
             }
         }
     }
@@ -312,7 +319,7 @@ public class PDCIDFontType2 extends PDCIDFont
     {
         // todo: really we want the BBox, (for text extraction:)
         return (ttf.getHorizontalHeader().getAscender() + -ttf.getHorizontalHeader().getDescender())
-            / ttf.getUnitsPerEm(); // todo: shouldn't this be the yMax/yMin?
+                / (float) ttf.getUnitsPerEm(); // todo: shouldn't this be the yMax/yMin?
     }
 
     @Override
@@ -375,7 +382,7 @@ public class PDCIDFontType2 extends PDCIDFont
         if (cid == 0)
         {
             throw new IllegalArgumentException(
-                String.format("No glyph for U+%04X (%c) in font %s", unicode, (char) unicode, getName()));
+                    String.format("No glyph for U+%04X (%c) in font %s", unicode, (char) unicode, getName()));
         }
 
         // CID is always 2-bytes (16-bit) for TrueType

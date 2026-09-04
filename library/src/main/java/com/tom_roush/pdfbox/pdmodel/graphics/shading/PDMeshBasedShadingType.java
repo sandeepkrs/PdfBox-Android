@@ -22,6 +22,7 @@ import android.util.Log;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -84,9 +85,9 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
         List<Patch> list = new ArrayList<Patch>();
         long maxSrcCoord = (long) Math.pow(2, getBitsPerCoordinate()) - 1;
         long maxSrcColor = (long) Math.pow(2, getBitsPerComponent()) - 1;
-        COSStream cosStream = (COSStream) dict;
+        InputStream imageStream = ((COSStream) dict).createInputStream();
 
-        ImageInputStream mciis = new MemoryCacheImageInputStream(cosStream.createInputStream());
+        ImageInputStream mciis = new MemoryCacheImageInputStream(imageStream);
         try
         {
             PointF[] implicitEdge = new PointF[4];
@@ -148,6 +149,8 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
         finally
         {
             mciis.close();
+            // MemoryCacheImageInputStream doesn't close the wrapped stream
+            imageStream.close();
         }
         return list;
     }
@@ -201,21 +204,23 @@ abstract class PDMeshBasedShadingType extends PDShadingType4
 
         try
         {
+            int bitsPerCoordinate = getBitsPerCoordinate();
             for (int i = pStart; i < controlPoints; i++)
             {
-                long x = input.readBits(getBitsPerCoordinate());
-                long y = input.readBits(getBitsPerCoordinate());
+                long x = input.readBits(bitsPerCoordinate);
+                long y = input.readBits(bitsPerCoordinate);
                 float px = interpolate(x, maxSrcCoord, rangeX.getMin(), rangeX.getMax());
                 float py = interpolate(y, maxSrcCoord, rangeY.getMin(), rangeY.getMax());
                 PointF p = matrix.transformPoint(px, py);
                 xform.transform(p, p);
                 points[i] = p;
             }
+            int bitsPerComponent = getBitsPerComponent();
             for (int i = cStart; i < 4; i++)
             {
                 for (int j = 0; j < numberOfColorComponents; j++)
                 {
-                    long c = input.readBits(getBitsPerComponent());
+                    long c = input.readBits(bitsPerComponent);
                     color[i][j] = interpolate(c, maxSrcColor, colRange[j].getMin(),
                             colRange[j].getMax());
                 }

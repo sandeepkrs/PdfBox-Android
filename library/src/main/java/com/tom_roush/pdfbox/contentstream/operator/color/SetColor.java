@@ -27,7 +27,6 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
-
 /**
  * sc,scn,SC,SCN: Sets the color to use for stroking or non-stroking operations.
  *
@@ -39,7 +38,8 @@ public abstract class SetColor extends OperatorProcessor
     public void process(Operator operator, List<COSBase> arguments) throws IOException
     {
         PDColorSpace colorSpace = getColorSpace();
-//        if (!(colorSpace instanceof PDPattern)) TODO: PdfBox-Android
+        // TODO: PdfBox-Android: Pattern colorspace not supported
+//        if (!(colorSpace instanceof PDPattern))
         {
             if (arguments.size() < colorSpace.getNumberOfComponents())
             {
@@ -47,6 +47,9 @@ public abstract class SetColor extends OperatorProcessor
             }
             if (!checkArrayTypesClass(arguments, COSNumber.class))
             {
+                // PDFBOX-5851: set an invalid color because Pattern colorspace is missing
+                // this will produce transparency in PageDrawer
+                setColor(new PDColor(new float[0], null));
                 return;
             }
         }

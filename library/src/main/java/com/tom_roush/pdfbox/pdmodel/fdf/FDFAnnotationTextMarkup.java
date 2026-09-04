@@ -22,7 +22,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import org.w3c.dom.Element;
-
 /**
  * This abstract class is used as a superclass for the different FDF annotations with text markup attributes.
  *
@@ -69,18 +68,14 @@ public abstract class FDFAnnotationTextMarkup extends FDFAnnotation
         {
             throw new IOException("Error: too little numbers in attribute 'coords'");
         }
-        float[] values = new float[coordsValues.length];
-        for (int i = 0; i < coordsValues.length; i++)
-        {
-            values[i] = Float.parseFloat(coordsValues[i]);
-        }
+        float[] values = parseFloats(coordsValues);
         setCoords(values);
     }
 
     /**
      * Set the coordinates of individual words or group of words.
      *
-     * The quadliterals shall encompasses a word or group of contiguous words in the text underlying the annotation. The
+     * The quadliterals shall encompass a word or group of contiguous words in the text underlying the annotation. The
      * coordinates for each quadrilateral shall be given in the order x1 y1 x2 y2 x3 y3 x4 y4.
      *
      * @param coords an array of 8 􏰍 n numbers specifying the coordinates of n quadrilaterals.

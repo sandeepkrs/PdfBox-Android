@@ -18,6 +18,7 @@ package com.tom_roush.pdfbox.filter;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.os.Build;
 
@@ -131,6 +132,19 @@ public final class JPXFilter extends Filter
         // extract embedded color space
         if (!parameters.containsKey(COSName.COLORSPACE) && Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
         {
+            if (image.hasAlpha() && parameters.getInt(COSName.SMASK_IN_DATA) > 0)
+            {
+                // PDFBOX-5657: save the soft mask in DecodeResult and use it later
+                // we never had SMaskInData = 2, maybe more work is needed
+                Bitmap smask = image.extractAlpha();
+                result.setJPXSMask(smask);
+                // create opaque image
+                Bitmap bim = Bitmap.createBitmap(
+                    image.getWidth(), image.getHeight(), Bitmap.Config.RGB_565);
+                Canvas canvas = new Canvas(bim);
+                canvas.drawBitmap(image, 0, 0, null);
+                image = bim;
+            }
             result.setColorSpace(new PDJPXColorSpace(image.getColorSpace()));
         }
 

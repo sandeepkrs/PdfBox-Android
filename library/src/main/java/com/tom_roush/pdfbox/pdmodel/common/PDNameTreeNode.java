@@ -31,7 +31,6 @@ import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSString;
-
 /**
  * This class represents a node in a name tree.
  *
@@ -41,6 +40,7 @@ import com.tom_roush.pdfbox.cos.COSString;
  */
 public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObjectable
 {
+
     private final COSDictionary node;
     private PDNameTreeNode<T> parent;
 
@@ -118,7 +118,18 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
             List<PDNameTreeNode<T>> pdObjects = new ArrayList<PDNameTreeNode<T>>(kids.size());
             for( int i=0; i<kids.size(); i++ )
             {
-                pdObjects.add( createChildNode( (COSDictionary)kids.getObject(i) ) );
+                COSBase base = kids.getObject(i);
+                PDNameTreeNode<T> childNode;
+                if (base instanceof COSDictionary)
+                {
+                    childNode = createChildNode((COSDictionary) base);
+                }
+                else
+                {
+                    Log.w("PdfBox-Android", "Bad child node at position " + i);
+                    childNode = createChildNode(new COSDictionary());
+                }
+                pdObjects.add(childNode);
             }
             retval = new COSArrayList<PDNameTreeNode<T>>(pdObjects, kids);
         }
@@ -152,7 +163,7 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
         {
             // remove kids
             node.setItem(COSName.KIDS, null);
-            // remove Limits 
+            // remove Limits
             node.setItem(COSName.LIMITS, null);
         }
         calculateLimits();
@@ -256,12 +267,13 @@ public abstract class PDNameTreeNode<T extends COSObjectable> implements COSObje
         COSArray namesArray = node.getCOSArray(COSName.NAMES);
         if( namesArray != null )
         {
-            Map<String, T> names = new LinkedHashMap<String, T>();
+            int size = namesArray.size();
+            Map<String, T> names = new LinkedHashMap<String, T>(size);
             if (namesArray.size() % 2 != 0)
             {
-                Log.w("PdfBox-Android", "Names array has odd size: " + namesArray.size());
+                Log.w("PdfBox-Android", "Names array has odd size: " + size);
             }
-            for (int i = 0; i + 1 < namesArray.size(); i += 2)
+            for (int i = 0; i + 1 < size; i += 2)
             {
                 COSBase base = namesArray.getObject(i);
                 if (!(base instanceof COSString))

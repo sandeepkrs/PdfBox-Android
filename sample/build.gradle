@@ -29,6 +29,15 @@ android {
     namespace 'com.tom_roush.pdfbox.sample'
 }
 
+// BouncyCastle 1.85 packaging bug: bcprov and bcutil both ship the same
+// org.bouncycastle.asn1.iana.* classes, causing checkDuplicateClasses to fail.
+// bcprov already contains all those classes, so we exclude bcutil from all
+// configurations. bcpkix (which needs bcutil APIs) still works because bcprov
+// provides the overlapping class definitions at runtime.
+configurations.all {
+    exclude group: 'org.bouncycastle', module: 'bcutil-jdk15to18'
+}
+
 dependencies {
     implementation project(':library')
 //    implementation "com.tom-roush:pdfbox-android:${project.VERSION_NAME}"
@@ -38,5 +47,5 @@ dependencies {
     // Optional dependencies
 
     // Read JPX images
-    implementation 'com.gemalto.jp2:jp2-android:1.0.3'
+    implementation files('libs/jp2-android-1.0.3.aar')
 }

@@ -17,7 +17,6 @@
 package com.tom_roush.pdfbox.pdmodel.encryption;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.security.Provider;
 import java.security.Security;
 
@@ -47,35 +46,10 @@ public class SecurityProvider
         // TODO synchronize access
         if (provider == null)
         {
-            try
-            {
-                // Remove Android-provided BouncyCastle implementation
-                Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-                Security.addProvider(new BouncyCastleProvider());
-                Class<Provider> providerClass = (Class<Provider>) Class
-                    .forName("org.bouncycastle.jce.provider.BouncyCastleProvider");
-                provider = providerClass.getDeclaredConstructor().newInstance();
-            }
-            catch (ClassNotFoundException ex)
-            {
-                throw new IOException(ex);
-            }
-            catch (InstantiationException ex)
-            {
-                throw new IOException(ex);
-            }
-            catch (IllegalAccessException ex)
-            {
-                throw new IOException(ex);
-            }
-            catch (NoSuchMethodException ex)
-            {
-                throw new IOException(ex);
-            }
-            catch (InvocationTargetException ex)
-            {
-                throw new IOException(ex);
-            }
+            // Remove Android-provided BouncyCastle implementation
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.addProvider(new BouncyCastleProvider());
+            provider = new BouncyCastleProvider();
         }
         return provider;
     }

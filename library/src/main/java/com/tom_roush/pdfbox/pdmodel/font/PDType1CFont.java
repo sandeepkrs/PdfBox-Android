@@ -41,9 +41,7 @@ import com.tom_roush.pdfbox.pdmodel.font.encoding.Encoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.StandardEncoding;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.Type1Encoding;
 import com.tom_roush.pdfbox.util.Matrix;
-
 import static com.tom_roush.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
-
 /**
  * Type 1-equivalent CFF font.
  *
@@ -52,6 +50,7 @@ import static com.tom_roush.pdfbox.pdmodel.font.UniUtil.getUniNameOfCodePoint;
  */
 public class PDType1CFont extends PDSimpleFont
 {
+
     private final Map<String, Float> glyphHeights = new HashMap<String, Float>();
     private Float avgWidth = null;
     private Matrix fontMatrix;
@@ -124,13 +123,14 @@ public class PDType1CFont extends PDSimpleFont
         }
         else
         {
+            String baseFont = getBaseFont();
             FontMapping<FontBoxFont> mapping = FontMappers.instance()
-                .getFontBoxFont(getBaseFont(), fd);
+                                                          .getFontBoxFont(baseFont, fd);
             genericFont = mapping.getFont();
 
             if (mapping.isFallback())
             {
-                Log.w("PdfBox-Android", "Using fallback font " + genericFont.getName() + " for " + getBaseFont());
+                Log.w("PdfBox-Android", "Using fallback font " + genericFont.getName() + " for " + baseFont);
             }
             isEmbedded = false;
         }
@@ -212,11 +212,11 @@ public class PDType1CFont extends PDSimpleFont
         if (getFontDescriptor() != null) {
             PDRectangle bbox = getFontDescriptor().getFontBoundingBox();
             if (bbox != null
-                && (bbox.getLowerLeftX() != 0 || bbox.getLowerLeftY() != 0
-                || bbox.getUpperRightX() != 0 || bbox.getUpperRightY() != 0))
+                    && (bbox.getLowerLeftX() != 0 || bbox.getLowerLeftY() != 0
+                    || bbox.getUpperRightX() != 0 || bbox.getUpperRightY() != 0))
             {
                 return new BoundingBox(bbox.getLowerLeftX(), bbox.getLowerLeftY(),
-                    bbox.getUpperRightX(), bbox.getUpperRightY());
+                                       bbox.getUpperRightX(), bbox.getUpperRightY());
             }
         }
         return genericFont.getFontBBox();
@@ -275,9 +275,9 @@ public class PDType1CFont extends PDSimpleFont
             if (numbers != null && numbers.size() == 6)
             {
                 fontMatrix = new Matrix(
-                    numbers.get(0).floatValue(), numbers.get(1).floatValue(),
-                    numbers.get(2).floatValue(), numbers.get(3).floatValue(),
-                    numbers.get(4).floatValue(), numbers.get(5).floatValue());
+                        numbers.get(0).floatValue(), numbers.get(1).floatValue(),
+                        numbers.get(2).floatValue(), numbers.get(3).floatValue(),
+                        numbers.get(4).floatValue(), numbers.get(5).floatValue());
             }
             else
             {
@@ -323,7 +323,7 @@ public class PDType1CFont extends PDSimpleFont
                 Log.w("PdfBox-Android", "No embedded CFF font, returning 0");
                 return 0;
             }
-            height = (float) cffFont.getType1CharString(name).getBounds().height();
+            height = cffFont.getType1CharString(name).getBounds().height();
             glyphHeights.put(name, height);
         }
         else
@@ -340,8 +340,8 @@ public class PDType1CFont extends PDSimpleFont
         if (!encoding.contains(name))
         {
             throw new IllegalArgumentException(
-                String.format("U+%04X ('%s') is not available in this font's encoding: %s",
-                    unicode, name, encoding.getEncodingName()));
+                    String.format("U+%04X ('%s') is not available in font %s encoding: %s",
+                                  unicode, name, getName(), encoding.getEncodingName()));
         }
 
         String nameInFont = getNameInFont(name);
@@ -351,7 +351,7 @@ public class PDType1CFont extends PDSimpleFont
         if (nameInFont.equals(".notdef") || !genericFont.hasGlyph(nameInFont))
         {
             throw new IllegalArgumentException(
-                String.format("No glyph for U+%04X in font %s", unicode, getName()));
+                    String.format("No glyph for U+%04X in font %s", unicode, getName()));
         }
 
         int code = inverted.get(name);
@@ -371,6 +371,12 @@ public class PDType1CFont extends PDSimpleFont
         {
             int codePoint = string.codePointAt(i);
             String name = getGlyphList().codePointToName(codePoint);
+            if (!cffFont.hasGlyph(name))
+            {
+                throw new IllegalArgumentException(
+                    String.format("U+%04X ('%s') is not available in font %s",
+                                  codePoint, name, getName()));
+            }
             width += cffFont.getType1CharString(name).getWidth();
         }
         return width;

@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.pdmodel.interactive.action;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This class represents a page object's dictionary of actions
  * that occur due to events.
@@ -70,7 +69,7 @@ public class PDPageAdditionalActions implements COSObjectable
      */
     public PDAction getO()
     {
-        COSDictionary o = (COSDictionary) actions.getDictionaryObject(COSName.O);
+        COSDictionary o = actions.getCOSDictionary(COSName.O);
         PDAction retval = null;
         if( o != null )
         {

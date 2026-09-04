@@ -33,7 +33,6 @@ import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
-
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.spec.IvParameterSpec;
@@ -48,7 +47,6 @@ import com.tom_roush.pdfbox.cos.COSString;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.util.Charsets;
-
 /**
  * A security handler as described in the PDF specifications.
  * A security handler is responsible of documents protection.
@@ -59,6 +57,7 @@ import com.tom_roush.pdfbox.util.Charsets;
  */
 public abstract class SecurityHandler
 {
+
     private static final short DEFAULT_KEY_LENGTH = 40;
 
     // see 7.6.2, page 58, PDF 32000-1:2008
@@ -87,7 +86,7 @@ public abstract class SecurityHandler
     // This solution keeps all different "equal" objects.
     // IdentityHashMap solves this problem and is also faster than a HashMap
     private final Set<COSBase> objects =
-        Collections.newSetFromMap(new IdentityHashMap<COSBase, Boolean>());
+            Collections.newSetFromMap(new IdentityHashMap<COSBase, Boolean>());
 
     private boolean useAES;
 
@@ -179,7 +178,7 @@ public abstract class SecurityHandler
      * @throws IOException If there is an error accessing data.
      */
     public abstract void prepareForDecryption(PDEncryption encryption, COSArray documentIDArray,
-        DecryptionMaterial decryptionMaterial) throws IOException;
+            DecryptionMaterial decryptionMaterial) throws IOException;
 
     /**
      * Encrypt or decrypt a set of data.
@@ -193,7 +192,7 @@ public abstract class SecurityHandler
      * @throws IOException If there is an error reading the data.
      */
     private void encryptData(long objectNumber, long genNumber, InputStream data,
-        OutputStream output, boolean decrypt) throws IOException
+                            OutputStream output, boolean decrypt) throws IOException
     {
         // Determine whether we're using Algorithm 1 (for RC4 and AES-128), or 1.A (for AES-256)
         if (useAES && encryptionKey.length == 32)
@@ -261,7 +260,7 @@ public abstract class SecurityHandler
      * @throws IOException If there is an error reading the data.
      */
     protected void encryptDataRC4(byte[] finalKey, InputStream input, OutputStream output)
-        throws IOException
+            throws IOException
     {
         rc4.setKey(finalKey);
         rc4.write(input, output);
@@ -294,7 +293,7 @@ public abstract class SecurityHandler
      * @throws IOException If there is an error reading the data.
      */
     private void encryptDataAESother(byte[] finalKey, InputStream data, OutputStream output, boolean decrypt)
-        throws IOException
+            throws IOException
     {
         byte[] iv = new byte[16];
 
@@ -396,8 +395,8 @@ public abstract class SecurityHandler
             if (ivSize != iv.length)
             {
                 throw new IOException(
-                    "AES initialization vector not fully read: only "
-                        + ivSize + " bytes read instead of " + iv.length);
+                        "AES initialization vector not fully read: only "
+                                + ivSize + " bytes read instead of " + iv.length);
             }
         }
         else
@@ -425,6 +424,28 @@ public abstract class SecurityHandler
     }
 
     /**
+     * This will decrypt a string if it is not in set of the objects.
+     *
+     * @param string The string to decrypt.
+     * @param objNum The object number.
+     * @param genNum The object generation Number.
+     *
+     * @return the encrypted/decrypted COS object
+     */
+    private COSBase decryptStringIfAbsent(COSString string, long objNum, long genNum)
+    {
+        // PDFBOX-4477: only cache strings and streams, this improves speed and memory footprint
+        if (objects.contains(string))
+        {
+            return string;
+        }
+        // replace the given COSString object with the encrypted/decrypted version
+        COSBase decryptedString = decryptString(string, objNum, genNum);
+        objects.add(decryptedString);
+        return decryptedString;
+    }
+
+    /**
      * This will dispatch to the correct method.
      *
      * @param obj    The object to decrypt.
@@ -433,35 +454,46 @@ public abstract class SecurityHandler
      *
      * @throws IOException If there is an error getting the stream data.
      */
-    public void decrypt(COSBase obj, long objNum, long genNum) throws IOException
+    public COSBase decrypt(COSBase obj, long objNum, long genNum) throws IOException
     {
         // PDFBOX-4477: only cache strings and streams, this improves speed and memory footprint
         if (obj instanceof COSString)
         {
-            if (objects.contains(obj))
-            {
-                return;
-            }
-            objects.add(obj);
-            decryptString((COSString) obj, objNum, genNum);
+            return decryptStringIfAbsent((COSString)obj, objNum, genNum);
         }
         else if (obj instanceof COSStream)
         {
-            if (objects.contains(obj))
-            {
-                return;
-            }
-            objects.add(obj);
-            decryptStream((COSStream) obj, objNum, genNum);
+            return decryptStreamIfAbsent((COSStream)obj, objNum, genNum);
         }
         else if (obj instanceof COSDictionary)
         {
-            decryptDictionary((COSDictionary) obj, objNum, genNum);
+            return decryptDictionary((COSDictionary) obj, objNum, genNum);
         }
         else if (obj instanceof COSArray)
         {
-            decryptArray((COSArray) obj, objNum, genNum);
+            return decryptArray((COSArray) obj, objNum, genNum);
         }
+        return obj;
+    }
+
+    /**
+     * This will decrypt a stream if it is not in set of the objects.
+     *
+     * @param stream The stream to decrypt.
+     * @param objNum The object number.
+     * @param genNum The object generation Number.
+     *
+     * @return the encrypted/decrypted COS object
+     */
+    private COSBase decryptStreamIfAbsent(COSStream stream, long objNum, long genNum) throws IOException
+    {
+        if (!objects.contains(stream))
+        {
+            objects.add(stream);
+            decryptStream(stream, objNum, genNum);
+        }
+
+        return stream;
     }
 
     /**
@@ -495,7 +527,7 @@ public abstract class SecurityHandler
         {
             // PDFBOX-3229 check case where metadata is not encrypted despite /EncryptMetadata missing
             InputStream is = stream.createRawInputStream();
-            byte buf[] = new byte[10];
+            byte[] buf = new byte[10];
             IOUtils.populateBuffer(is, buf);
             is.close();
             if (Arrays.equals(buf, "<?xpacket ".getBytes(Charsets.ISO_8859_1)))
@@ -511,12 +543,12 @@ public abstract class SecurityHandler
         OutputStream output = stream.createRawOutputStream();
         try
         {
-            encryptData(objNum, genNum, encryptedStream, output, true /* decrypt */);
+           encryptData(objNum, genNum, encryptedStream, output, true /* decrypt */);
         }
         catch (IOException ex)
         {
             Log.e("PdfBox-Android", ex.getClass().getSimpleName() + " thrown when decrypting object " +
-                objNum + " " + genNum + " obj");
+                    objNum + " " + genNum + " obj");
             throw ex;
         }
         finally
@@ -538,7 +570,9 @@ public abstract class SecurityHandler
      */
     public void encryptStream(COSStream stream, long objNum, int genNum) throws IOException
     {
-        byte[] rawData = IOUtils.toByteArray(stream.createRawInputStream());
+        InputStream is = stream.createRawInputStream();
+        byte[] rawData = IOUtils.toByteArray(is);
+        is.close();
         ByteArrayInputStream encryptedStream = new ByteArrayInputStream(rawData);
         OutputStream output = stream.createRawOutputStream();
         try
@@ -558,21 +592,23 @@ public abstract class SecurityHandler
      * @param objNum The object number.
      * @param genNum The object generation number.
      *
+     * @return the encrypted/decrypted COS object
+     *
      * @throws IOException If there is an error creating a new string.
      */
-    private void decryptDictionary(COSDictionary dictionary, long objNum, long genNum) throws IOException
+    private COSBase decryptDictionary(COSDictionary dictionary, long objNum, long genNum) throws IOException
     {
         if (dictionary.getItem(COSName.CF) != null)
         {
             // PDFBOX-2936: avoid orphan /CF dictionaries found in US govt "I-" files
-            return;
+            return dictionary;
         }
         COSBase type = dictionary.getDictionaryObject(COSName.TYPE);
         boolean isSignature = COSName.SIG.equals(type) || COSName.DOC_TIME_STAMP.equals(type) ||
-            // PDFBOX-4466: /Type is optional, see
-            // https://ec.europa.eu/cefdigital/tracker/browse/DSS-1538
-            (dictionary.getDictionaryObject(COSName.CONTENTS) instanceof COSString &&
-                dictionary.getDictionaryObject(COSName.BYTERANGE) instanceof COSArray);
+                // PDFBOX-4466: /Type is optional, see
+                // https://ec.europa.eu/cefdigital/tracker/browse/DSS-1538
+                (dictionary.getDictionaryObject(COSName.CONTENTS) instanceof COSString &&
+                 dictionary.getDictionaryObject(COSName.BYTERANGE) instanceof COSArray);
         for (Map.Entry<COSName, COSBase> entry : dictionary.entrySet())
         {
             if (isSignature && COSName.CONTENTS.equals(entry.getKey()))
@@ -582,11 +618,25 @@ public abstract class SecurityHandler
             }
             COSBase value = entry.getValue();
             // within a dictionary only the following kind of COS objects have to be decrypted
-            if (value instanceof COSString || value instanceof COSArray || value instanceof COSDictionary)
+            if (value instanceof COSString)
             {
-                decrypt(value, objNum, genNum);
+                entry.setValue(decryptStringIfAbsent((COSString)value, objNum, genNum));
+            }
+            else if (value instanceof COSArray)
+            {
+                entry.setValue(decryptArray((COSArray) value, objNum, genNum));
+            }
+            else if (value instanceof COSStream)
+            {
+                entry.setValue(decryptStreamIfAbsent((COSStream)value, objNum, genNum));
+            }
+            else if (value instanceof COSDictionary)
+            {
+                entry.setValue(decryptDictionary((COSDictionary)value, objNum, genNum));
             }
         }
+
+        return dictionary;
     }
 
     /**
@@ -596,13 +646,15 @@ public abstract class SecurityHandler
      * @param objNum The object number.
      * @param genNum The object generation number.
      *
+     * @return the decrypted COSString
+     *
      */
-    private void decryptString(COSString string, long objNum, long genNum)
+    private COSBase decryptString(COSString string, long objNum, long genNum)
     {
         // String encrypted with identity filter
         if (COSName.IDENTITY.equals(stringFilterName))
         {
-            return;
+            return string;
         }
 
         ByteArrayInputStream data = new ByteArrayInputStream(string.getBytes());
@@ -611,11 +663,13 @@ public abstract class SecurityHandler
         {
             encryptData(objNum, genNum, data, outputStream, true /* decrypt */);
             string.setValue(outputStream.toByteArray());
+            return string;
         }
         catch (IOException ex)
         {
             Log.e("PdfBox-Android", "Failed to decrypt COSString of length " + string.getBytes().length +
-                " in object " + objNum + ": " + ex.getMessage());
+                    " in object " + objNum + ": " + ex.getMessage());
+            return string;
         }
     }
 
@@ -643,18 +697,22 @@ public abstract class SecurityHandler
      * @param objNum The object number.
      * @param genNum The object generation number.
      *
+     * @return the encrypted/decrypted COS object
+     *
      * @throws IOException If there is an error accessing the data.
      */
-    private void decryptArray(COSArray array, long objNum, long genNum) throws IOException
+    private COSBase decryptArray(COSArray array, long objNum, long genNum) throws IOException
     {
         for (int i = 0; i < array.size(); i++)
         {
-            decrypt(array.get(i), objNum, genNum);
+            array.set(i, decrypt(array.get(i), objNum, genNum));
         }
+
+        return array;
     }
 
     /**
-     * Getter of the property <tt>keyLength</tt>.
+     * Getter of the property <code>keyLength</code>.
      * @return Returns the key length in bits.
      */
     public int getKeyLength()
@@ -663,7 +721,7 @@ public abstract class SecurityHandler
     }
 
     /**
-     * Setter of the property <tt>keyLength</tt>.
+     * Setter of the property <code>keyLength</code>.
      *
      * @param keyLen The key length to set in bits.
      */

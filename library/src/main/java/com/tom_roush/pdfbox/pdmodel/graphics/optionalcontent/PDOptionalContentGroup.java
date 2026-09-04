@@ -20,7 +20,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDPropertyList;
 import com.tom_roush.pdfbox.rendering.RenderDestination;
-
 /**
  * An optional content group (OCG).
  */
@@ -43,10 +42,10 @@ public class PDOptionalContentGroup extends PDPropertyList
     public PDOptionalContentGroup(COSDictionary dict)
     {
         super(dict);
-        if (!dict.getItem(COSName.TYPE).equals(COSName.OCG))
+        if (!dict.getDictionaryObject(COSName.TYPE).equals(COSName.OCG))
         {
             throw new IllegalArgumentException(
-                "Provided dictionary is not of type '" + COSName.OCG + "'");
+                    "Provided dictionary is not of type '" + COSName.OCG + "'");
         }
     }
 
@@ -57,16 +56,16 @@ public class PDOptionalContentGroup extends PDPropertyList
     public enum RenderState
     {
         /** The "ON" value. */
-        ON(COSName.ON),
-        /** The "OFF" value. */
-        OFF(COSName.OFF);
+       ON(COSName.ON),
+       /** The "OFF" value. */
+       OFF(COSName.OFF);
 
-        private final COSName name;
+       private final COSName name;
 
-        private RenderState(COSName value)
-        {
-            this.name = value;
-        }
+       private RenderState(COSName value)
+       {
+           this.name = value;
+       }
 
         /**
          * Returns the base state represented by the given {@link COSName}.

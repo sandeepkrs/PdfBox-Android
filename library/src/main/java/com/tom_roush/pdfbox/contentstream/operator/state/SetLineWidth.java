@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.contentstream.operator.OperatorName;
 import com.tom_roush.pdfbox.contentstream.operator.OperatorProcessor;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * w: Set line width.
  *
@@ -39,6 +38,10 @@ public class SetLineWidth extends OperatorProcessor
         if (arguments.isEmpty())
         {
             throw new MissingOperandException(operator, arguments);
+        }
+        if (!checkArrayTypesClass(arguments, COSNumber.class))
+        {
+            return;
         }
         COSNumber width = (COSNumber) arguments.get(0);
         context.getGraphicsState().setLineWidth(width.floatValue());

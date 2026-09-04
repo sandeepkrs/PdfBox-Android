@@ -29,7 +29,6 @@ package com.tom_roush.pdfbox.filter;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 /**
  * CCITT Modified Group 4 (T6) fax compression.
  *
@@ -46,7 +45,7 @@ import java.io.OutputStream;
 final class CCITTFaxEncoderStream extends OutputStream {
 
     private int currentBufferLength = 0;
-    private final byte[] inputBuffer;
+    private byte[] inputBuffer;
     private final int inputBufferLength;
     private final int columns;
     private final int rows;
@@ -93,6 +92,9 @@ final class CCITTFaxEncoderStream extends OutputStream {
 
     @Override
     public void close() throws IOException {
+        changesCurrentRow = null;
+        changesReferenceRow = null;
+        inputBuffer = null;
         stream.close();
     }
 

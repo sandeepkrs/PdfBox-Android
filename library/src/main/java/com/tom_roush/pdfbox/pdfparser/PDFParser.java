@@ -30,9 +30,9 @@ import com.tom_roush.pdfbox.io.RandomAccessRead;
 import com.tom_roush.pdfbox.io.ScratchFile;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException;
-
 public class PDFParser extends COSParser
 {
+
     /**
      * Constructor.
      * Unrestricted main memory will be used for buffering PDF streams.
@@ -81,7 +81,7 @@ public class PDFParser extends COSParser
      * @throws IOException If something went wrong.
      */
     public PDFParser(RandomAccessRead source, String decryptionPassword, ScratchFile scratchFile)
-        throws IOException
+            throws IOException
     {
         this(source, decryptionPassword, null, null, scratchFile);
     }
@@ -92,13 +92,13 @@ public class PDFParser extends COSParser
      *
      * @param source input representing the pdf.
      * @param decryptionPassword password to be used for decryption.
-     * @param keyStore key store to be used for decryption when using public key security 
+     * @param keyStore key store to be used for decryption when using public key security
      * @param alias alias to be used for decryption when using public key security
      *
      * @throws IOException If something went wrong.
      */
     public PDFParser(RandomAccessRead source, String decryptionPassword, InputStream keyStore,
-        String alias) throws IOException
+            String alias) throws IOException
     {
         this(source, decryptionPassword, keyStore, alias, ScratchFile.getMainMemoryOnlyInstance());
     }
@@ -108,7 +108,7 @@ public class PDFParser extends COSParser
      *
      * @param source input representing the pdf.
      * @param decryptionPassword password to be used for decryption.
-     * @param keyStore key store to be used for decryption when using public key security 
+     * @param keyStore key store to be used for decryption when using public key security
      * @param alias alias to be used for decryption when using public key security
      * @param scratchFile buffer handler for temporary storage; it will be closed on
      *        {@link COSDocument#close()}
@@ -116,7 +116,7 @@ public class PDFParser extends COSParser
      * @throws IOException If something went wrong.
      */
     public PDFParser(RandomAccessRead source, String decryptionPassword, InputStream keyStore,
-        String alias, ScratchFile scratchFile) throws IOException
+                     String alias, ScratchFile scratchFile) throws IOException
     {
         super(source, decryptionPassword, keyStore, alias);
         fileLen = source.length();
@@ -135,7 +135,7 @@ public class PDFParser extends COSParser
             catch (NumberFormatException nfe)
             {
                 Log.w("PdfBox-Android", "System property " + SYSPROP_EOFLOOKUPRANGE
-                    + " does not contain an integer value, but: '" + eofLookupRangeStr + "'");
+                        + " does not contain an integer value, but: '" + eofLookupRangeStr + "'");
             }
         }
         document = new COSDocument(scratchFile);
@@ -207,14 +207,21 @@ public class PDFParser extends COSParser
      */
     public void parse() throws IOException
     {
-        // set to false if all is processed
-        boolean exceptionOccurred = true;
-        try
-        {
+         // set to false if all is processed
+         boolean exceptionOccurred = true;
+         try
+         {
             // PDFBOX-1922 read the version header and rewind
             if (!parsePDFHeader() && !parseFDFHeader())
             {
-                throw new IOException( "Error: Header doesn't contain versioninfo" );
+                if (isLenient())
+                {
+                    Log.w("PdfBox-Android", "Error: Header doesn't contain versioninfo");
+                }
+                else
+                {
+                    throw new IOException("Error: Header doesn't contain versioninfo");
+                }
             }
 
             if (!initialParseDone)

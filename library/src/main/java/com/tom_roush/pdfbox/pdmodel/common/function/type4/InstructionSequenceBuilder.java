@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.pdmodel.common.function.type4;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 /**
  * Basic parser for Type 4 functions which is used to build up instruction sequences.
  *
@@ -27,7 +26,7 @@ import java.util.regex.Pattern;
 public final class InstructionSequenceBuilder extends Parser.AbstractSyntaxHandler
 {
     private static final Pattern INTEGER_PATTERN = Pattern.compile("[\\+\\-]?\\d+");
-    private static final Pattern REAL_PATTERN = Pattern.compile("[\\-]?\\d*\\.\\d*([Ee]\\-?\\d+)?");
+    private static final Pattern REAL_PATTERN = Pattern.compile("\\-?\\d*\\.\\d*([Ee]\\-?\\d+)?");
 
     private final InstructionSequence mainSequence = new InstructionSequence();
     private final Stack<InstructionSequence> seqStack = new Stack<InstructionSequence>();

@@ -26,11 +26,11 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSFloat;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
+import com.tom_roush.pdfbox.pdmodel.ResourceCache;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDFontSetting;
 import com.tom_roush.pdfbox.pdmodel.graphics.PDLineDashPattern;
 import com.tom_roush.pdfbox.pdmodel.graphics.blend.BlendMode;
-
 /**
  * An extended graphics state dictionary.
  *
@@ -39,6 +39,7 @@ import com.tom_roush.pdfbox.pdmodel.graphics.blend.BlendMode;
 public class PDExtendedGraphicsState implements COSObjectable
 {
     private final COSDictionary dict;
+    private final ResourceCache cache;
 
     /**
      * Default constructor, creates blank graphics state.
@@ -47,6 +48,7 @@ public class PDExtendedGraphicsState implements COSObjectable
     {
         dict = new COSDictionary();
         dict.setItem(COSName.TYPE, COSName.EXT_G_STATE);
+        cache = null;
     }
 
     /**
@@ -56,7 +58,19 @@ public class PDExtendedGraphicsState implements COSObjectable
      */
     public PDExtendedGraphicsState(COSDictionary dictionary)
     {
+        this(dictionary, null);
+    }
+
+    /**
+     * Create a graphics state from an existing dictionary.
+     *
+     * @param dictionary The existing graphics state.
+     * @param resourceCache Resource cache, may be null.
+     */
+    public PDExtendedGraphicsState(COSDictionary dictionary, ResourceCache resourceCache)
+    {
         dict = dictionary;
+        cache = resourceCache;
     }
 
     /**
@@ -162,7 +176,7 @@ public class PDExtendedGraphicsState implements COSObjectable
             {
                 if (dict.containsKey(COSName.TR2))
                 {
-                    // "If both TR and TR2 are present in the same graphics state parameter dictionary, 
+                    // "If both TR and TR2 are present in the same graphics state parameter dictionary,
                     // TR2 shall take precedence."
                     continue;
                 }
@@ -411,7 +425,7 @@ public class PDExtendedGraphicsState implements COSObjectable
         return getFloatItem(COSName.OPM);
     }
 
-    /**
+   /**
      * This will set the overprint mode(OPM).
      *
      * @param overprintMode The overprint mode. It will be truncated to an integer. This parameter
@@ -607,16 +621,13 @@ public class PDExtendedGraphicsState implements COSObjectable
      */
     public PDSoftMask getSoftMask()
     {
-        if (!dict.containsKey(COSName.SMASK))
-        {
-            return null;
-        }
-        return PDSoftMask.create(dict.getDictionaryObject(COSName.SMASK));
+        COSBase smask = dict.getDictionaryObject(COSName.SMASK);
+        return smask == null ? null : PDSoftMask.create(smask, cache);
     }
 
     /**
 
-     /**
+    /**
      * This will get the text knockout flag.
      *
      * @return The text knockout flag.

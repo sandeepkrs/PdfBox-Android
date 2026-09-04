@@ -25,7 +25,6 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSFloat;
 import com.tom_roush.pdfbox.cos.COSNumber;
-
 /**
  * This class will be used for matrix manipulation.
  *
@@ -357,19 +356,19 @@ public final class Matrix implements Cloneable
     public Matrix multiply( Matrix other, Matrix result )
     {
         float[] c = result != null && result != other && result != this ? result.single
-            : new float[SIZE];
+                : new float[SIZE];
 
         multiplyArrays(single, other.single, c);
 
         if (!Matrix.isFinite(c[0]) //
-            || !Matrix.isFinite(c[1]) //
-            || !Matrix.isFinite(c[2]) //
-            || !Matrix.isFinite(c[3]) //
-            || !Matrix.isFinite(c[4]) //
-            || !Matrix.isFinite(c[5]) //
-            || !Matrix.isFinite(c[6]) //
-            || !Matrix.isFinite(c[7]) //
-            || !Matrix.isFinite(c[8]))
+                || !Matrix.isFinite(c[1]) //
+                || !Matrix.isFinite(c[2]) //
+                || !Matrix.isFinite(c[3]) //
+                || !Matrix.isFinite(c[4]) //
+                || !Matrix.isFinite(c[5]) //
+                || !Matrix.isFinite(c[6]) //
+                || !Matrix.isFinite(c[7]) //
+                || !Matrix.isFinite(c[8]))
             throw new IllegalArgumentException("Multiplying two matrices produces illegal values");
 
         if (result == null)
@@ -482,8 +481,8 @@ public final class Matrix implements Cloneable
      * 0 y 0
      * 0 0 1
      *
-     * @param x The xscale operator.
-     * @param y The yscale operator.
+     * @param x The x-scale operator.
+     * @param y The y-scale operator.
      * @return A new matrix with just the x/y scaling
      */
     public static Matrix getScaleInstance(float x, float y)
@@ -603,7 +602,7 @@ public final class Matrix implements Cloneable
         if (single[1] != 0.0f)
         {
             return (float) Math.sqrt(Math.pow(single[0], 2) +
-                Math.pow(single[1], 2));
+                                      Math.pow(single[1], 2));
         }
         return single[0];
     }
@@ -618,7 +617,7 @@ public final class Matrix implements Cloneable
         if (single[3] != 0.0f)
         {
             return (float) Math.sqrt(Math.pow(single[3], 2) +
-                Math.pow(single[4], 2));
+                                      Math.pow(single[4], 2));
         }
         return single[4];
     }

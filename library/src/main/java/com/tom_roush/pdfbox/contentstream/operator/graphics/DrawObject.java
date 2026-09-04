@@ -31,7 +31,6 @@ import com.tom_roush.pdfbox.pdmodel.graphics.PDXObject;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDTransparencyGroup;
 import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
-
 /**
  * Do: Draws an XObject.
  *
@@ -40,6 +39,7 @@ import com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject;
  */
 public final class DrawObject extends GraphicsOperatorProcessor
 {
+
     @Override
     public void process(Operator operator, List<COSBase> operands) throws IOException
     {
@@ -61,7 +61,11 @@ public final class DrawObject extends GraphicsOperatorProcessor
         }
         else if (xobject instanceof PDImageXObject)
         {
-            PDImageXObject image = (PDImageXObject)xobject;
+            PDImageXObject image = (PDImageXObject) xobject;
+            if (!image.isStencil() && !context.isShouldProcessColorOperators())
+            {
+                return;
+            }
             context.drawImage(image);
         }
         else if (xobject instanceof PDFormXObject)

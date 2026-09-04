@@ -14,7 +14,7 @@ Add the following to dependency to `build.gradle`:
 
 ```gradle
 dependencies {
-    implementation 'com.tom-roush:pdfbox-android:2.0.27.0'
+    implementation 'com.tom-roush:pdfbox-android:2.0.37.0'
 }
 ```
 
@@ -36,16 +36,17 @@ Reading JPX Images
 
 Android does not come with native support for handling JPX images. These images can be read using the [JP2Android library](https://github.com/ThalesGroup/JP2ForAndroid). As JPX is not a common image format, this library is not included with PdfBox-Android by default. If the JP2Android library is not on the classpath of your application, JPX images will be ignored and a warning will be logged.
 
-To include the JP2Android library, add the following to your project's Gradle `dependencies` section. Note that this library is available in JCenter only, so you will need to add `jcenter()` to your repository list.
+To include the JP2Android library in your own application, either build it from its [source repository](https://github.com/ThalesGroup/JP2ForAndroid) or copy the prebuilt AAR vendored in this repository (`sample/libs/jp2-android-1.0.3.aar`) and reference it as a file dependency:
 ```gradle
 dependencies {
-    implementation 'com.gemalto.jp2:jp2-android:1.0.3'
+    implementation files('libs/jp2-android-1.0.3.aar')
 }
 ```
+Note: the library was originally distributed through JCenter, which no longer hosts the artifact. The vendored copy is unmodified and is licensed under the BSD 2-Clause license (Copyright (c) 2018 Gemalto s.r.o., see the [upstream repository](https://github.com/ThalesGroup/JP2ForAndroid) for the full license text).
 
 Important notes
 ==============
 
-* Currently based on PDFBox v2.0.27
+* Currently based on PDFBox v2.0.37
 
 * Requires API 19 or greater for full functionality

@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -107,11 +108,9 @@ public class TestPublicKeyEncryption
     @Before
     public void setUp() throws Exception
     {
-        if (Cipher.getMaxAllowedKeyLength("AES") != Integer.MAX_VALUE)
-        {
-            // we need strong encryption for these tests
-            fail("JCE unlimited strength jurisdiction policy files are not installed");
-        }
+        // we need strong encryption for these tests
+        assertEquals("JCE unlimited strength jurisdiction policy files are not installed",
+            Integer.MAX_VALUE, Cipher.getMaxAllowedKeyLength("AES"));
 
         testContext = InstrumentationRegistry.getInstrumentation().getContext();
         PDFBoxResourceLoader.init(testContext);
@@ -176,12 +175,10 @@ public class TestPublicKeyEncryption
         policy.setEncryptionKeyLength(keyLength);
         document.protect(policy);
 
-        PDDocument encryptedDoc = null;
+        File file = save("testProtectionError");
         try
         {
-            File file = save("testProtectionError");
-            encryptedDoc = reload(file, password2, getKeyStore(keyStore2));
-            Assert.assertTrue(encryptedDoc.isEncrypted());
+            reload(file, password2, getKeyStore(keyStore2));
             fail("No exception when using an incorrect decryption key");
         }
         catch (IOException ex)
@@ -189,13 +186,6 @@ public class TestPublicKeyEncryption
             String msg = ex.getMessage();
             Assert.assertTrue("not the expected exception: " + msg,
                 msg.contains("serial-#: rid 2 vs. cert 3"));
-        }
-        finally
-        {
-            if (encryptedDoc != null)
-            {
-                encryptedDoc.close();
-            }
         }
     }
 

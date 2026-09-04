@@ -22,7 +22,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText;
 import org.w3c.dom.Element;
-
 /**
  * This represents a Text FDF annotation.
  *
@@ -69,7 +68,7 @@ public class FDFAnnotationText extends FDFAnnotation
         String icon = element.getAttribute("icon");
         if (icon != null && !icon.isEmpty())
         {
-            setIcon(element.getAttribute("icon"));
+            setIcon(icon);
         }
         String state = element.getAttribute("state");
         if (state != null && !state.isEmpty())
@@ -77,8 +76,8 @@ public class FDFAnnotationText extends FDFAnnotation
             String statemodel = element.getAttribute("statemodel");
             if (statemodel != null && !statemodel.isEmpty())
             {
-                setState(element.getAttribute("state"));
-                setStateModel(element.getAttribute("statemodel"));
+                setState(state);
+                setStateModel(statemodel);
             }
         }
     }

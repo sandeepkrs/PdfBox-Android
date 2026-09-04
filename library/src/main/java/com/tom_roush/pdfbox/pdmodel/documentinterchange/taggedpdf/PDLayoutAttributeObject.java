@@ -19,9 +19,9 @@ package com.tom_roush.pdfbox.pdmodel.documentinterchange.taggedpdf;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
+import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDGamma;
-
 /**
  * A Layout attribute object.
  *
@@ -840,8 +840,7 @@ public class PDLayoutAttributeObject extends PDStandardAttributeObject
      */
     public PDRectangle getBBox()
     {
-        COSArray array =
-            (COSArray) this.getCOSObject().getDictionaryObject(BBOX);
+        COSArray array = this.getCOSObject().getCOSArray(COSName.BBOX);
         if (array != null)
         {
             return new PDRectangle(array);

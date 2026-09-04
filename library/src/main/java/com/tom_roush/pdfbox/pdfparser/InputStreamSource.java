@@ -21,7 +21,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
-
 /**
  * A SequentialSource backed by an InputStream.
  */
@@ -29,6 +28,7 @@ final class InputStreamSource implements SequentialSource
 {
     private final PushbackInputStream input;
     private int position;
+    private boolean isOpen = true;
 
     /**
      * Constructor.
@@ -144,5 +144,12 @@ final class InputStreamSource implements SequentialSource
     public void close() throws IOException
     {
         input.close();
+        isOpen = false;
+    }
+
+    @Override
+    public boolean isClosed() throws IOException
+    {
+        return !isOpen;
     }
 }

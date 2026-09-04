@@ -18,9 +18,7 @@ package com.tom_roush.pdfbox.pdmodel.interactive.viewerpreferences;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
-
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
-
 /**
  * This is the document viewing preferences.
  *
@@ -198,6 +196,14 @@ public class PDViewerPreferences implements COSObjectable
     private final COSDictionary prefs;
 
     /**
+     * Constructor.
+     */
+    public PDViewerPreferences()
+    {
+        this.prefs = new COSDictionary();
+    }
+
+    /**
      * Constructor that is used for a preexisting dictionary.
      *
      * @param dic The underlying dictionary.
@@ -346,7 +352,7 @@ public class PDViewerPreferences implements COSObjectable
     public String getNonFullScreenPageMode()
     {
         return prefs.getNameAsString( COSName.NON_FULL_SCREEN_PAGE_MODE,
-            NON_FULL_SCREEN_PAGE_MODE.UseNone.toString());
+                NON_FULL_SCREEN_PAGE_MODE.UseNone.toString());
     }
 
     /**

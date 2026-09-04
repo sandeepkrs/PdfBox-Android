@@ -59,11 +59,38 @@ public class CombAlignmentTest
       PDDocument document = PDDocument.load(testContext.getAssets().open(IN_DIR + "/" + NAME_OF_PDF));
       PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
       PDField field = acroForm.getField("PDFBoxCombLeft");
+      field.setValue("");
       field.setValue(TEST_VALUE);
       field = acroForm.getField("PDFBoxCombMiddle");
+      field.setValue("");
       field.setValue(TEST_VALUE);
       field = acroForm.getField("PDFBoxCombRight");
+      field.setValue("");
       field.setValue(TEST_VALUE);
+      // compare rendering
+      File file = new File(OUT_DIR, NAME_OF_PDF);
+      document.save(file);
+      document.close();
+      TestRendering testRendering = new TestRendering();
+      testRendering.setUp();
+      testRendering.render(file);
+   }
+
+   // PDFBOX-5784
+   @Test
+   public void testPDFBOX5784() throws IOException
+   {
+      final String NAME_OF_PDF = "PDFBOX-5784.pdf";
+
+      PDDocument document = PDDocument.load(testContext.getAssets().open(IN_DIR + "/" + NAME_OF_PDF));
+      PDAcroForm acroForm = document.getDocumentCatalog().getAcroForm();
+      for (PDField field : acroForm.getFieldTree())
+      {
+         if (!field.getPartialName().contains("acrobat"))
+         {
+            field.setValue("WIaqg");
+         }
+      }
       // compare rendering
       File file = new File(OUT_DIR, NAME_OF_PDF);
       document.save(file);

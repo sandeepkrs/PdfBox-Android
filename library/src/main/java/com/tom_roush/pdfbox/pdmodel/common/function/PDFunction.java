@@ -27,7 +27,6 @@ import com.tom_roush.pdfbox.cos.COSStream;
 import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.common.PDRange;
 import com.tom_roush.pdfbox.pdmodel.common.PDStream;
-
 /**
  * This class represents a function in a PDF document.
  *
@@ -127,7 +126,7 @@ public abstract class PDFunction implements COSObjectable
         if (!(base instanceof COSDictionary))
         {
             throw new IOException("Error: Function must be a Dictionary, but is " +
-                (base == null ? "(null)" : base.getClass().getSimpleName()));
+                    (base == null ? "(null)" : base.getClass().getSimpleName()));
         }
         COSDictionary functionDictionary = (COSDictionary) base;
         int functionType = functionDictionary.getInt(COSName.FUNCTION_TYPE);
@@ -263,26 +262,26 @@ public abstract class PDFunction implements COSObjectable
      * Evaluates the function at the given input.
      * ReturnValue = f(input)
      *
-     * @param input The array of input values for the function. 
+     * @param input The array of input values for the function.
      * In many cases will be an array of a single value, but not always.
      *
-     * @return The of outputs the function returns based on those inputs. 
+     * @return The of outputs the function returns based on those inputs.
      * In many cases will be an array of a single value, but not always.
      *
-     * @throws IOException if something went wrong processing the function.  
+     * @throws IOException if something went wrong processing the function.
      */
     public abstract float[] eval(float[] input) throws IOException;
 
     /**
      * Returns all ranges for the output values as COSArray .
      * Required for type 0 and type 4 functions
-     * @return the ranges array. 
+     * @return the ranges array.
      */
     protected COSArray getRangeValues()
     {
         if (range == null)
         {
-            range = (COSArray) getCOSObject().getDictionaryObject(COSName.RANGE);
+            range = getCOSObject().getCOSArray(COSName.RANGE);
         }
         return range;
     }
@@ -290,13 +289,13 @@ public abstract class PDFunction implements COSObjectable
     /**
      * Returns all domains for the input values as COSArray.
      * Required for all function types.
-     * @return the domains array. 
+     * @return the domains array.
      */
     private COSArray getDomainValues()
     {
         if (domain == null)
         {
-            domain = (COSArray) getCOSObject().getDictionaryObject(COSName.DOMAIN);
+            domain = getCOSObject().getCOSArray(COSName.DOMAIN);
         }
         return domain;
     }
@@ -352,8 +351,8 @@ public abstract class PDFunction implements COSObjectable
     }
 
     /**
-     * For a given value of x, interpolate calculates the y value 
-     * on the line defined by the two points (xRangeMin , xRangeMax ) 
+     * For a given value of x, interpolate calculates the y value
+     * on the line defined by the two points (xRangeMin , xRangeMax )
      * and (yRangeMin , yRangeMax ).
      *
      * @param x the to be interpolated value.
@@ -365,6 +364,11 @@ public abstract class PDFunction implements COSObjectable
      */
     protected float interpolate(float x, float xRangeMin, float xRangeMax, float yRangeMin, float yRangeMax)
     {
+        if (xRangeMax == xRangeMin)
+        {
+            // PDFBOX-5593 / PR #162
+            return yRangeMin;
+        }
         return yRangeMin + ((x - xRangeMin) * (yRangeMax - yRangeMin)/(xRangeMax - xRangeMin));
     }
 

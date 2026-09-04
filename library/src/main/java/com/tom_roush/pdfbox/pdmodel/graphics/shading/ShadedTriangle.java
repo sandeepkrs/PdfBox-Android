@@ -66,20 +66,23 @@ class ShadedTriangle
 
         if (degree == 2)
         {
-            if (overlaps(corner[1], corner[2]) && !overlaps(corner[0], corner[2]))
+            PointF corner0 = corner[0];
+            PointF corner1 = corner[1];
+            PointF corner2 = corner[2];
+            if (overlaps(corner1, corner2) && !overlaps(corner0, corner2))
             {
-                Point p0 = new Point((int) Math.round(corner[0].x),
-                        (int) Math.round(corner[0].y));
-                Point p1 = new Point((int) Math.round(corner[2].x),
-                        (int) Math.round(corner[2].y));
+                Point p0 = new Point((int) Math.round(corner0.x),
+                        (int) Math.round(corner0.y));
+                Point p1 = new Point((int) Math.round(corner2.x),
+                        (int) Math.round(corner2.y));
                 line = new Line(p0, p1, color[0], color[2]);
             }
             else
             {
-                Point p0 = new Point((int) Math.round(corner[1].x),
-                        (int) Math.round(corner[1].y));
-                Point p1 = new Point((int) Math.round(corner[2].x),
-                        (int) Math.round(corner[2].y));
+                Point p0 = new Point((int) Math.round(corner1.x),
+                        (int) Math.round(corner1.y));
+                Point p1 = new Point((int) Math.round(corner2.x),
+                        (int) Math.round(corner2.y));
                 line = new Line(p0, p1, color[1], color[2]);
             }
         }
@@ -102,7 +105,7 @@ class ShadedTriangle
      */
     private int calcDeg(PointF[] p)
     {
-        Set<Point> set = new HashSet<Point>();
+        Set<Point> set = new HashSet<Point>(3);
         for (PointF itp : p)
         {
             Point np = new Point((int) Math.round(itp.x * 1000), (int) Math.round(itp.y * 1000));
@@ -234,11 +237,12 @@ class ShadedTriangle
     public float[] calcColor(PointF p)
     {
         int numberOfColorComponents = color[0].length;
-        float[] pCol = new float[numberOfColorComponents];
+        float[] pCol = null;
 
         switch (degree)
         {
             case 1:
+                pCol = new float[numberOfColorComponents];
                 for (int i = 0; i < numberOfColorComponents; i++)
                 {
                     // average
@@ -248,8 +252,10 @@ class ShadedTriangle
             case 2:
                 // linear interpolation
                 Point tp = new Point((int) Math.round(p.x), (int) Math.round(p.y));
-                return line.calcColor(tp);
+                pCol = line.calcColor(tp);
+                break;
             default:
+                pCol = new float[numberOfColorComponents];
                 float aw = (float) (getArea(p, corner[1], corner[2]) / area);
                 float bw = (float) (getArea(p, corner[2], corner[0]) / area);
                 float cw = (float) (getArea(p, corner[0], corner[1]) / area);

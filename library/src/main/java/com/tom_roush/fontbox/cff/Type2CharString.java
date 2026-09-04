@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 
 import com.tom_roush.fontbox.type1.Type1CharStringReader;
-
 /**
  * Represents a Type 2 CharString by converting it into an equivalent Type 1 CharString.
  *
@@ -48,7 +47,7 @@ public class Type2CharString extends Type1CharString
      * @param nomWidthX nominal width
      */
     public Type2CharString(Type1CharStringReader font, String fontName, String glyphName, int gid, List<Object> sequence,
-        int defaultWidthX, int nomWidthX)
+                           int defaultWidthX, int nomWidthX)
     {
         super(font, fontName, glyphName);
         this.gid = gid;
@@ -82,6 +81,43 @@ public class Type2CharString extends Type1CharString
     {
         type1Sequence = new ArrayList<Object>();
         pathCount = 0;
+
+        // PDFBOX-5987: the sequence contains several "num denom DIV" sequences whose results are used
+        // for further operations. However the converter only handles direct arguments properly,
+        // not arguments that are created at runtime on the stack. It's not possible to fix this
+        // by just copying the command codes because addAlternatingCurve / addCurve require
+        // switching the sequence of arguments.
+        // The solution below just replaces all "num denom DIV" sequences with its result.
+        // If more files with even more complex sequences appear we will have to get rid of the
+        // converter and implement a complete renderer like with type1 charstrings.
+        List<Object> newSequence = new ArrayList<Object>(sequence.size());
+        for (int i = 0; i < sequence.size(); ++i)
+        {
+            Object obj = sequence.get(i);
+            if (obj instanceof CharStringCommand &&
+                "div".equals(CharStringCommand.TYPE2_VOCABULARY.get(((CharStringCommand) obj).getKey())) &&
+                 i >= 2)
+            {
+                Object num = sequence.get(i - 2);
+                Object den = sequence.get(i - 1);
+                if (num instanceof Number && den instanceof Number)
+                {
+                    float f = ((Number) num).floatValue() / ((Number) den).floatValue();
+                    newSequence.remove(newSequence.size() - 1);
+                    newSequence.remove(newSequence.size() - 1);
+                    newSequence.add(f);
+                }
+                else
+                {
+                    newSequence.add(sequence.get(i)); // GIGO
+                }
+            }
+            else
+            {
+                newSequence.add(sequence.get(i));
+            }
+        }
+
         CharStringHandler handler = new CharStringHandler() {
             @Override
             public List<Number> handleCommand(List<Number> numbers, CharStringCommand command)
@@ -89,7 +125,7 @@ public class Type2CharString extends Type1CharString
                 return Type2CharString.this.handleCommand(numbers, command);
             }
         };
-        handler.handleSequence(sequence);
+        handler.handleSequence(newSequence);
     }
 
     @SuppressWarnings(value = { "unchecked" })
@@ -170,10 +206,10 @@ public class Type2CharString extends Type1CharString
             if (numbers.size() >= 7)
             {
                 List<Number> first = Arrays.asList(numbers.get(0), 0,
-                    numbers.get(1), numbers.get(2), numbers.get(3), 0);
+                        numbers.get(1), numbers.get(2), numbers.get(3), 0);
                 List<Number> second = Arrays.asList(numbers.get(4), 0,
-                    numbers.get(5), -(numbers.get(2).floatValue()),
-                    numbers.get(6), 0);
+                        numbers.get(5), -(numbers.get(2).floatValue()),
+                        numbers.get(6), 0);
                 addCommandList(Arrays.asList(first, second), new CharStringCommand(8));
             }
         }
@@ -188,9 +224,9 @@ public class Type2CharString extends Type1CharString
             if (numbers.size() >= 9)
             {
                 List<Number> first = Arrays.asList(numbers.get(0), numbers.get(1),
-                    numbers.get(2), numbers.get(3), numbers.get(4), 0);
+                        numbers.get(2), numbers.get(3), numbers.get(4), 0);
                 List<Number> second = Arrays.asList(numbers.get(5), 0,
-                    numbers.get(6), numbers.get(7), numbers.get(8), 0);
+                        numbers.get(6), numbers.get(7), numbers.get(8), 0);
                 addCommandList(Arrays.asList(first, second), new CharStringCommand(8));
             }
         }
@@ -204,9 +240,14 @@ public class Type2CharString extends Type1CharString
                 dy += numbers.get(i * 2 + 1).intValue();
             }
             List<Number> first = numbers.subList(0, 6);
-            List<Number> second = Arrays.asList(numbers.get(6), numbers.get(7), numbers.get(8),
-                numbers.get(9), (Math.abs(dx) > Math.abs(dy) ? numbers.get(10) : -dx),
-                (Math.abs(dx) > Math.abs(dy) ? -dy : numbers.get(10)));
+            boolean dxIsBigger = Math.abs(dx) > Math.abs(dy);
+            List<Number> second = Arrays.asList(
+                    numbers.get(6),
+                    numbers.get(7),
+                    numbers.get(8),
+                    numbers.get(9),
+                    (dxIsBigger ? numbers.get(10) : -dx),
+                    (dxIsBigger ? -dy : numbers.get(10)));
             addCommandList(Arrays.asList(first, second), new CharStringCommand(8));
         }
         else if ("hstemhm".equals(name))
@@ -232,9 +273,9 @@ public class Type2CharString extends Type1CharString
             if (numbers.size() >= 2)
             {
                 addCommandList(split(numbers.subList(0, numbers.size() - 2), 6),
-                    new CharStringCommand(8));
+                        new CharStringCommand(8));
                 addCommand(numbers.subList(numbers.size() - 2, numbers.size()),
-                    new CharStringCommand(5));
+                        new CharStringCommand(5));
             }
         }
         else if ("rlinecurve".equals(name))
@@ -242,9 +283,9 @@ public class Type2CharString extends Type1CharString
             if (numbers.size() >= 6)
             {
                 addCommandList(split(numbers.subList(0, numbers.size() - 6), 2),
-                    new CharStringCommand(5));
+                        new CharStringCommand(5));
                 addCommand(numbers.subList(numbers.size() - 6, numbers.size()),
-                    new CharStringCommand(8));
+                        new CharStringCommand(8));
             }
         }
         else if ("vvcurveto".equals(name))
@@ -269,13 +310,13 @@ public class Type2CharString extends Type1CharString
             if (flag)
             {
                 addCommand(Arrays.asList((Number) 0f, numbers.get(0).floatValue() + nominalWidthX),
-                    new CharStringCommand(13));
+                        new CharStringCommand(13));
                 numbers = numbers.subList(1, numbers.size());
             }
             else
             {
                 addCommand(Arrays.asList((Number) 0f, defWidthX),
-                    new CharStringCommand(13));
+                        new CharStringCommand(13));
             }
         }
         return numbers;
@@ -302,8 +343,8 @@ public class Type2CharString extends Type1CharString
     private void closeCharString2Path()
     {
         CharStringCommand command = pathCount > 0 ? (CharStringCommand) type1Sequence
-            .get(type1Sequence.size() - 1)
-            : null;
+                .get(type1Sequence.size() - 1)
+                : null;
 
         CharStringCommand closepathCommand = new CharStringCommand(9);
         if (command != null && !closepathCommand.equals(command))
@@ -317,7 +358,7 @@ public class Type2CharString extends Type1CharString
         while (!numbers.isEmpty())
         {
             addCommand(numbers.subList(0, 1), new CharStringCommand(
-                horizontal ? 6 : 7));
+                    horizontal ? 6 : 7));
             numbers = numbers.subList(1, numbers.size());
             horizontal = !horizontal;
         }
@@ -332,15 +373,15 @@ public class Type2CharString extends Type1CharString
             {
                 addCommand(Arrays.asList(numbers.get(0), 0,
                         numbers.get(1), numbers.get(2), last ? numbers.get(4)
-                            : 0, numbers.get(3)),
-                    new CharStringCommand(8));
+                                : 0, numbers.get(3)),
+                        new CharStringCommand(8));
             }
             else
             {
                 addCommand(Arrays.asList(0, numbers.get(0),
                         numbers.get(1), numbers.get(2), numbers.get(3),
                         last ? numbers.get(4) : 0),
-                    new CharStringCommand(8));
+                        new CharStringCommand(8));
             }
             numbers = numbers.subList(last ? 5 : 4, numbers.size());
             horizontal = !horizontal;
@@ -356,17 +397,17 @@ public class Type2CharString extends Type1CharString
             if (horizontal)
             {
                 addCommand(Arrays.asList(numbers.get(first ? 1 : 0),
-                    first ? numbers.get(0) : 0, numbers
-                        .get(first ? 2 : 1),
-                    numbers.get(first ? 3 : 2), numbers.get(first ? 4 : 3),
-                    0), new CharStringCommand(8));
+                        first ? numbers.get(0) : 0, numbers
+                                .get(first ? 2 : 1),
+                        numbers.get(first ? 3 : 2), numbers.get(first ? 4 : 3),
+                        0), new CharStringCommand(8));
             }
             else
             {
                 addCommand(Arrays.asList(first ? numbers.get(0) : 0, numbers.get(first ? 1 : 0), numbers
-                            .get(first ? 2 : 1), numbers.get(first ? 3 : 2),
+                        .get(first ? 2 : 1), numbers.get(first ? 3 : 2),
                         0, numbers.get(first ? 4 : 3)),
-                    new CharStringCommand(8));
+                        new CharStringCommand(8));
             }
             numbers = numbers.subList(first ? 5 : 4, numbers.size());
         }

@@ -16,7 +16,6 @@
  */
 package com.tom_roush.pdfbox.pdmodel.documentinterchange.logicalstructure;
 
-import java.util.Iterator;
 import java.util.Map;
 
 import com.tom_roush.pdfbox.cos.COSArray;
@@ -28,7 +27,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSObject;
 import com.tom_roush.pdfbox.pdmodel.PDPage;
 import com.tom_roush.pdfbox.pdmodel.documentinterchange.markedcontent.PDMarkedContent;
-
+import com.tom_roush.pdfbox.pdmodel.documentinterchange.taggedpdf.StandardStructureTypes;
 /**
  * A structure element.
  *
@@ -43,8 +42,9 @@ public class PDStructureElement extends PDStructureNode
     /**
      * Constructor with required values.
      *
-     * @param structureType the structure type
-     * @param parent the parent structure node
+     * @param structureType The structure type. Constants are available in the
+     * {@link StandardStructureTypes} class.
+     * @param parent The parent structure node.
      */
     public PDStructureElement(String structureType, PDStructureNode parent)
     {
@@ -168,16 +168,11 @@ public class PDStructureElement extends PDStructureNode
         COSBase a = this.getCOSObject().getDictionaryObject(COSName.A);
         if (a instanceof COSArray)
         {
-            COSArray aa = (COSArray) a;
-            Iterator<COSBase> it = aa.iterator();
+            COSArray array = (COSArray) a;
             PDAttributeObject ao = null;
-            while (it.hasNext())
+            for (int i = 0; i < array.size(); ++i)
             {
-                COSBase item = it.next();
-                if (item instanceof COSObject)
-                {
-                    item = ((COSObject) item).getObject();
-                }
+                COSBase item = array.getObject(i);
                 if (item instanceof COSDictionary)
                 {
                     ao = PDAttributeObject.create((COSDictionary) item);
@@ -186,6 +181,8 @@ public class PDStructureElement extends PDStructureNode
                 }
                 else if (item instanceof COSInteger)
                 {
+                    // Read "14.7.5.3 Attribute Revision Numbers"
+                    // This is additional to the /R entry
                     attributes.setRevisionNumber(ao, ((COSNumber) item).intValue());
                 }
             }
@@ -343,15 +340,10 @@ public class PDStructureElement extends PDStructureNode
         if (c instanceof COSArray)
         {
             COSArray array = (COSArray) c;
-            Iterator<COSBase> it = array.iterator();
             String className = null;
-            while (it.hasNext())
+            for (int i = 0; i < array.size(); ++i)
             {
-                COSBase item = it.next();
-                if (item instanceof COSObject)
-                {
-                    item = ((COSObject) item).getObject();
-                }
+                COSBase item = array.getObject(i);
                 if (item instanceof COSName)
                 {
                     className = ((COSName) item).getName();
@@ -359,7 +351,9 @@ public class PDStructureElement extends PDStructureNode
                 }
                 else if (item instanceof COSInteger)
                 {
-                    classNames.setRevisionNumber(className, ((COSInteger) item).intValue());
+                    // Read "14.7.5.3 Attribute Revision Numbers"
+                    // This is additional to the /R entry
+                    classNames.setRevisionNumber(className, ((COSNumber) item).intValue());
                 }
             }
         }
@@ -609,14 +603,10 @@ public class PDStructureElement extends PDStructureNode
     public String getStandardStructureType()
     {
         String type = this.getStructureType();
-        Map<String,Object> roleMap = getRoleMap();
-        if (roleMap.containsKey(type))
+        Object mappedValue = getRoleMap().get(type);
+        if (mappedValue instanceof String)
         {
-            Object mappedValue = getRoleMap().get(type);
-            if (mappedValue instanceof String)
-            {
-                type = (String)mappedValue;
-            }
+            type = (String) mappedValue;
         }
         return type;
     }
@@ -624,7 +614,23 @@ public class PDStructureElement extends PDStructureNode
     /**
      * Appends a marked-content sequence kid.
      *
-     * @param markedContent the marked-content sequence
+     * @param mcid the marked-content id (MCID).
+     * @throws IllegalArgumentException if the mcid is negative.
+     */
+    public void appendKid(int mcid)
+    {
+        if (mcid < 0)
+        {
+            throw new IllegalArgumentException("MCID should not be negative");
+        }
+        this.appendKid(COSInteger.get(mcid));
+    }
+
+    /**
+     * Appends a marked-content sequence kid.
+     *
+     * @param markedContent the marked-content sequence with the MCID.
+     * @throws IllegalArgumentException if the mcid is negative or doesn't exist.
      */
     public void appendKid(PDMarkedContent markedContent)
     {
@@ -632,7 +638,12 @@ public class PDStructureElement extends PDStructureNode
         {
             return;
         }
-        this.appendKid(COSInteger.get(markedContent.getMCID()));
+        int mcid = markedContent.getMCID();
+        if (mcid < 0)
+        {
+            throw new IllegalArgumentException("MCID is negative or doesn't exist");
+        }
+        this.appendKid(COSInteger.get(mcid));
     }
 
     /**

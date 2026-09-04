@@ -16,6 +16,8 @@
  */
 package com.tom_roush.pdfbox.pdmodel.interactive.annotation;
 
+import android.graphics.Rect;
+
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -27,7 +29,6 @@ import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColor;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDAppearanceHandler;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDCircleAppearanceHandler;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.handlers.PDSquareAppearanceHandler;
-
 /**
  * This is the class that represents a rectangular or eliptical annotation Introduced in PDF 1.3 specification .
  *
@@ -106,7 +107,7 @@ public class PDAnnotationSquareCircle extends PDAnnotationMarkup
      */
     public PDBorderEffectDictionary getBorderEffect()
     {
-        COSDictionary be = (COSDictionary) getCOSObject().getDictionaryObject(COSName.BE);
+        COSDictionary be = getCOSObject().getCOSDictionary(COSName.BE);
         if (be != null)
         {
             return new PDBorderEffectDictionary(be);
@@ -137,7 +138,7 @@ public class PDAnnotationSquareCircle extends PDAnnotationMarkup
      */
     public PDRectangle getRectDifference()
     {
-        COSArray rd = (COSArray) getCOSObject().getDictionaryObject(COSName.RD);
+        COSArray rd = getCOSObject().getCOSArray(COSName.RD);
         if (rd != null)
         {
             return new PDRectangle(rd);
@@ -248,7 +249,7 @@ public class PDAnnotationSquareCircle extends PDAnnotationMarkup
         return new float[]{};
     }
 
-    /**
+        /**
      * Set a custom appearance handler for generating the annotations appearance streams.
      *
      * @param appearanceHandler

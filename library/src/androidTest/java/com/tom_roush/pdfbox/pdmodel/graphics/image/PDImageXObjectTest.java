@@ -24,6 +24,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -173,7 +174,9 @@ public class PDImageXObjectTest
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
       PDImageXObject image = PDImageXObject.createFromFileByExtension(file, doc);
 
-      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, new FileInputStream(file));
+      InputStream is = new FileInputStream(file);
+      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, is);
+      is.close();
 
       Assert.assertEquals(expectedImage.getSuffix(), image.getSuffix());
       checkIdentARGB(image.getImage(), expectedImage.getImage());
@@ -219,7 +222,9 @@ public class PDImageXObjectTest
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
       PDImageXObject image = PDImageXObject.createFromFile(file.getAbsolutePath(), doc);
 
-      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, new FileInputStream(file));
+      InputStream is = new FileInputStream(file);
+      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, is);
+      is.close();
 
       Assert.assertEquals(expectedImage.getSuffix(), image.getSuffix());
       checkIdentARGB(image.getImage(), expectedImage.getImage());
@@ -265,7 +270,9 @@ public class PDImageXObjectTest
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
       PDImageXObject image = PDImageXObject.createFromFileByContent(file, doc);
 
-      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, new FileInputStream(file));
+      InputStream is = new FileInputStream(file);
+      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, is);
+      is.close();
 
       Assert.assertEquals(expectedImage.getSuffix(), image.getSuffix());
       checkIdentARGB(image.getImage(), expectedImage.getImage());
@@ -281,7 +288,9 @@ public class PDImageXObjectTest
    {
       PDDocument doc = new PDDocument();
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
-      byte[] byteArray = IOUtils.toByteArray(new FileInputStream(file));
+      InputStream is = new FileInputStream(file);
+      byte[] byteArray = IOUtils.toByteArray(is);
+      is.close();
       PDImageXObject image = PDImageXObject.createFromByteArray(doc, byteArray, null);
 
       Bitmap bim = BitmapFactory.decodeStream(testContext.getAssets().open(inPath + filename));
@@ -298,7 +307,9 @@ public class PDImageXObjectTest
    {
       PDDocument doc = new PDDocument();
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
-      byte[] byteArray = IOUtils.toByteArray(new FileInputStream(file));
+      InputStream is = new FileInputStream(file);
+      byte[] byteArray = IOUtils.toByteArray(is);
+      is.close();
       PDImageXObject image = PDImageXObject.createFromByteArray(doc, byteArray, null);
 
       PDImageXObject expectedImage = CCITTFactory.createFromFile(doc, file);
@@ -314,10 +325,14 @@ public class PDImageXObjectTest
    {
       PDDocument doc = new PDDocument();
       File file = TestResourceGenerator.copyStreamToFile(CACHE_DIR, filename, testContext.getAssets().open(inPath + filename));
-      byte[] byteArray = IOUtils.toByteArray(new FileInputStream(file));
+      InputStream is1 = new FileInputStream(file);
+      byte[] byteArray = IOUtils.toByteArray(is1);
+      is1.close();
       PDImageXObject image = PDImageXObject.createFromByteArray(doc, byteArray, null);
 
-      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, new FileInputStream(file));
+      InputStream is2 = new FileInputStream(file);
+      PDImageXObject expectedImage = JPEGFactory.createFromStream(doc, is2);
+      is2.close();
 
       Assert.assertEquals(expectedImage.getSuffix(), image.getSuffix());
       checkIdentARGB(image.getImage(), expectedImage.getImage());

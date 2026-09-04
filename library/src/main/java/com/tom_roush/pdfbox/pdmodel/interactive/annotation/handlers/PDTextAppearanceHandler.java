@@ -20,6 +20,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.tom_roush.pdfbox.cos.COSName;
@@ -34,13 +35,13 @@ import com.tom_roush.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotation;
 import com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationText;
 import com.tom_roush.pdfbox.util.Matrix;
-
 /**
  *
  * @author Tilman Hausherr
  */
 public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
 {
+
     private static final Set<String> SUPPORTED_NAMES = new HashSet<String>();
 
     static
@@ -110,7 +111,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
             }
             else if (PDAnnotationText.NAME_CROSS.equals(annotationTypeName))
             {
-                drawCross(annotation, contentStream);
+                drawZapf(annotation, contentStream, 19, 0, "a22"); // 0x2716
             }
             else if (PDAnnotationText.NAME_CIRCLE.equals(annotationTypeName))
             {
@@ -134,11 +135,11 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
             }
             else if (PDAnnotationText.NAME_STAR.equals(annotationTypeName))
             {
-                drawStar(annotation, contentStream);
+                drawZapf(annotation, contentStream, 19, 0, "a35"); // 0x2605
             }
             else if (PDAnnotationText.NAME_CHECK.equals(annotationTypeName))
             {
-                drawCheck(annotation, contentStream);
+                drawZapf(annotation, contentStream, 19, 50, "a20"); // 0x2714
             }
             else if (PDAnnotationText.NAME_RIGHT_ARROW.equals(annotationTypeName))
             {
@@ -146,7 +147,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
             }
             else if (PDAnnotationText.NAME_RIGHT_POINTER.equals(annotationTypeName))
             {
-                drawRightPointer(annotation, contentStream);
+                drawZapf(annotation, contentStream, 17, 50, "a174"); // 0x27A4
             }
             else if (PDAnnotationText.NAME_CROSS_HAIRS.equals(annotationTypeName))
             {
@@ -208,7 +209,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawNote(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 18, 20);
         contentStream.setMiterLimit(4);
@@ -233,7 +234,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawCircles(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);
 
@@ -247,6 +248,10 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
 
         float smallR = 6.36f;
         float largeR = 9.756f;
+
+        // adjustments because the bottom of the circle is flat
+        contentStream.transform(Matrix.getScaleInstance(0.95f, 0.95f));
+        contentStream.transform(Matrix.getTranslateInstance(0, 0.5f));
 
         contentStream.setMiterLimit(4);
         contentStream.setLineJoinStyle(1);
@@ -273,7 +278,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawInsert(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 17, 20);
 
@@ -287,44 +292,8 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
         contentStream.closeAndFillAndStroke();
     }
 
-    private void drawCross(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
-    {
-        PDRectangle bbox = adjustRectAndBBox(annotation, 19, 19);
-
-        // should be a square, but who knows...
-        float min = Math.min(bbox.getWidth(), bbox.getHeight());
-
-        // small = offset nearest bbox edge
-        // large = offset second nearest bbox edge
-        float small = min / 10;
-        float large = min / 5;
-
-        contentStream.setMiterLimit(4);
-        contentStream.setLineJoinStyle(1);
-        contentStream.setLineCapStyle(0);
-        contentStream.setLineWidth(0.59f); // value from Adobe
-
-        contentStream.moveTo(small, large);
-        contentStream.lineTo(large, small);
-        contentStream.lineTo(min / 2, min / 2 - small);
-        contentStream.lineTo(min - large, small);
-        contentStream.lineTo(min - small, large);
-        contentStream.lineTo(min / 2 + small, min / 2);
-        contentStream.lineTo(min - small, min - large);
-        contentStream.lineTo(min - large, min - small);
-        contentStream.lineTo(min / 2, min / 2 + small);
-        contentStream.lineTo(large, min - small);
-        contentStream.lineTo(small, min - large);
-        contentStream.lineTo(min / 2 - small, min / 2);
-        contentStream.closeAndFillAndStroke();
-
-        // alternatively, this could also be drawn with Zapf Dingbats "a21"
-        // see DrawStar()
-    }
-
     private void drawHelp(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);
 
@@ -366,7 +335,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawParagraph(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);
 
@@ -408,7 +377,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawNewParagraph(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         adjustRectAndBBox(annotation, 13, 20);
 
@@ -433,78 +402,13 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
         contentStream.fill();
     }
 
-    private void drawStar(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
-    {
-        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 19);
-
-        float min = Math.min(bbox.getWidth(), bbox.getHeight());
-
-        contentStream.setMiterLimit(4);
-        contentStream.setLineJoinStyle(1);
-        contentStream.setLineCapStyle(0);
-        contentStream.setLineWidth(0.59f); // value from Adobe
-
-        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 0.8f, 0.001f * min / 0.8f));
-
-        // we get the shape of a Zapf Dingbats star (0x2605) and use that one.
-        // Adobe uses a different font (which one?), or created the shape from scratch.
-        Path path = PDType1Font.ZAPF_DINGBATS.getPath("a35");
-        addPath(contentStream, path);
-        contentStream.fillAndStroke();
-    }
-
-    //TODO this is mostly identical to drawStar, except for scale, translation and symbol
-    // maybe use a table with all values and draw from there
-    // this could also optionally use outer circle
-    private void drawCheck(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
-    {
-        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 19);
-
-        float min = Math.min(bbox.getWidth(), bbox.getHeight());
-
-        contentStream.setMiterLimit(4);
-        contentStream.setLineJoinStyle(1);
-        contentStream.setLineCapStyle(0);
-        contentStream.setLineWidth(0.59f); // value from Adobe
-
-        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 0.8f, 0.001f * min / 0.8f));
-        contentStream.transform(Matrix.getTranslateInstance(0, 50));
-
-        // we get the shape of a Zapf Dingbats check (0x2714) and use that one.
-        // Adobe uses a different font (which one?), or created the shape from scratch.
-        Path path = PDType1Font.ZAPF_DINGBATS.getPath("a20");
-        addPath(contentStream, path);
-        contentStream.fillAndStroke();
-    }
-
-    //TODO this is mostly identical to drawStar, except for scale, translation and symbol
-    private void drawRightPointer(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
-    {
-        PDRectangle bbox = adjustRectAndBBox(annotation, 20, 17);
-
-        float min = Math.min(bbox.getWidth(), bbox.getHeight());
-
-        contentStream.setMiterLimit(4);
-        contentStream.setLineJoinStyle(1);
-        contentStream.setLineCapStyle(0);
-        contentStream.setLineWidth(0.59f); // value from Adobe
-
-        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 0.8f, 0.001f * min / 0.8f));
-        contentStream.transform(Matrix.getTranslateInstance(0, 50));
-
-        // we get the shape of a Zapf Dingbats right pointer (0x27A4) and use that one.
-        // Adobe uses a different font (which one?), or created the shape from scratch.
-        Path path = PDType1Font.ZAPF_DINGBATS.getPath("a174");
-        addPath(contentStream, path);
-        contentStream.fillAndStroke();
-    }
-
     private void drawCrossHairs(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
+        List<Number> fontMatrix = PDType1Font.SYMBOL.getFontBoxFont().getFontMatrix();
+        float xScale = (Float) fontMatrix.get(0);
+        float yScale = (Float) fontMatrix.get(3);
+
         PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);
 
         float min = Math.min(bbox.getWidth(), bbox.getHeight());
@@ -514,7 +418,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
         contentStream.setLineCapStyle(0);
         contentStream.setLineWidth(0.61f); // value from Adobe
 
-        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 1.5f, 0.001f * min / 1.5f));
+        contentStream.transform(Matrix.getScaleInstance(xScale * min * 1.3333f, yScale * min * 1.3333f));
         contentStream.transform(Matrix.getTranslateInstance(0, 50));
 
         // we get the shape of a Symbol crosshair (0x2295) and use that one.
@@ -525,7 +429,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawUpArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+                 throws IOException
     {
         adjustRectAndBBox(annotation, 17, 20);
 
@@ -545,7 +449,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawUpLeftArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+                 throws IOException
     {
         adjustRectAndBBox(annotation, 17, 17);
 
@@ -567,7 +471,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawRightArrow(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+            throws IOException
     {
         PDRectangle bbox = adjustRectAndBBox(annotation, 20, 20);
 
@@ -593,15 +497,14 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
         contentStream.restoreGraphicsState();
 
         contentStream.saveGraphicsState();
-        // rescale so that the glyph fits into circle and move it to circle center
-        // values gathered by trial and error
-        contentStream.transform(Matrix.getScaleInstance(0.001f * min / 1.3f, 0.001f * min / 1.3f));
-        contentStream.transform(Matrix.getTranslateInstance(200, 300));
-
-        // we get the shape of a Zapf Dingbats right arrow (0x2794) and use that one.
-        // Adobe uses a different font (which one?), or created the shape from scratch.
-        Path path = PDType1Font.ZAPF_DINGBATS.getPath("a160");
-        addPath(contentStream, path);
+        contentStream.moveTo(8, 17.5f);
+        contentStream.lineTo(8, 13.5f);
+        contentStream.lineTo(3, 13.5f);
+        contentStream.lineTo(3, 6.5f);
+        contentStream.lineTo(8, 6.5f);
+        contentStream.lineTo(8, 2.5f);
+        contentStream.lineTo(18, 10);
+        contentStream.closePath();
         contentStream.restoreGraphicsState();
         // surprisingly, this one not counterclockwise.
         drawCircle(contentStream, min / 2, min / 2, min / 2 - 1);
@@ -609,7 +512,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawComment(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+                 throws IOException
     {
         adjustRectAndBBox(annotation, 18, 18);
 
@@ -659,7 +562,7 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
     }
 
     private void drawKey(PDAnnotationText annotation, final PDAppearanceContentStream contentStream)
-        throws IOException
+                 throws IOException
     {
         adjustRectAndBBox(annotation, 13, 18);
 
@@ -698,6 +601,31 @@ public class PDTextAppearanceHandler extends PDAbstractAppearanceHandler
         contentStream.curveTo(3907, 4004, 4096, 4192, 4096, 4425);
         contentStream.curveTo(4096, 4658, 3907, 4847, 3674, 4847);
         contentStream.curveTo(3441, 4847, 3253, 4658, 3253, 4425);
+        contentStream.fillAndStroke();
+    }
+
+    private void drawZapf(PDAnnotationText annotation, final PDAppearanceContentStream contentStream,
+            int by, int ty, String glyphName) throws IOException
+    {
+        PDRectangle bbox = adjustRectAndBBox(annotation, 20, by);
+
+        float min = Math.min(bbox.getWidth(), bbox.getHeight());
+
+        contentStream.setMiterLimit(4);
+        contentStream.setLineJoinStyle(1);
+        contentStream.setLineCapStyle(0);
+        contentStream.setLineWidth(0.59f); // value from Adobe
+
+        List<Number> fontMatrix = PDType1Font.ZAPF_DINGBATS.getFontBoxFont().getFontMatrix();
+        float xScale = (Float) fontMatrix.get(0);
+        float yScale = (Float) fontMatrix.get(3);
+        contentStream.transform(Matrix.getScaleInstance(xScale * min / 0.8f, yScale * min / 0.8f));
+        contentStream.transform(Matrix.getTranslateInstance(0, ty));
+
+        // we get the shape of a Zapf Dingbats glyph and use that one.
+        // Adobe uses a different font (which one?), or created the shape from scratch.
+        Path path = PDType1Font.ZAPF_DINGBATS.getPath(glyphName);
+        addPath(contentStream, path);
         contentStream.fillAndStroke();
     }
 

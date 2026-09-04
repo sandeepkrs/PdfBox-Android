@@ -16,6 +16,8 @@
  */
 package com.tom_roush.pdfbox.multipdf;
 
+import android.util.Log;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.tom_roush.harmony.awt.geom.AffineTransform;
+import com.tom_roush.pdfbox.android.PDFBoxConfig;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -44,7 +47,6 @@ import com.tom_roush.pdfbox.pdmodel.PDPageTree;
 import com.tom_roush.pdfbox.pdmodel.PDResources;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
 import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
-
 /**
  * Adds an overlay to an existing PDF document.
  *
@@ -53,6 +55,7 @@ import com.tom_roush.pdfbox.pdmodel.graphics.form.PDFormXObject;
  */
 public class Overlay implements Closeable
 {
+
     /**
      * Possible location of the overlaid pages: foreground or background.
      */
@@ -62,13 +65,14 @@ public class Overlay implements Closeable
     }
 
     private LayoutPage defaultOverlayPage;
+    private final Map<Integer,LayoutPage> rotatedDefaultOverlayPagesMap = new HashMap<Integer, LayoutPage>();
     private LayoutPage firstPageOverlayPage;
     private LayoutPage lastPageOverlayPage;
     private LayoutPage oddPageOverlayPage;
     private LayoutPage evenPageOverlayPage;
 
-    private final Set<PDDocument> openDocuments = new HashSet<PDDocument>();
-    private Map<Integer, LayoutPage> specificPageOverlayPage = new HashMap<Integer, LayoutPage>();
+    private final Set<PDDocument> openDocumentsSet = new HashSet<PDDocument>();
+    private Map<Integer, LayoutPage> specificPageOverlayLayoutPageMap = new HashMap<Integer, LayoutPage>();
 
     private Position position = Position.BACKGROUND;
 
@@ -76,30 +80,31 @@ public class Overlay implements Closeable
     private PDDocument inputPDFDocument = null;
 
     private String defaultOverlayFilename = null;
-    private PDDocument defaultOverlay = null;
+    private PDDocument defaultOverlayDocument = null;
 
     private String firstPageOverlayFilename = null;
-    private PDDocument firstPageOverlay = null;
+    private PDDocument firstPageOverlayDocument = null;
 
     private String lastPageOverlayFilename = null;
-    private PDDocument lastPageOverlay = null;
+    private PDDocument lastPageOverlayDocument = null;
 
     private String allPagesOverlayFilename = null;
-    private PDDocument allPagesOverlay = null;
+    private PDDocument allPagesOverlayDocument = null;
 
     private String oddPageOverlayFilename = null;
-    private PDDocument oddPageOverlay = null;
+    private PDDocument oddPageOverlayDocument = null;
 
     private String evenPageOverlayFilename = null;
-    private PDDocument evenPageOverlay = null;
+    private PDDocument evenPageOverlayDocument = null;
 
     private int numberOfOverlayPages = 0;
     private boolean useAllOverlayPages = false;
+    private boolean adjustRotation = false;
 
     /**
      * This will add overlays to a document.
      *
-     * @param specificPageOverlayFile Optional map of overlay files of which the first page will be
+     * @param specificPageOverlayMap Optional map of overlay files of which the first page will be
      * used for specific pages of the input document. The page numbers are 1-based. The map must be
      * empty (but not null) if no specific mappings are used.
      *
@@ -107,24 +112,26 @@ public class Overlay implements Closeable
      * the input document was passed by {@link #setInputPDF(PDDocument) setInputPDF(PDDocument)}
      * then it is that object that is returned.
      *
-     * @throws IOException if something went wrong
+     * @throws IOException if something went wrong.
+     * @throws IllegalArgumentException if the input document is missing.
      */
-    public PDDocument overlay(Map<Integer, String> specificPageOverlayFile) throws IOException
+    public PDDocument overlay(Map<Integer, String> specificPageOverlayMap) throws IOException
     {
         Map<String, LayoutPage> layouts = new HashMap<String, LayoutPage>();
         String path;
         loadPDFs();
-        for (Map.Entry<Integer, String> e : specificPageOverlayFile.entrySet())
+        for (Map.Entry<Integer, String> e : specificPageOverlayMap.entrySet())
         {
             path = e.getValue();
             LayoutPage layoutPage = layouts.get(path);
             if (layoutPage == null)
             {
                 PDDocument doc = loadPDF(path);
-                layouts.put(path, getLayoutPage(doc));
-                openDocuments.add(doc);
+                layoutPage = createLayoutPageFromDocument(doc);
+                layouts.put(path, layoutPage);
+                openDocumentsSet.add(doc);
             }
-            specificPageOverlayPage.put(e.getKey(), layoutPage);
+            specificPageOverlayLayoutPageMap.put(e.getKey(), layoutPage);
         }
         processPages(inputPDFDocument);
         return inputPDFDocument;
@@ -134,7 +141,7 @@ public class Overlay implements Closeable
      * This will add overlays documents to a document. If you created the overlay documents with
      * subsetted fonts, you need to save them first so that the subsetting gets done.
      *
-     * @param specificPageOverlayDocuments Optional map of overlay documents for specific pages. The
+     * @param specificPageOverlayDocumentMap Optional map of overlay documents for specific pages. The
      * page numbers are 1-based. The map must be empty (but not null) if no specific mappings are
      * used.
      *
@@ -144,15 +151,15 @@ public class Overlay implements Closeable
      *
      * @throws IOException if something went wrong
      */
-    public PDDocument overlayDocuments(Map<Integer, PDDocument> specificPageOverlayDocuments) throws IOException
+    public PDDocument overlayDocuments(Map<Integer, PDDocument> specificPageOverlayDocumentMap) throws IOException
     {
         loadPDFs();
-        for (Map.Entry<Integer, PDDocument> e : specificPageOverlayDocuments.entrySet())
+        for (Map.Entry<Integer, PDDocument> e : specificPageOverlayDocumentMap.entrySet())
         {
             PDDocument doc = e.getValue();
             if (doc != null)
             {
-                specificPageOverlayPage.put(e.getKey(), getLayoutPage(doc));
+                specificPageOverlayLayoutPageMap.put(e.getKey(), createLayoutPageFromDocument(doc));
             }
         }
         processPages(inputPDFDocument);
@@ -167,36 +174,37 @@ public class Overlay implements Closeable
     @Override
     public void close() throws IOException
     {
-        if (defaultOverlay != null)
+        if (defaultOverlayDocument != null)
         {
-            defaultOverlay.close();
+            defaultOverlayDocument.close();
         }
-        if (firstPageOverlay != null)
+        if (firstPageOverlayDocument != null)
         {
-            firstPageOverlay.close();
+            firstPageOverlayDocument.close();
         }
-        if (lastPageOverlay != null)
+        if (lastPageOverlayDocument != null)
         {
-            lastPageOverlay.close();
+            lastPageOverlayDocument.close();
         }
-        if (allPagesOverlay != null)
+        if (allPagesOverlayDocument != null)
         {
-            allPagesOverlay.close();
+            allPagesOverlayDocument.close();
         }
-        if (oddPageOverlay != null)
+        if (oddPageOverlayDocument != null)
         {
-            oddPageOverlay.close();
+            oddPageOverlayDocument.close();
         }
-        if (evenPageOverlay != null)
+        if (evenPageOverlayDocument != null)
         {
-            evenPageOverlay.close();
+            evenPageOverlayDocument.close();
         }
-        for (PDDocument doc : openDocuments)
+        for (PDDocument doc : openDocumentsSet)
         {
             doc.close();
         }
-        openDocuments.clear();
-        specificPageOverlayPage.clear();
+        openDocumentsSet.clear();
+        specificPageOverlayLayoutPageMap.clear();
+        rotatedDefaultOverlayPagesMap.clear();
     }
 
     private void loadPDFs() throws IOException
@@ -206,61 +214,65 @@ public class Overlay implements Closeable
         {
             inputPDFDocument = loadPDF(inputFileName);
         }
+        if (inputPDFDocument == null)
+        {
+            throw new IllegalArgumentException("No input document");
+        }
         // default overlay PDF
         if (defaultOverlayFilename != null)
         {
-            defaultOverlay = loadPDF(defaultOverlayFilename);
+            defaultOverlayDocument = loadPDF(defaultOverlayFilename);
         }
-        if (defaultOverlay != null)
+        if (defaultOverlayDocument != null)
         {
-            defaultOverlayPage = getLayoutPage(defaultOverlay);
+            defaultOverlayPage = createLayoutPageFromDocument(defaultOverlayDocument);
         }
         // first page overlay PDF
         if (firstPageOverlayFilename != null)
         {
-            firstPageOverlay = loadPDF(firstPageOverlayFilename);
+            firstPageOverlayDocument = loadPDF(firstPageOverlayFilename);
         }
-        if (firstPageOverlay != null)
+        if (firstPageOverlayDocument != null)
         {
-            firstPageOverlayPage = getLayoutPage(firstPageOverlay);
+            firstPageOverlayPage = createLayoutPageFromDocument(firstPageOverlayDocument);
         }
         // last page overlay PDF
         if (lastPageOverlayFilename != null)
         {
-            lastPageOverlay = loadPDF(lastPageOverlayFilename);
+            lastPageOverlayDocument = loadPDF(lastPageOverlayFilename);
         }
-        if (lastPageOverlay != null)
+        if (lastPageOverlayDocument != null)
         {
-            lastPageOverlayPage = getLayoutPage(lastPageOverlay);
+            lastPageOverlayPage = createLayoutPageFromDocument(lastPageOverlayDocument);
         }
         // odd pages overlay PDF
         if (oddPageOverlayFilename != null)
         {
-            oddPageOverlay = loadPDF(oddPageOverlayFilename);
+            oddPageOverlayDocument = loadPDF(oddPageOverlayFilename);
         }
-        if (oddPageOverlay != null)
+        if (oddPageOverlayDocument != null)
         {
-            oddPageOverlayPage = getLayoutPage(oddPageOverlay);
+            oddPageOverlayPage = createLayoutPageFromDocument(oddPageOverlayDocument);
         }
         // even pages overlay PDF
         if (evenPageOverlayFilename != null)
         {
-            evenPageOverlay = loadPDF(evenPageOverlayFilename);
+            evenPageOverlayDocument = loadPDF(evenPageOverlayFilename);
         }
-        if (evenPageOverlay != null)
+        if (evenPageOverlayDocument != null)
         {
-            evenPageOverlayPage = getLayoutPage(evenPageOverlay);
+            evenPageOverlayPage = createLayoutPageFromDocument(evenPageOverlayDocument);
         }
         // all pages overlay PDF
         if (allPagesOverlayFilename != null)
         {
-            allPagesOverlay = loadPDF(allPagesOverlayFilename);
+            allPagesOverlayDocument = loadPDF(allPagesOverlayFilename);
         }
-        if (allPagesOverlay != null)
+        if (allPagesOverlayDocument != null)
         {
-            specificPageOverlayPage = getLayoutPages(allPagesOverlay);
+            specificPageOverlayLayoutPageMap = createPageOverlayLayoutPageMap(allPagesOverlayDocument);
             useAllOverlayPages = true;
-            numberOfOverlayPages = specificPageOverlayPage.size();
+            numberOfOverlayPages = specificPageOverlayLayoutPageMap.size();
         }
     }
 
@@ -275,14 +287,14 @@ public class Overlay implements Closeable
     private static final class LayoutPage
     {
         private final PDRectangle overlayMediaBox;
-        private final COSStream overlayContentStream;
+        private final COSStream overlayCOSStream;
         private final COSDictionary overlayResources;
-        private final short overlayRotation;
+        private int overlayRotation;
 
-        private LayoutPage(PDRectangle mediaBox, COSStream contentStream, COSDictionary resources, short rotation)
+        private LayoutPage(PDRectangle mediaBox, COSStream contentStream, COSDictionary resources, int rotation)
         {
             overlayMediaBox = mediaBox;
-            overlayContentStream = contentStream;
+            overlayCOSStream = contentStream;
             overlayResources = resources;
             overlayRotation = rotation;
         }
@@ -295,7 +307,7 @@ public class Overlay implements Closeable
      * @return
      * @throws IOException
      */
-    private LayoutPage getLayoutPage(PDDocument doc) throws IOException
+    private LayoutPage createLayoutPageFromDocument(PDDocument doc) throws IOException
     {
         return createLayoutPage(doc.getPage(0));
     }
@@ -315,14 +327,15 @@ public class Overlay implements Closeable
             resources = new PDResources();
         }
         return new LayoutPage(page.getMediaBox(), createCombinedContentStream(contents),
-            resources.getCOSObject(), (short) page.getRotation());
+                resources.getCOSObject(), page.getRotation());
     }
 
-    private Map<Integer,LayoutPage> getLayoutPages(PDDocument doc) throws IOException
+    private Map<Integer,LayoutPage> createPageOverlayLayoutPageMap(PDDocument doc) throws IOException
     {
         int i = 0;
-        Map<Integer, LayoutPage> layoutPages = new HashMap<Integer, LayoutPage>();
-        for (PDPage page : doc.getPages())
+        PDPageTree pageTree = doc.getPages();
+        Map<Integer, LayoutPage> layoutPages = new HashMap<Integer, LayoutPage>(pageTree.getCount());
+        for (PDPage page : pageTree)
         {
             layoutPages.put(i, createLayoutPage(page));
             i++;
@@ -381,6 +394,7 @@ public class Overlay implements Closeable
     private void processPages(PDDocument document) throws IOException
     {
         int pageCounter = 0;
+        PDFCloneUtility cloner = new PDFCloneUtility(document);
         PDPageTree pageTree = document.getPages();
         int numberOfPages = pageTree.getCount();
         for (PDPage page : pageTree)
@@ -440,7 +454,7 @@ public class Overlay implements Closeable
     }
 
     private void overlayPage(PDPage page, LayoutPage layoutPage, COSArray array)
-        throws IOException
+            throws IOException
     {
         PDResources resources = page.getResources();
         if (resources == null)
@@ -448,16 +462,17 @@ public class Overlay implements Closeable
             resources = new PDResources();
             page.setResources(resources);
         }
-        COSName xObjectId = createOverlayXObject(page, layoutPage);
-        array.add(createOverlayStream(page, layoutPage, xObjectId));
+        PDFormXObject overlayFormXObject = createOverlayFormXObject(layoutPage);
+        COSName formXObjectId = resources.add(overlayFormXObject, "OL");
+        array.add(createOverlayStream(page, layoutPage, formXObjectId));
     }
 
-    private LayoutPage getLayoutPage(int pageNumber, int numberOfPages)
+    private LayoutPage getLayoutPage(int pageNumber, int numberOfPages) throws IOException
     {
         LayoutPage layoutPage = null;
-        if (!useAllOverlayPages && specificPageOverlayPage.containsKey(pageNumber))
+        if (!useAllOverlayPages && specificPageOverlayLayoutPageMap.containsKey(pageNumber))
         {
-            layoutPage = specificPageOverlayPage.get(pageNumber);
+            layoutPage = specificPageOverlayLayoutPageMap.get(pageNumber);
         }
         else if ((pageNumber == 1) && (firstPageOverlayPage != null))
         {
@@ -478,18 +493,45 @@ public class Overlay implements Closeable
         else if (defaultOverlayPage != null)
         {
             layoutPage = defaultOverlayPage;
+
+            if (adjustRotation)
+            {
+                // PDFBOX-6049: consider the rotation of the document page
+                // Note that this segment is only the second best solution to the problem. The best
+                // would be to make appropriate transforms in calculateAffineTransform()
+                PDPage page = inputPDFDocument.getPage(pageNumber - 1);
+                int rotation = page.getRotation();
+                if (rotation != 0)
+                {
+                    return createAdjustedLayoutPage(rotation);
+                }
+            }
         }
         else if (useAllOverlayPages)
         {
             int usePageNum = (pageNumber -1 ) % numberOfOverlayPages;
-            layoutPage = specificPageOverlayPage.get(usePageNum);
+            layoutPage = specificPageOverlayLayoutPageMap.get(usePageNum);
         }
         return layoutPage;
     }
 
-    private COSName createOverlayXObject(PDPage page, LayoutPage layoutPage)
+    private LayoutPage createAdjustedLayoutPage(int rotation) throws IOException
     {
-        PDFormXObject xobjForm = new PDFormXObject(layoutPage.overlayContentStream);
+        LayoutPage rotatedLayoutPage = rotatedDefaultOverlayPagesMap.get(rotation);
+        if (rotatedLayoutPage == null)
+        {
+            // createLayoutPage must be called because we can't reuse the COSStream
+            rotatedLayoutPage = createLayoutPage(defaultOverlayDocument.getPage(0));
+            int newRotation = (rotatedLayoutPage.overlayRotation - rotation + 360) % 360;
+            rotatedLayoutPage.overlayRotation = newRotation;
+            rotatedDefaultOverlayPagesMap.put(rotation, rotatedLayoutPage);
+        }
+        return rotatedLayoutPage;
+    }
+
+    private PDFormXObject createOverlayFormXObject(LayoutPage layoutPage) throws IOException
+    {
+        PDFormXObject xobjForm = new PDFormXObject(layoutPage.overlayCOSStream);
         xobjForm.setResources(new PDResources(layoutPage.overlayResources));
         xobjForm.setFormType(1);
         xobjForm.setBBox(layoutPage.overlayMediaBox.createRetranslatedRectangle());
@@ -498,26 +540,25 @@ public class Overlay implements Closeable
         {
             case 90:
                 at.translate(0, layoutPage.overlayMediaBox.getWidth());
-                at.rotate(Math.toRadians(-90));
+                at.rotate(-Math.PI / 2.0);
                 break;
             case 180:
                 at.translate(layoutPage.overlayMediaBox.getWidth(), layoutPage.overlayMediaBox.getHeight());
-                at.rotate(Math.toRadians(-180));
+                at.rotate(-Math.PI);
                 break;
             case 270:
                 at.translate(layoutPage.overlayMediaBox.getHeight(), 0);
-                at.rotate(Math.toRadians(-270));
+                at.rotate(-Math.PI * 1.5);
                 break;
             default:
                 break;
         }
         xobjForm.setMatrix(at);
-        PDResources resources = page.getResources();
-        return resources.add(xobjForm, "OL");
+        return xobjForm;
     }
 
     private COSStream createOverlayStream(PDPage page, LayoutPage layoutPage, COSName xObjectId)
-        throws IOException
+            throws IOException
     {
         // create a new content stream that executes the XObject content
         StringBuilder overlayStream = new StringBuilder();
@@ -536,7 +577,7 @@ public class Overlay implements Closeable
         for (double v : flatmatrix)
         {
             overlayStream.append(float2String((float) v));
-            overlayStream.append(" ");
+            overlayStream.append(' ');
         }
         overlayStream.append(" cm\n");
 
@@ -552,8 +593,9 @@ public class Overlay implements Closeable
 
     /**
      * Calculate the transform to be used when positioning the overlay. The default implementation
-     * centers on the destination. Override this method to do your own, e.g. move to a corner, or
-     * rotate.
+     * centers on the destination and assumes (0,0) to be the lower left (This will be changed in
+     * 4.0, see PDFBOX-6048 why). Override this method to do your own, e.g. move to a corner,
+     * rotate, or zoom.
      *
      * @param page The page that will get the overlay.
      * @param overlayMediaBox The overlay media box.
@@ -565,13 +607,17 @@ public class Overlay implements Closeable
         PDRectangle pageMediaBox = page.getMediaBox();
         float hShift = (pageMediaBox.getWidth() - overlayMediaBox.getWidth()) / 2.0f;
         float vShift = (pageMediaBox.getHeight() - overlayMediaBox.getHeight()) / 2.0f;
+        if (PDFBoxConfig.isDebugEnabled())
+        {
+            Log.d("PdfBox-Android", "Overlay position: (" + hShift + "," + vShift + ")");
+        }
         at.translate(hShift, vShift);
         return at;
     }
 
     private String float2String(float floatValue)
     {
-        // use a BigDecimal as intermediate state to avoid 
+        // use a BigDecimal as intermediate state to avoid
         // a floating point string representation of the float value
         BigDecimal value = new BigDecimal(String.valueOf(floatValue));
         String stringValue = value.toPlainString();
@@ -590,7 +636,7 @@ public class Overlay implements Closeable
     {
         COSStream stream = inputPDFDocument.getDocument().createCOSStream();
         OutputStream out = stream.createOutputStream(
-            content.length() > 20 ? COSName.FLATE_DECODE : null);
+                content.length() > 20 ? COSName.FLATE_DECODE : null);
         out.write(content.getBytes("ISO-8859-1"));
         out.close();
         return stream;
@@ -657,7 +703,7 @@ public class Overlay implements Closeable
      */
     public void setDefaultOverlayPDF(PDDocument defaultOverlayPDF)
     {
-        defaultOverlay = defaultOverlayPDF;
+        defaultOverlayDocument = defaultOverlayPDF;
     }
 
     /**
@@ -688,7 +734,7 @@ public class Overlay implements Closeable
      */
     public void setFirstPageOverlayPDF(PDDocument firstPageOverlayPDF)
     {
-        firstPageOverlay = firstPageOverlayPDF;
+        firstPageOverlayDocument = firstPageOverlayPDF;
     }
 
     /**
@@ -709,7 +755,7 @@ public class Overlay implements Closeable
      */
     public void setLastPageOverlayPDF(PDDocument lastPageOverlayPDF)
     {
-        lastPageOverlay = lastPageOverlayPDF;
+        lastPageOverlayDocument = lastPageOverlayPDF;
     }
 
     /**
@@ -731,7 +777,7 @@ public class Overlay implements Closeable
      */
     public void setAllPagesOverlayPDF(PDDocument allPagesOverlayPDF)
     {
-        allPagesOverlay = allPagesOverlayPDF;
+        allPagesOverlayDocument = allPagesOverlayPDF;
     }
 
     /**
@@ -752,7 +798,7 @@ public class Overlay implements Closeable
      */
     public void setOddPageOverlayPDF(PDDocument oddPageOverlayPDF)
     {
-        oddPageOverlay = oddPageOverlayPDF;
+        oddPageOverlayDocument = oddPageOverlayPDF;
     }
 
     /**
@@ -773,6 +819,24 @@ public class Overlay implements Closeable
      */
     public void setEvenPageOverlayPDF(PDDocument evenPageOverlayPDF)
     {
-        evenPageOverlay = evenPageOverlayPDF;
+        evenPageOverlayDocument = evenPageOverlayPDF;
+    }
+
+    /**
+     * This sets whether the overlay is to be rotated according to the rotation of the pages of the
+     * source document. This may look weird if the content of the document is also rotated. So it's
+     * really a users decision to activate this option if the overlay appears rotated in some pages
+     * of the result document and this isn't wanted.
+     * <p>
+     * This setting will only apply to usage of the default overlay, because it is assumed that when
+     * using specific overlays for specific pages, it is known in advance what kind of input there
+     * is.
+     *
+     * @param adjustRotation if true, the overlay will always look the same when the result file is
+     * displayed on the screen. If false (default) then it will be rotated if the page is rotated.
+     */
+    public void setAdjustRotation(boolean adjustRotation)
+    {
+        this.adjustRotation = adjustRotation;
     }
 }

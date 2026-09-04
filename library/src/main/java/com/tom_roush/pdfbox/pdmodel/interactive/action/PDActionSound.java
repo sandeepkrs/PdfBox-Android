@@ -23,7 +23,6 @@ import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.cos.COSStream;
-
 /**
  * This represents a Sound action that can be executed in a PDF document
  *
@@ -155,7 +154,7 @@ public class PDActionSound extends PDAction
     }
 
     /**
-     * Gets the synchronous flag. It specifyes whether to play the sound synchronously or
+     * Gets the synchronous flag. It specifies whether to play the sound synchronously or
      * asynchronously. When true, the reader allows no further user interaction other than canceling
      * the sound until the sound has been completely played.
      *

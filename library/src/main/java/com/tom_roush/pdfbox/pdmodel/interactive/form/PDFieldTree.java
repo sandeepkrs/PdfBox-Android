@@ -28,12 +28,12 @@ import java.util.Queue;
 import java.util.Set;
 
 import com.tom_roush.pdfbox.cos.COSDictionary;
-
 /**
  * The field tree.
  */
 public class PDFieldTree implements Iterable<PDField>
 {
+
     private final PDAcroForm acroForm;
 
     /**
@@ -69,7 +69,7 @@ public class PDFieldTree implements Iterable<PDField>
         // PDFBOX-5044: to prevent recursion
         // must be COSDictionary and not PDField, because PDField is newly created each time
         private final Set<COSDictionary> set =
-            Collections.newSetFromMap(new IdentityHashMap<COSDictionary, Boolean>());
+                Collections.newSetFromMap(new IdentityHashMap<COSDictionary, Boolean>());
 
         private FieldIterator(PDAcroForm form)
         {
@@ -115,7 +115,7 @@ public class PDFieldTree implements Iterable<PDField>
                     if (set.contains(kid.getCOSObject()))
                     {
                         Log.e("PdfBox-Android", "Child of field '" + node.getFullyQualifiedName() +
-                            "' already exists elsewhere, ignored to avoid recursion");
+                                "' already exists elsewhere, ignored to avoid recursion");
                     }
                     else
                     {

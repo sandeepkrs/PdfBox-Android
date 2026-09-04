@@ -19,7 +19,6 @@ package com.tom_roush.pdfbox.pdmodel.fdf;
 import android.util.Log;
 
 import java.io.IOException;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
@@ -28,9 +27,7 @@ import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSDictionary;
 import com.tom_roush.pdfbox.cos.COSName;
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle;
-
 import org.w3c.dom.Element;
-
 /**
  * This represents a FreeText FDF annotation.
  *
@@ -38,6 +35,7 @@ import org.w3c.dom.Element;
  */
 public class FDFAnnotationFreeText extends FDFAnnotation
 {
+
     /**
      * COS Model value for SubType entry.
      */
@@ -104,16 +102,8 @@ public class FDFAnnotationFreeText extends FDFAnnotation
         String fringe = element.getAttribute("fringe");
         if (fringe != null && !fringe.isEmpty())
         {
-            String[] fringeValues = fringe.split(",");
-            if (fringeValues.length != 4)
-            {
-                throw new IOException("Error: wrong amount of numbers in attribute 'fringe'");
-            }
-            PDRectangle rect = new PDRectangle();
-            rect.setLowerLeftX(Float.parseFloat(fringeValues[0]));
-            rect.setLowerLeftY(Float.parseFloat(fringeValues[1]));
-            rect.setUpperRightX(Float.parseFloat(fringeValues[2]));
-            rect.setUpperRightY(Float.parseFloat(fringeValues[3]));
+            PDRectangle rect = createRectangleFromAttributes(
+                    fringe, "Error: wrong amount of numbers in attribute 'fringe'");
             setFringe(rect);
         }
     }
@@ -124,11 +114,7 @@ public class FDFAnnotationFreeText extends FDFAnnotation
         if (callout != null && !callout.isEmpty())
         {
             String[] calloutValues = callout.split(",");
-            float[] values = new float[calloutValues.length];
-            for (int i = 0; i < calloutValues.length; i++)
-            {
-                values[i] = Float.parseFloat(calloutValues[i]);
-            }
+            float[] values = parseFloats(calloutValues);
             setCallout(values);
         }
     }

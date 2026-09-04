@@ -38,7 +38,6 @@ import com.tom_roush.pdfbox.pdmodel.PDResources;
 import com.tom_roush.pdfbox.pdmodel.common.COSArrayList;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray;
-
 /**
  * An inline image object which uses a special syntax to express the data for a
  * small image directly within the content stream.
@@ -67,7 +66,7 @@ public final class PDInlineImage implements PDImage
      * @throws IOException if the stream cannot be decoded
      */
     public PDInlineImage(COSDictionary parameters, byte[] data, PDResources resources)
-        throws IOException
+            throws IOException
     {
         this.parameters = parameters;
         this.resources = resources;
@@ -83,15 +82,17 @@ public final class PDInlineImage implements PDImage
         {
             ByteArrayInputStream in = new ByteArrayInputStream(data);
             ByteArrayOutputStream out = new ByteArrayOutputStream(data.length);
+            byte[] ba = null;
             for (int i = 0; i < filters.size(); i++)
             {
                 // TODO handling of abbreviated names belongs here, rather than in other classes
                 out.reset();
                 Filter filter = FilterFactory.INSTANCE.getFilter(filters.get(i));
                 decodeResult = filter.decode(in, out, parameters, i);
-                in = new ByteArrayInputStream(out.toByteArray());
+                ba = out.toByteArray();
+                in = new ByteArrayInputStream(ba);
             }
-            this.decodedData = out.toByteArray();
+            this.decodedData = ba;
         }
 
         // repair parameters
@@ -279,7 +280,12 @@ public final class PDInlineImage implements PDImage
     @Override
     public COSArray getDecode()
     {
-        return (COSArray) parameters.getDictionaryObject(COSName.D, COSName.DECODE);
+        COSBase decode = parameters.getDictionaryObject(COSName.D, COSName.DECODE);
+        if (decode instanceof COSArray)
+        {
+            return (COSArray) decode;
+        }
+        return null;
     }
 
     @Override
@@ -356,6 +362,8 @@ public final class PDInlineImage implements PDImage
     {
         return SampledImageReader.getRGBImage(this, region, subsampling, null);
     }
+
+
 
     @Override
     public Bitmap getStencilImage(Paint paint) throws IOException

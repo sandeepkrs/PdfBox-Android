@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.tom_roush.fontbox.afm.FontMetrics;
 import com.tom_roush.fontbox.cmap.CMap;
+import com.tom_roush.pdfbox.android.PDFBoxConfig;
 import com.tom_roush.pdfbox.cos.COSArray;
 import com.tom_roush.pdfbox.cos.COSBase;
 import com.tom_roush.pdfbox.cos.COSDictionary;
@@ -42,7 +43,6 @@ import com.tom_roush.pdfbox.pdmodel.common.COSObjectable;
 import com.tom_roush.pdfbox.pdmodel.font.encoding.GlyphList;
 import com.tom_roush.pdfbox.util.Matrix;
 import com.tom_roush.pdfbox.util.Vector;
-
 /**
  * This is the base class for all PDF fonts.
  *
@@ -147,18 +147,23 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             cmap = readCMap(toUnicode);
             if (cmap != null && !cmap.hasUnicodeMappings())
             {
-                Log.w("PdfBox-Android", "Invalid ToUnicode CMap in font " + getName());
+                String name = getName();
+                Log.w("PdfBox-Android", "Invalid ToUnicode CMap in font " + name);
                 String cmapName = cmap.getName() != null ? cmap.getName() : "";
                 String ordering = cmap.getOrdering() != null ? cmap.getOrdering() : "";
                 COSBase encoding = dict.getDictionaryObject(COSName.ENCODING);
                 if (cmapName.contains("Identity") //
-                    || ordering.contains("Identity") //
-                    || COSName.IDENTITY_H.equals(encoding) //
-                    || COSName.IDENTITY_V.equals(encoding))
+                        || ordering.contains("Identity") //
+                        || COSName.IDENTITY_H.equals(encoding) //
+                        || COSName.IDENTITY_V.equals(encoding))
                 {
-                    // assume that if encoding is identity, then the reverse is also true
-                    cmap = CMapManager.getPredefinedCMap(COSName.IDENTITY_H.getName());
-                    Log.w("PdfBox-Android", "Using predefined identity CMap instead");
+                    COSDictionary encodingDict = dict.getCOSDictionary(COSName.ENCODING);
+                    if (encodingDict == null || !encodingDict.containsKey(COSName.DIFFERENCES))
+                    {
+                        // assume that if encoding is identity, then the reverse is also true
+                        cmap = CMapManager.getPredefinedCMap(COSName.IDENTITY_H.getName());
+                        Log.w("PdfBox-Android", "Using predefined identity CMap instead");
+                    }
                 }
             }
         }
@@ -323,7 +328,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
      */
     public final byte[] encode(String text) throws IOException
     {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream out = new ByteArrayOutputStream(Math.max(32, text.length()));
         int offset = 0;
         while (offset < text.length())
         {
@@ -458,8 +463,8 @@ public abstract class PDFont implements COSObjectable, PDFontLike
         {
             if (toUnicodeCMap.getName() != null &&
                 toUnicodeCMap.getName().startsWith("Identity-") &&
-                (dict.getDictionaryObject(COSName.TO_UNICODE) instanceof COSName ||
-                    !toUnicodeCMap.hasUnicodeMappings()))
+                    (dict.getDictionaryObject(COSName.TO_UNICODE) instanceof COSName ||
+                     !toUnicodeCMap.hasUnicodeMappings()))
             {
                 // handle the undocumented case of using Identity-H/V as a ToUnicode CMap, this
                 // isn't actually valid as the Identity-x CMaps are code->CID maps, not
@@ -527,7 +532,7 @@ public abstract class PDFont implements COSObjectable, PDFontLike
     }
 
     /**
-     * Determines the width of the space character.
+     * Determines the width of the space character. This is very important for text extraction.
      *
      * @return the width of the space character
      */
@@ -547,7 +552,25 @@ public abstract class PDFont implements COSObjectable, PDFontLike
                 }
                 else
                 {
-                    fontWidthOfSpace = getWidth(32);
+                    try
+                    {
+                        // PDFBOX-5920: try with encoding, which gets the correct code
+                        fontWidthOfSpace = getStringWidth(" ");
+                    }
+                    catch (UnsupportedOperationException ex)
+                    {
+                        // Happens if encoding isn't implemented
+                        Log.d("PdfBox-Android", ex.getMessage(), ex);
+                    }
+                    catch (IllegalArgumentException ex)
+                    {
+                        // Happens if space is not available in the font
+                        Log.d("PdfBox-Android", ex.getMessage(), ex);
+                    }
+                    if (fontWidthOfSpace <= 0)
+                    {
+                        fontWidthOfSpace = getWidth(32);
+                    }
                 }
 
                 // try to get it from the font itself
@@ -564,8 +587,13 @@ public abstract class PDFont implements COSObjectable, PDFontLike
             }
             catch (Exception e)
             {
-                Log.e("PdfBox-Android", "Can't determine the width of the space character, assuming 250", e);
+                Log.e("PdfBox-Android", "Can't determine the width of the space character for font " +
+                        getName() + ", assuming 250", e);
                 fontWidthOfSpace = 250f;
+            }
+            if (PDFBoxConfig.isDebugEnabled())
+            {
+                Log.d("PdfBox-Android", "Space width for font " + getName() + " is " + fontWidthOfSpace);
             }
         }
         return fontWidthOfSpace;
