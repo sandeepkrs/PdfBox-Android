@@ -640,15 +640,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
         final int height = Math.max(image.getHeight(), mask.getHeight());
 
         // scale mask to fit image, or image to fit mask, whichever is larger.
-        // also make sure that mask is 8 bit gray and image is ARGB as this
-        // is what needs to be returned.
         if (mask.getWidth() < width || mask.getHeight() < height)
         {
             mask = scaleImage(mask, width, height, interpolateMask);
-        }
-        if (mask.getConfig() != Bitmap.Config.ALPHA_8 || !image.isMutable())
-        {
-            mask = mask.copy(Bitmap.Config.ALPHA_8, true);
         }
 
         if (image.getWidth() < width || image.getHeight() < height)
@@ -659,27 +653,11 @@ public final class PDImageXObject extends PDXObject implements PDImage
         {
             image = image.copy(Bitmap.Config.ARGB_8888, true);
         }
+        final boolean isMaskAlpha8 = mask.getConfig() == Bitmap.Config.ALPHA_8;
         int[] pixels = new int[width];
         int[] maskPixels = new int[width];
 
-        // compose alpha into ARGB image, either:
-        // - very fast by direct bit combination if not a soft mask and a 8 bit alpha source.
-        // - fast by letting the sample model do a bulk band operation if no matte is set.
-        // - slow and complex by matte calculations on individual pixel components.
-        if (!isSoft && image.getByteCount() == mask.getByteCount())
-        {
-            for (int y = 0; y < height; y++)
-            {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int i = 0, c = width; c > 0; i++, c--)
-                {
-                    pixels[i] = pixels[i] & 0xffffff | ~maskPixels[i] & 0xff000000;
-                }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
-            }
-        }
-        else if (matte == null)
+        if (matte == null)
         {
             for (int y = 0; y < height; y++)
             {
@@ -687,11 +665,13 @@ public final class PDImageXObject extends PDXObject implements PDImage
                 mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
                 for (int x = 0; x < width; x++)
                 {
+                    int maskVal = maskPixels[x];
+                    int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (!isSoft)
                     {
-                        maskPixels[x] ^= -1;
+                        a = 255 - a;
                     }
-                    pixels[x] = pixels[x] & 0xffffff | maskPixels[x] & 0xff000000;
+                    pixels[x] = (pixels[x] & 0x00FFFFFF) | (a << 24);
                 }
                 image.setPixels(pixels, 0, width, 0, y, width, 1);
             }
@@ -722,10 +702,11 @@ public final class PDImageXObject extends PDXObject implements PDImage
                 mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
                 for (int x = 0; x < width; x++)
                 {
-                    int a = Color.alpha(maskPixels[x]);
+                    int maskVal = maskPixels[x];
+                    int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (a == 0)
                     {
-                        pixels[x] = pixels[x] & 0xffffff;
+                        pixels[x] = pixels[x] & 0x00FFFFFF;
                         continue;
                     }
                     int rgb = pixels[x];

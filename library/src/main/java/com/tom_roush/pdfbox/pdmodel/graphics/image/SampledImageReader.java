@@ -36,6 +36,7 @@ import com.tom_roush.pdfbox.cos.COSNumber;
 import com.tom_roush.pdfbox.filter.DecodeOptions;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import com.tom_roush.pdfbox.pdmodel.graphics.color.PDIndexed;
 
 /**
  * Reads a sampled image from a PDF file.
@@ -284,7 +285,7 @@ final class SampledImageReader
             // and then simply shift bits out to the left, detecting set bits via sign
             final boolean nosubsampling = currentSubsampling == 1;
             final int stride = (inputWidth + 7) / 8;
-            final int invert = /*colorSpace instanceof PDIndexed TODO: PdfBox-Android ||*/ decode[0] < decode[1] ? 0 : -1;
+            final int invert = (colorSpace instanceof PDIndexed || decode[0] < decode[1]) ? 0 : -1;
             final int endX = startx + scanWidth;
             final byte[] buff = new byte[stride];
             for (int y = 0; y < starty + scanHeight; y++)
@@ -367,15 +368,16 @@ final class SampledImageReader
                 scanHeight = clipped.height();
             }
             final int numComponents = pdImage.getColorSpace().getNumberOfComponents();
+            final PDColorSpace colorSpace = pdImage.getColorSpace();
             if (startx == 0 && starty == 0 && scanWidth == width && scanHeight == height)
             {
                 // we just need to copy all sample data, then convert to RGB image.
-                return createBitmapFromRawStream(input, inputWidth, numComponents, currentSubsampling);
+                return createBitmapFromRawStream(input, inputWidth, numComponents, currentSubsampling, colorSpace);
             }
             else
             {
                 Bitmap origin = createBitmapFromRawStream(input, inputWidth, numComponents,
-                    currentSubsampling);
+                    currentSubsampling, colorSpace);
                 if (currentSubsampling > 1)
                 {
                     startx /= currentSubsampling;
@@ -391,17 +393,38 @@ final class SampledImageReader
     }
 
     private static Bitmap createBitmapFromRawStream(InputStream input, int originalWidth, int numComponents,
-        int sampleSize) throws IOException
+        int sampleSize, PDColorSpace colorSpace) throws IOException
     {
         byte[] bytes = IOUtils.toByteArray(input);
         int originalHeight = bytes.length / numComponents / originalWidth;
+
+        if (colorSpace instanceof PDIndexed)
+        {
+            PDIndexed indexed = (PDIndexed) colorSpace;
+            int[] pixels = new int[originalWidth * originalHeight];
+            int len = Math.min(bytes.length, pixels.length);
+            for (int i = 0; i < len; i++)
+            {
+                pixels[i] = indexed.getRgbColor(bytes[i] & 0xFF);
+            }
+            Bitmap bitmap = Bitmap.createBitmap(originalWidth, originalHeight, Bitmap.Config.ARGB_8888);
+            bitmap.setPixels(pixels, 0, originalWidth, 0, 0, originalWidth, originalHeight);
+            if (sampleSize > 1)
+            {
+                int width = originalWidth / sampleSize;
+                int height = originalHeight / sampleSize;
+                bitmap = Bitmap.createScaledBitmap(bitmap, width, height, true);
+            }
+            return bitmap;
+        }
+
         if (numComponents == 1)
         {
             byte[] result = new byte[originalWidth * originalHeight * 4];
             for (int i = originalWidth * originalHeight - 1; i >= 0; i--)
             {
                 int to = i * 4;
-                result[to + 3] = bytes[i];
+                result[to + 3] = (byte) 255;
                 result[to] = bytes[i];
                 result[to + 1] = bytes[i];
                 result[to + 2] = bytes[i];
