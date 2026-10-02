@@ -17,7 +17,6 @@
 package com.tom_roush.pdfbox.pdmodel.graphics.color;
 
 import android.graphics.Bitmap;
-import android.graphics.Color;
 
 import java.io.IOException;
 
@@ -122,7 +121,7 @@ public final class PDIndexed extends PDSpecialColorSpace
             r = Math.max(0, Math.min(255, r));
             g = Math.max(0, Math.min(255, g));
             b = Math.max(0, Math.min(255, b));
-            rgbColorTable[i] = Color.argb(255, r, g, b);
+            rgbColorTable[i] = (0xFF << 24) | (r << 16) | (g << 8) | b;
         }
     }
 
@@ -139,9 +138,9 @@ public final class PDIndexed extends PDSpecialColorSpace
 
         int argb = rgbColorTable[index];
         return new float[] {
-            Color.red(argb) / 255f,
-            Color.green(argb) / 255f,
-            Color.blue(argb) / 255f
+            ((argb >> 16) & 0xFF) / 255f,
+            ((argb >> 8) & 0xFF) / 255f,
+            (argb & 0xFF) / 255f
         };
     }
 
@@ -155,7 +154,7 @@ public final class PDIndexed extends PDSpecialColorSpace
     {
         if (rgbColorTable == null || rgbColorTable.length == 0)
         {
-            return Color.BLACK;
+            return 0xFF000000;
         }
         index = Math.max(0, Math.min(index, actualMaxIndex));
         return rgbColorTable[index];
