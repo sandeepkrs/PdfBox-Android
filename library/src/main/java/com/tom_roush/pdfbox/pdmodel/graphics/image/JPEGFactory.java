@@ -21,6 +21,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,6 +36,7 @@ import com.tom_roush.pdfbox.filter.FilterFactory;
 import com.tom_roush.pdfbox.io.IOUtils;
 import com.tom_roush.pdfbox.pdmodel.PDDocument;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDColorSpace;
+import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceCMYK;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceGray;
 import com.tom_roush.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
 
@@ -81,7 +83,19 @@ public final class JPEGFactory
 
         Dimensions meta = retrieveDimensions(byteStream);
 
-        PDColorSpace colorSpace = PDDeviceRGB.INSTANCE; // All images are RGB after being loaded by Bitmaps
+        PDColorSpace colorSpace;
+        if (meta.numComponents == 1)
+        {
+            colorSpace = PDDeviceGray.INSTANCE;
+        }
+        else if (meta.numComponents == 4)
+        {
+            colorSpace = PDDeviceCMYK.INSTANCE;
+        }
+        else
+        {
+            colorSpace = PDDeviceRGB.INSTANCE;
+        }
 
         // create PDImageXObject from stream
         PDImageXObject pdImage = new PDImageXObject(document, byteStream,
@@ -107,8 +121,96 @@ public final class JPEGFactory
         Dimensions meta = new Dimensions();
         meta.width = options.outWidth;
         meta.height = options.outHeight;
+        parseJpegMetadata(stream, meta);
 
         return meta;
+    }
+
+    private static void parseJpegMetadata(ByteArrayInputStream stream, Dimensions meta)
+    {
+        stream.mark(0);
+        meta.numComponents = 3;
+        try
+        {
+            if (stream.read() != 0xFF || stream.read() != 0xD8)
+            {
+                return;
+            }
+            int b;
+            while ((b = stream.read()) != -1)
+            {
+                if (b == 0xFF)
+                {
+                    while ((b = stream.read()) == 0xFF)
+                    {
+                        // skip padding bytes
+                    }
+                    if (b == -1)
+                    {
+                        break;
+                    }
+
+                    // Check SOF markers
+                    if ((b >= 0xC0 && b <= 0xC3) || (b >= 0xC5 && b <= 0xC7) || (b >= 0xC9 && b <= 0xCB))
+                    {
+                        // SOF marker: skip length (2 bytes)
+                        stream.skip(2);
+                        int precision = stream.read();
+                        int h1 = stream.read();
+                        int h2 = stream.read();
+                        int w1 = stream.read();
+                        int w2 = stream.read();
+                        int components = stream.read();
+                        if (components > 0)
+                        {
+                            meta.numComponents = components;
+                        }
+                        if (meta.height <= 0 && h1 != -1 && h2 != -1)
+                        {
+                            meta.height = (h1 << 8) | h2;
+                        }
+                        if (meta.width <= 0 && w1 != -1 && w2 != -1)
+                        {
+                            meta.width = (w1 << 8) | w2;
+                        }
+                        break;
+                    }
+                    else if (b == 0xDA || b == 0xD9)
+                    {
+                        // SOS (Start of Scan) or EOI
+                        break;
+                    }
+                    else if (b >= 0xD0 && b <= 0xD7)
+                    {
+                        // RST markers have no payload
+                        continue;
+                    }
+                    else
+                    {
+                        // Other markers: read 2-byte length and skip payload
+                        int lenHigh = stream.read();
+                        int lenLow = stream.read();
+                        if (lenHigh == -1 || lenLow == -1)
+                        {
+                            break;
+                        }
+                        int length = (lenHigh << 8) | lenLow;
+                        if (length > 2)
+                        {
+                            stream.skip(length - 2);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Log.w("PdfBox-Android", "Could not parse JPEG components: " + e.getMessage());
+        }
+        finally
+        {
+            stream.reset();
+        }
     }
 
     /**
@@ -232,20 +334,28 @@ public final class JPEGFactory
             return null;
         }
 
-        int[] pixels = new int[image.getHeight() * image.getWidth()];
-        image.getPixels(pixels, 0, image.getWidth(), 0, 0, image.getWidth(), image.getHeight());
+        final int width = image.getWidth();
+        final int height = image.getHeight();
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] pixels = new int[bufferSize];
 
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        int bpc;
-        bpc = 8;
-        for (int pixel : pixels)
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(width * height);
+        int bpc = 8;
+        for (int y = 0; y < height; y += chunkRows)
         {
-            bos.write(Color.alpha(pixel));
+            int currentChunkRows = Math.min(chunkRows, height - y);
+            int currentPixelCount = currentChunkRows * width;
+            image.getPixels(pixels, 0, width, 0, y, width, currentChunkRows);
+            for (int i = 0; i < currentPixelCount; i++)
+            {
+                bos.write((pixels[i] >> 24) & 0xFF);
+            }
         }
-        //        }
 
         return prepareImageXObject(document, bos.toByteArray(),
-            image.getWidth(), image.getHeight(), bpc, PDDeviceGray.INSTANCE);
+            width, height, bpc, PDDeviceGray.INSTANCE);
     }
 
     /**

@@ -628,10 +628,10 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * @param matte an optional RGB matte if a soft mask.
      * @return an ARGB image (can be the altered original image)
      */
-    private Bitmap applyMask(Bitmap image, Bitmap mask, boolean interpolateMask,
+    Bitmap applyMask(Bitmap image, Bitmap mask, boolean interpolateMask,
         boolean isSoft, float[] matte)
     {
-        if (mask == null)
+        if (image == null || mask == null)
         {
             return image;
         }
@@ -640,15 +640,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
         final int height = Math.max(image.getHeight(), mask.getHeight());
 
         // scale mask to fit image, or image to fit mask, whichever is larger.
-        // also make sure that mask is 8 bit gray and image is ARGB as this
-        // is what needs to be returned.
         if (mask.getWidth() < width || mask.getHeight() < height)
         {
             mask = scaleImage(mask, width, height, interpolateMask);
-        }
-        if (mask.getConfig() != Bitmap.Config.ALPHA_8 || !image.isMutable())
-        {
-            mask = mask.copy(Bitmap.Config.ALPHA_8, true);
         }
 
         if (image.getWidth() < width || image.getHeight() < height)
@@ -659,41 +653,32 @@ public final class PDImageXObject extends PDXObject implements PDImage
         {
             image = image.copy(Bitmap.Config.ARGB_8888, true);
         }
-        int[] pixels = new int[width];
-        int[] maskPixels = new int[width];
+        final boolean isMaskAlpha8 = mask.getConfig() == Bitmap.Config.ALPHA_8;
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] pixels = new int[bufferSize];
+        int[] maskPixels = new int[bufferSize];
 
-        // compose alpha into ARGB image, either:
-        // - very fast by direct bit combination if not a soft mask and a 8 bit alpha source.
-        // - fast by letting the sample model do a bulk band operation if no matte is set.
-        // - slow and complex by matte calculations on individual pixel components.
-        if (!isSoft && image.getByteCount() == mask.getByteCount())
+        if (matte == null)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < height; y += chunkRows)
             {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int i = 0, c = width; c > 0; i++, c--)
+                int currentChunkRows = Math.min(chunkRows, height - y);
+                int currentPixelCount = currentChunkRows * width;
+                image.getPixels(pixels, 0, width, 0, y, width, currentChunkRows);
+                mask.getPixels(maskPixels, 0, width, 0, y, width, currentChunkRows);
+                for (int i = 0; i < currentPixelCount; i++)
                 {
-                    pixels[i] = pixels[i] & 0xffffff | ~maskPixels[i] & 0xff000000;
-                }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
-            }
-        }
-        else if (matte == null)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int x = 0; x < width; x++)
-                {
+                    int maskVal = maskPixels[i];
+                    int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (!isSoft)
                     {
-                        maskPixels[x] ^= -1;
+                        a = 255 - a;
                     }
-                    pixels[x] = pixels[x] & 0xffffff | maskPixels[x] & 0xff000000;
+                    pixels[i] = (pixels[i] & 0x00FFFFFF) | (a << 24);
                 }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
+                image.setPixels(pixels, 0, width, 0, y, width, currentChunkRows);
             }
         }
         else
@@ -716,28 +701,31 @@ public final class PDImageXObject extends PDXObject implements PDImage
             final int m0h = m0 / 255 + (1 << fraction - 1);
             final int m1h = m1 / 255 + (1 << fraction - 1);
             final int m2h = m2 / 255 + (1 << fraction - 1);
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < height; y += chunkRows)
             {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int x = 0; x < width; x++)
+                int currentChunkRows = Math.min(chunkRows, height - y);
+                int currentPixelCount = currentChunkRows * width;
+                image.getPixels(pixels, 0, width, 0, y, width, currentChunkRows);
+                mask.getPixels(maskPixels, 0, width, 0, y, width, currentChunkRows);
+                for (int i = 0; i < currentPixelCount; i++)
                 {
-                    int a = Color.alpha(maskPixels[x]);
+                    int maskVal = maskPixels[i];
+                    int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (a == 0)
                     {
-                        pixels[x] = pixels[x] & 0xffffff;
+                        pixels[i] = pixels[i] & 0x00FFFFFF;
                         continue;
                     }
-                    int rgb = pixels[x];
+                    int rgb = pixels[i];
                     int r = Color.red(rgb);
                     int g = Color.green(rgb);
                     int b = Color.blue(rgb);
                     r = clampColor(((r * factor - m0) / a + m0h) >> fraction);
                     g = clampColor(((g * factor - m1) / a + m1h) >> fraction);
                     b = clampColor(((b * factor - m2) / a + m2h) >> fraction);
-                    pixels[x] = Color.argb(a, r, g, b);
+                    pixels[i] = Color.argb(a, r, g, b);
                 }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
+                image.setPixels(pixels, 0, width, 0, y, width, currentChunkRows);
             }
         }
         return image;
@@ -751,9 +739,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
     /**
      * High-quality image scaling.
      */
-    private Bitmap scaleImage(Bitmap image, int width, int height, boolean interpolate)
+    Bitmap scaleImage(Bitmap image, int width, int height, boolean interpolate)
     {
-        return Bitmap.createScaledBitmap(image, width, height, !interpolate);
+        return Bitmap.createScaledBitmap(image, width, height, interpolate);
     }
 
     /**
@@ -775,7 +763,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
             if (cosStream != null)
             {
                 // always DeviceGray
-                return new PDImageXObject(new PDStream(cosStream), null);
+                return new PDImageXObject(new PDStream(cosStream), resources);
             }
             return null;
         }
@@ -806,7 +794,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
         if (cosStream != null)
         {
             // always DeviceGray
-            return new PDImageXObject(new PDStream(cosStream), null);
+            return new PDImageXObject(new PDStream(cosStream), resources);
         }
         return null;
     }
@@ -874,6 +862,15 @@ public final class PDImageXObject extends PDXObject implements PDImage
             }
         }
         return colorSpace;
+    }
+
+    /**
+     * Returns the resources associated with this image, or null if there are none.
+     * @return the resources
+     */
+    public PDResources getResources()
+    {
+        return resources;
     }
 
     @Override

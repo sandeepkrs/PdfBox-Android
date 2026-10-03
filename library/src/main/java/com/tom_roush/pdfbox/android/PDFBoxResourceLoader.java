@@ -63,8 +63,7 @@ public class PDFBoxResourceLoader
     {
         if (ASSET_MANAGER == null)
         {
-            Log.e("PdfBox-Android",
-                "PDFBoxResourceLoader is not initialized, call PDFBoxResourceLoader.init() before use");
+            throw new IOException("PDFBoxResourceLoader is not initialized, call PDFBoxResourceLoader.init() before use");
         }
         return ASSET_MANAGER.open(path);
     }
