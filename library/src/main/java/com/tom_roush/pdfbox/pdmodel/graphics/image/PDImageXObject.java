@@ -628,10 +628,10 @@ public final class PDImageXObject extends PDXObject implements PDImage
      * @param matte an optional RGB matte if a soft mask.
      * @return an ARGB image (can be the altered original image)
      */
-    private Bitmap applyMask(Bitmap image, Bitmap mask, boolean interpolateMask,
+    Bitmap applyMask(Bitmap image, Bitmap mask, boolean interpolateMask,
         boolean isSoft, float[] matte)
     {
-        if (mask == null)
+        if (image == null || mask == null)
         {
             return image;
         }
@@ -732,9 +732,9 @@ public final class PDImageXObject extends PDXObject implements PDImage
     /**
      * High-quality image scaling.
      */
-    private Bitmap scaleImage(Bitmap image, int width, int height, boolean interpolate)
+    Bitmap scaleImage(Bitmap image, int width, int height, boolean interpolate)
     {
-        return Bitmap.createScaledBitmap(image, width, height, !interpolate);
+        return Bitmap.createScaledBitmap(image, width, height, interpolate);
     }
 
     /**
@@ -756,7 +756,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
             if (cosStream != null)
             {
                 // always DeviceGray
-                return new PDImageXObject(new PDStream(cosStream), null);
+                return new PDImageXObject(new PDStream(cosStream), resources);
             }
             return null;
         }
@@ -787,7 +787,7 @@ public final class PDImageXObject extends PDXObject implements PDImage
         if (cosStream != null)
         {
             // always DeviceGray
-            return new PDImageXObject(new PDStream(cosStream), null);
+            return new PDImageXObject(new PDStream(cosStream), resources);
         }
         return null;
     }
@@ -855,6 +855,15 @@ public final class PDImageXObject extends PDXObject implements PDImage
             }
         }
         return colorSpace;
+    }
+
+    /**
+     * Returns the resources associated with this image, or null if there are none.
+     * @return the resources
+     */
+    public PDResources getResources()
+    {
+        return resources;
     }
 
     @Override
