@@ -9,7 +9,7 @@ plugins {
 
 val minSdkProp: String by project
 val compileSdkProp: String by project
-val versionNameProp = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.0-SNAPSHOT"
+val versionNameProp = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.1"
 
 android {
     namespace = "com.tom_roush.pdfbox"

@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val versionNameProp = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.0-SNAPSHOT"
+val versionNameProp = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.1"
 val versionCodeProp = (project.findProperty("VERSION_CODE") as String?)?.toInt() ?: 1
 
 android {

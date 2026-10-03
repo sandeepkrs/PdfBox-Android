@@ -4,5 +4,5 @@ plugins {
 }
 
 allprojects {
-    version = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.0-SNAPSHOT"
+    version = project.findProperty("VERSION_NAME") as String? ?: "2.0.37.1"
 }
