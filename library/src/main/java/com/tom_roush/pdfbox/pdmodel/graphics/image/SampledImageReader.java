@@ -212,7 +212,8 @@ final class SampledImageReader
             // in PDColorSpace#toRGBImage expects an 8-bit range, i.e. 0-255.
             final float[] defaultDecode = pdImage.getColorSpace().getDefaultDecode(8);
             final float[] decode = getDecodeArray(pdImage);
-            if (pdImage.getSuffix() != null && pdImage.getSuffix().equals("jpg") && subsampling == 1)
+            if (pdImage.getSuffix() != null && pdImage.getSuffix().equals("jpg") && subsampling == 1
+                && region == null && colorKey == null && Arrays.equals(decode, defaultDecode))
             {
                 return BitmapFactory.decodeStream(pdImage.createInputStream());
             }
@@ -392,11 +393,20 @@ final class SampledImageReader
         }
     }
 
-    private static Bitmap createBitmapFromRawStream(InputStream input, int originalWidth, int numComponents,
+    static Bitmap createBitmapFromRawStream(InputStream input, int originalWidth, int numComponents,
         int sampleSize, PDColorSpace colorSpace) throws IOException
     {
+        if (originalWidth <= 0 || numComponents <= 0)
+        {
+            throw new IOException("Invalid image dimensions or components: width=" + originalWidth + ", components=" + numComponents);
+        }
+
         byte[] bytes = IOUtils.toByteArray(input);
         int originalHeight = bytes.length / numComponents / originalWidth;
+        if (originalHeight <= 0)
+        {
+            throw new IOException("Image stream contains insufficient data: " + bytes.length + " bytes for width=" + originalWidth + ", components=" + numComponents);
+        }
 
         if (colorSpace instanceof PDIndexed)
         {
@@ -465,6 +475,10 @@ final class SampledImageReader
                 result[to + 3] = (byte) 255;
             }
             bytes = result;
+        }
+        else
+        {
+            throw new IOException("Unsupported number of components for raw stream conversion: " + numComponents);
         }
         Bitmap bitmap = Bitmap.createBitmap(originalWidth, originalHeight, Bitmap.Config.ARGB_8888);
         bitmap.copyPixelsFromBuffer(ByteBuffer.wrap(bytes));
