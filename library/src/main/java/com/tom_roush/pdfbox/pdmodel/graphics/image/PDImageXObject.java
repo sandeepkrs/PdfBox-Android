@@ -654,26 +654,31 @@ public final class PDImageXObject extends PDXObject implements PDImage
             image = image.copy(Bitmap.Config.ARGB_8888, true);
         }
         final boolean isMaskAlpha8 = mask.getConfig() == Bitmap.Config.ALPHA_8;
-        int[] pixels = new int[width];
-        int[] maskPixels = new int[width];
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] pixels = new int[bufferSize];
+        int[] maskPixels = new int[bufferSize];
 
         if (matte == null)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < height; y += chunkRows)
             {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int x = 0; x < width; x++)
+                int currentChunkRows = Math.min(chunkRows, height - y);
+                int currentPixelCount = currentChunkRows * width;
+                image.getPixels(pixels, 0, width, 0, y, width, currentChunkRows);
+                mask.getPixels(maskPixels, 0, width, 0, y, width, currentChunkRows);
+                for (int i = 0; i < currentPixelCount; i++)
                 {
-                    int maskVal = maskPixels[x];
+                    int maskVal = maskPixels[i];
                     int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (!isSoft)
                     {
                         a = 255 - a;
                     }
-                    pixels[x] = (pixels[x] & 0x00FFFFFF) | (a << 24);
+                    pixels[i] = (pixels[i] & 0x00FFFFFF) | (a << 24);
                 }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
+                image.setPixels(pixels, 0, width, 0, y, width, currentChunkRows);
             }
         }
         else
@@ -696,29 +701,31 @@ public final class PDImageXObject extends PDXObject implements PDImage
             final int m0h = m0 / 255 + (1 << fraction - 1);
             final int m1h = m1 / 255 + (1 << fraction - 1);
             final int m2h = m2 / 255 + (1 << fraction - 1);
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < height; y += chunkRows)
             {
-                image.getPixels(pixels, 0, width, 0, y, width, 1);
-                mask.getPixels(maskPixels, 0, width, 0, y, width, 1);
-                for (int x = 0; x < width; x++)
+                int currentChunkRows = Math.min(chunkRows, height - y);
+                int currentPixelCount = currentChunkRows * width;
+                image.getPixels(pixels, 0, width, 0, y, width, currentChunkRows);
+                mask.getPixels(maskPixels, 0, width, 0, y, width, currentChunkRows);
+                for (int i = 0; i < currentPixelCount; i++)
                 {
-                    int maskVal = maskPixels[x];
+                    int maskVal = maskPixels[i];
                     int a = isMaskAlpha8 ? ((maskVal >> 24) & 0xFF) : ((maskVal >> 16) & 0xFF);
                     if (a == 0)
                     {
-                        pixels[x] = pixels[x] & 0x00FFFFFF;
+                        pixels[i] = pixels[i] & 0x00FFFFFF;
                         continue;
                     }
-                    int rgb = pixels[x];
+                    int rgb = pixels[i];
                     int r = Color.red(rgb);
                     int g = Color.green(rgb);
                     int b = Color.blue(rgb);
                     r = clampColor(((r * factor - m0) / a + m0h) >> fraction);
                     g = clampColor(((g * factor - m1) / a + m1h) >> fraction);
                     b = clampColor(((b * factor - m2) / a + m2h) >> fraction);
-                    pixels[x] = Color.argb(a, r, g, b);
+                    pixels[i] = Color.argb(a, r, g, b);
                 }
-                image.setPixels(pixels, 0, width, 0, y, width, 1);
+                image.setPixels(pixels, 0, width, 0, y, width, currentChunkRows);
             }
         }
         return image;

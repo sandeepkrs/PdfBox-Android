@@ -81,23 +81,25 @@ public final class PDDeviceGray extends PDDeviceColorSpace
 
         int width = raster.getWidth();
         int height = raster.getHeight();
-        int[] imgPixels = new int[width];
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] imgPixels = new int[bufferSize];
+        int[] outPixels = new int[bufferSize];
 
         Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        int[] outPixels = new int[width];
 
-        int gray;
-        int rgb;
-        for (int y = 0; y < height; y++)
+        for (int y = 0; y < height; y += chunkRows)
         {
-            raster.getPixels(imgPixels, 0, width, 0, y, width, 1);
-            for (int x = 0; x < width; x++)
+            int currentChunkRows = Math.min(chunkRows, height - y);
+            int currentPixelCount = currentChunkRows * width;
+            raster.getPixels(imgPixels, 0, width, 0, y, width, currentChunkRows);
+            for (int i = 0; i < currentPixelCount; i++)
             {
-                gray = Color.alpha(imgPixels[x]);
-                rgb = Color.argb(255, gray, gray, gray);
-                outPixels[x] = rgb;
+                int gray = Color.alpha(imgPixels[i]);
+                outPixels[i] = Color.argb(255, gray, gray, gray);
             }
-            image.setPixels(outPixels, 0, width, 0, y, width, 1);
+            image.setPixels(outPixels, 0, width, 0, y, width, currentChunkRows);
         }
 
         return image;

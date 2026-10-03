@@ -87,16 +87,21 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
    {
       int width = raster.getWidth();
       int height = raster.getHeight();
-      int[] imgPixels = new int[width];
+      final int maxChunkPixels = 262144;
+      final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+      final int bufferSize = chunkRows * width;
+      int[] imgPixels = new int[bufferSize];
+      int[] outPixels = new int[bufferSize];
       Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-      int[] outPixels = new int[width];
 
-      for (int y = 0; y < height; y++)
+      for (int y = 0; y < height; y += chunkRows)
       {
-         raster.getPixels(imgPixels, 0, width, 0, y, width, 1);
-         for (int x = 0; x < width; x++)
+         int currentChunkRows = Math.min(chunkRows, height - y);
+         int currentPixelCount = currentChunkRows * width;
+         raster.getPixels(imgPixels, 0, width, 0, y, width, currentChunkRows);
+         for (int i = 0; i < currentPixelCount; i++)
          {
-            int pixel = imgPixels[x];
+            int pixel = imgPixels[i];
             float c = android.graphics.Color.red(pixel) / 255.0f;
             float m = android.graphics.Color.green(pixel) / 255.0f;
             float yVal = android.graphics.Color.blue(pixel) / 255.0f;
@@ -104,9 +109,9 @@ public class PDDeviceCMYK extends PDDeviceColorSpace
             int r = Math.round(255 * (1 - c) * (1 - k));
             int g = Math.round(255 * (1 - m) * (1 - k));
             int b = Math.round(255 * (1 - yVal) * (1 - k));
-            outPixels[x] = android.graphics.Color.argb(255, r, g, b);
+            outPixels[i] = android.graphics.Color.argb(255, r, g, b);
          }
-         image.setPixels(outPixels, 0, width, 0, y, width, 1);
+         image.setPixels(outPixels, 0, width, 0, y, width, currentChunkRows);
       }
       return image;
    }

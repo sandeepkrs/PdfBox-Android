@@ -123,22 +123,29 @@ public final class LosslessFactory
     {
         int height = image.getHeight();
         int width = image.getWidth();
-        int[] rgbLineBuffer = new int[width];
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] rgbLineBuffer = new int[bufferSize];
         int bpc = 8;
         ByteArrayOutputStream baos = new ByteArrayOutputStream(((width*bpc/8)+(width*bpc%8 != 0 ? 1:0))*height);
         MemoryCacheImageOutputStream mcios = new MemoryCacheImageOutputStream(baos);
-        for (int y = 0; y < height; ++y)
+        for (int y = 0; y < height; y += chunkRows)
         {
-            image.getPixels(rgbLineBuffer, 0, width, 0, y, width, 1);
-            for (int pixel : rgbLineBuffer)
+            int currentChunkRows = Math.min(chunkRows, height - y);
+            image.getPixels(rgbLineBuffer, 0, width, 0, y, width, currentChunkRows);
+            for (int r = 0; r < currentChunkRows; r++)
             {
-                mcios.writeBits(pixel & 0xFF, bpc);
-            }
-
-            int bitOffset = mcios.getBitOffset();
-            if (bitOffset != 0)
-            {
-                mcios.writeBits(0, 8 - bitOffset);
+                int rowOffset = r * width;
+                for (int x = 0; x < width; x++)
+                {
+                    mcios.writeBits(rgbLineBuffer[rowOffset + x] & 0xFF, bpc);
+                }
+                int bitOffset = mcios.getBitOffset();
+                if (bitOffset != 0)
+                {
+                    mcios.writeBits(0, 8 - bitOffset);
+                }
             }
         }
         mcios.flush();
@@ -151,7 +158,10 @@ public final class LosslessFactory
     {
         int height = image.getHeight();
         int width = image.getWidth();
-        int[] rgbLineBuffer = new int[width];
+        final int maxChunkPixels = 262144;
+        final int chunkRows = Math.min(height, Math.max(1, maxChunkPixels / width));
+        final int bufferSize = chunkRows * width;
+        int[] rgbLineBuffer = new int[bufferSize];
         int bpc = 8;
         PDDeviceColorSpace deviceColorSpace = PDDeviceRGB.INSTANCE;
         byte[] imageData = new byte[width * height * 3];
@@ -168,20 +178,20 @@ public final class LosslessFactory
         {
             alphaImageData = new byte[0];
         }
-        for (int y = 0; y < height; ++y)
+        for (int y = 0; y < height; y += chunkRows)
         {
-            image.getPixels(rgbLineBuffer, 0, width, 0, y, width, 1);
-            for (int pixel : rgbLineBuffer)
+            int currentChunkRows = Math.min(chunkRows, height - y);
+            int currentPixelCount = currentChunkRows * width;
+            image.getPixels(rgbLineBuffer, 0, width, 0, y, width, currentChunkRows);
+            for (int i = 0; i < currentPixelCount; i++)
             {
+                int pixel = rgbLineBuffer[i];
                 imageData[byteIdx++] = (byte) ((pixel >> 16) & 0xFF);
                 imageData[byteIdx++] = (byte) ((pixel >> 8) & 0xFF);
                 imageData[byteIdx++] = (byte) (pixel & 0xFF);
                 if (image.hasAlpha())
                 {
-                    {
-                        // write a byte
-                        alphaImageData[alphaByteIdx++] = (byte) ((pixel >> 24) & 0xFF);
-                    }
+                    alphaImageData[alphaByteIdx++] = (byte) ((pixel >> 24) & 0xFF);
                 }
             }
         }
