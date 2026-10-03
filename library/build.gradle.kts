@@ -16,7 +16,7 @@ android {
     compileSdk = (project.findProperty("ANDROID_BUILD_SDK_VERSION") as String?)?.toInt() ?: 37
 
     defaultConfig {
-        minSdk = (project.findProperty("ANDROID_BUILD_MIN_SDK_VERSION") as String?)?.toInt() ?: 21
+        minSdk = (project.findProperty("ANDROID_BUILD_MIN_SDK_VERSION") as String?)?.toInt() ?: 23
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["notAnnotation"] = "androidx.test.filters.FlakyTest"
         consumerProguardFiles("consumer-proguard-rules.txt")

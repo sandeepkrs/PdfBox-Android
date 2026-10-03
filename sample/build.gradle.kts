@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.tom_roush.pdfbox.sample"
-        minSdk = (project.findProperty("ANDROID_BUILD_MIN_SDK_VERSION") as String?)?.toInt() ?: 21
+        minSdk = (project.findProperty("ANDROID_BUILD_MIN_SDK_VERSION") as String?)?.toInt() ?: 23
         targetSdk = (project.findProperty("ANDROID_BUILD_TARGET_SDK_VERSION") as String?)?.toInt() ?: 37
         versionName = versionNameProp
         versionCode = versionCodeProp

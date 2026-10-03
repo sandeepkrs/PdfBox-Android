@@ -55,4 +55,4 @@ Important notes
 
 * Currently based on PDFBox v2.0.37
 
-* Requires API 19 or greater for full functionality
+* Requires API 23 or greater for full functionality
